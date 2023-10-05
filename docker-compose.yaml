@@ -1,0 +1,69 @@
+# Creating network "douyin_default" with the default driver
+# 首次会自动创建一个默认网络 供所有服务连接
+services:
+  # douyin: 
+  #   build: . # 会在指定目录寻找Dockerfile 构建镜像
+  #   container_name: web_fiber
+  #   ports:
+  #     - "9999:9999"
+  mysql-master:
+    container_name: mysql-master 
+    image: mysql:latest
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123456
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: 'douyin'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+      MASTER_SYNC_USER: syncuser
+      MASTER_SYNC_PASSWORD: sync123456
+      SYNC_ALLOW_HOST: '%'
+      R_W_USER: rw_user
+      R_W_USER_PASSWORD: rw123456
+      R_W_USER_HOST: '%'
+      R_W_DATABASE: '*'
+    volumes:
+      - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
+      - ./config/mysql/master.cnf:/etc/my.cnf
+    networks:
+      shardingSphere:
+        ipv4_address: 192.168.0.100
+  mysql-slave:
+    container_name: mysql-slave
+    image: mysql:latest
+    ports:
+      - "13307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123456
+      MYSQL_DATABASE: 'douyin'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+      MASTER_HOST: 192.168.0.100
+      MASTER_PORT: 3306
+      MASTER_SYNC_USER: syncuser
+      MASTER_SYNC_PASSWORD: sync123456
+      R_USER: r_user
+      R_USER_PASSWORD: r123456
+      R_USER_HOST: '%'
+    volumes:
+      - ./config/mysql/slave.sh:/docker-entrypoint-initdb.d/slave.sh
+      - ./config/mysql/slave.cnf:/etc/my.cnf
+    networks:
+      shardingSphere:
+        ipv4_address: 192.168.0.101
+    depends_on:
+      - mysql-master
+  
+  redis:
+    image: redis:latest
+    container_name: redis_douyin
+    ports:
+      - 6379:6379
+
+
+networks:
+  shardingSphere:
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.0.0/24"

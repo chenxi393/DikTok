@@ -1,0 +1,31 @@
+mode: "production"
+jwtSecret: "DYF的抖音项目"
+
+httpAddress:
+  host: 127.0.0.1
+  port: 9999
+
+mysqlMaster:
+  host: 127.0.0.1
+  port: 13306
+  username: root
+  password: admin123456
+  database: douyin
+  maxOpenConn: 100
+  maxIdleConn: 10
+
+mysqlSlave:
+  host: 127.0.0.1
+  port: 13307
+  username: root
+  password: admin123456
+  database: douyin
+  maxOpenConn: 100
+  maxIdleConn: 10
+
+userRedis:
+  host: 127.0.0.1
+  port: 6379
+  password:
+  db: 0
+  poolSize: 100
