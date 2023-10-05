@@ -3,7 +3,7 @@ jwtSecret: "DYF的抖音项目"
 
 httpAddress:
   host: 127.0.0.1
-  port: 9999
+  port: 30000
 
 mysqlMaster:
   host: 127.0.0.1

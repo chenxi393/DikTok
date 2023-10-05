@@ -3,9 +3,13 @@
 services:
   # douyin: 
   #   build: . # 会在指定目录寻找Dockerfile 构建镜像
-  #   container_name: web_fiber
+  #   container_name: go_server
   #   ports:
   #     - "9999:9999"
+  #   depends_on:
+  #     - mysql-master
+  #     - redis
+
   mysql-master:
     container_name: mysql-master 
     image: mysql:latest

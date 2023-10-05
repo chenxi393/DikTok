@@ -8,6 +8,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 	"gorm.io/plugin/dbresolver"
 )
 
@@ -50,8 +51,12 @@ func InitMysql() {
 		DSN:                       masterDNS,
 		DefaultStringSize:         256,   // string 类型字段的默认长度
 		SkipInitializeWithVersion: false, // 根据当前 MySQL 版本自动配置
+		
 	}), &gorm.Config{
 		Logger: ormLogger,
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true, //单数表
+		},
 	})
 	if err != nil {
 		panic(err.Error())
@@ -78,6 +83,7 @@ func InitMysql() {
 func migration() {
 	err := global_db.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 		&model.User{},
+		&model.Follow{},
 	)
 	if err != nil {
 		panic(err.Error())

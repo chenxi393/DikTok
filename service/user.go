@@ -8,13 +8,18 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
 	// 密码，最长32个字符
-	Password string `json:"password"`
+	Password string `query:"password"`
 	// 注册用户名，最长32个字符
-	Username string `json:"username"`
+	Username string `query:"username"`
+	// 用户鉴权token
+	Token string `query:"token"`
+	// 用户id
+	UserID string `query:"user_id"`
 }
 
 func (service UserService) RegisterService() (*response.UserRegisterOrLogin, error) {
@@ -29,19 +34,19 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 
 	userDao := dao.NewUserDao()
 	//先判断用户存不存在
-	user, err := userDao.SelectUserByName(service.Username)
-	if err != nil {
+	_, err := userDao.SelectUserByName(service.Username)
+	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
-	if user.ID != 0 {
+	if err != gorm.ErrRecordNotFound {
 		err := fmt.Errorf("用户名已被注册")
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
 	// 对密码进行加密并存储
 	encryptedPassword := util.BcryptHash(service.Password)
-	user = &model.User{
+	user := &model.User{
 		Username: service.Username,
 		Password: encryptedPassword,
 	}
@@ -61,9 +66,9 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 
 	return &response.UserRegisterOrLogin{
 		StatusCode: response.Success,
-		StatusMsg:  "用户注册成功",
-		Token:      token,
-		UserID:     userID,
+		StatusMsg:  response.RegisterSuccess,
+		Token:      &token,
+		UserID:     &userID,
 	}, nil
 }
 
@@ -101,8 +106,31 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 
 	return &response.UserRegisterOrLogin{
 		StatusCode: response.Success,
-		StatusMsg:  "用户登录成功",
-		Token:      token,
-		UserID:     user.ID,
+		StatusMsg:  response.LoginSucess,
+		Token:      &token,
+		UserID:     &user.ID,
+	}, nil
+}
+
+func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, error) {
+	// TODO 使用布隆过滤器判断用户ID是否存在
+	// TODO 去redis里查询用户信息 这是热点数据
+	// TODO 缓存未命中再去查数据库
+	userDao := dao.NewUserDao()
+	// 去数据库查询用户信息
+	user, err := userDao.SelectUserByID(service.UserID)
+	if err != nil {
+		return nil, err
+	}
+	// 判断是否是关注用户
+	// TODO正常来说这是热点数据 应当去redis里查 没查到 再去数据库查
+	isFollowed, err := userDao.IsFollowed(userID, service.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.InfoResponse{
+		StatusCode: response.Success,
+		User:       response.UserInfo(user, isFollowed),
 	}, nil
 }

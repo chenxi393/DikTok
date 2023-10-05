@@ -25,7 +25,7 @@ func initRouter(app *fiber.App) {
 	{
 		// 客户端（前端） 用户注册或者登录后 紧接着就调用 /douyin/user/
 		user := api.Group("/user")
-		//user.Get("/", controller.UserInfo)
+		user.Get("/", controller.UserInfo)
 		{
 			user.Post("/register/", controller.UserRegister)
 			user.Post("/login/", controller.UserLogin)
