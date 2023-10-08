@@ -14,6 +14,43 @@
    * [参考配置的文章](https://zhuanlan.zhihu.com/p/650314645)
 2. redis各个地方要统筹考虑
 
+### RIGHT JOIN LEFT JOIN WHERE
+where和inner join是内连接 只保留公共部分
+外连接会保留不满足条件的
+总之 外连接至少会保留一张表的所有信息
+
+user表
+| id  | name  |
+| --- | ----- |
+| 1   | Alice |
+| 2   | Bob   |
+| 3   | Carol |
+
+video表
+| id  | title   | author_id |
+| --- | ------- | --------- |
+| 1   | Video 1 | 1         |
+| 2   | Video 2 | 2         |
+| 3   | Video 3 | 2         |
+| 4   | Video 4 | 4         |
+
+user right join video on author_id=id
+| id   | name  | title   |
+| ---- | ----- | ------- |
+| 1    | Alice | Video 1 |
+| 2    | Bob   | Video 2 |
+| 2    | Bob   | Video 3 |
+| NULL | NULL  | Video 4 |
+
+user right join video等价于video left join user
+
+where author_id=id 或者 直接join
+| id   | name  | title   |
+| ---- | ----- | ------- |
+| 1    | Alice | Video 1 |
+| 2    | Bob   | Video 2 |
+| 2    | Bob   | Video 3 |
+
 ### Fiber
 fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也是我们是Zero Allocation)
 

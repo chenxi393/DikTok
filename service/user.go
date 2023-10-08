@@ -18,8 +18,8 @@ type UserService struct {
 	Username string `query:"username"`
 	// 用户鉴权token
 	Token string `query:"token"`
-	// 用户id
-	UserID string `query:"user_id"`
+	// 用户id 注意上面token会带一个userID 
+	UserID uint64 `query:"user_id"`
 }
 
 func (service UserService) RegisterService() (*response.UserRegisterOrLogin, error) {
@@ -32,9 +32,8 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 		return nil, fmt.Errorf("密码太简单")
 	}
 
-	userDao := dao.NewUserDao()
 	//先判断用户存不存在
-	_, err := userDao.SelectUserByName(service.Username)
+	_, err := dao.SelectUserByName(service.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -50,7 +49,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 		Username: service.Username,
 		Password: encryptedPassword,
 	}
-	userID, err := userDao.CreateUser(user)
+	userID, err := dao.CreateUser(user)
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -74,9 +73,8 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 
 func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error) {
 	logTag := "service.user.Login err:"
-	userDao := dao.NewUserDao()
 	//先判断用户存不存在
-	user, err := userDao.SelectUserByName(service.Username)
+	user, err := dao.SelectUserByName(service.Username)
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -116,15 +114,14 @@ func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, 
 	// TODO 使用布隆过滤器判断用户ID是否存在
 	// TODO 去redis里查询用户信息 这是热点数据
 	// TODO 缓存未命中再去查数据库
-	userDao := dao.NewUserDao()
 	// 去数据库查询用户信息
-	user, err := userDao.SelectUserByID(service.UserID)
+	user, err := dao.SelectUserByID(service.UserID)
 	if err != nil {
 		return nil, err
 	}
 	// 判断是否是关注用户
 	// TODO正常来说这是热点数据 应当去redis里查 没查到 再去数据库查
-	isFollowed, err := userDao.IsFollowed(userID, service.UserID)
+	isFollowed, err := dao.IsFollowed(userID, service.UserID)
 	if err != nil {
 		return nil, err
 	}

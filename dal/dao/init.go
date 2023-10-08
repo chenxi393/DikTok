@@ -84,6 +84,8 @@ func migration() {
 	err := global_db.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 		&model.User{},
 		&model.Follow{},
+		&model.Video{},
+		&model.UserFavoriteVideo{},
 	)
 	if err != nil {
 		panic(err.Error())
