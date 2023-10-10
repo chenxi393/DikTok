@@ -19,8 +19,11 @@ type MysqlConfig struct {
 }
 
 type HttpConfig struct {
-	Host string `mapstructure:"host"`
-	Port string `mapstructure:"port"`
+	Host          string `mapstructure:"host"`
+	Port          string `mapstructure:"port"`
+	VideoAddress  string `mapstructure:"videoAddress"`
+	ImageAddress  string `mapstructure:"imageAddress"`
+	DefaltImagURL string `mapstructure:"defaltCoverURL"`
 }
 
 type RedisConfig struct {
@@ -38,6 +41,11 @@ type System struct {
 	HttpAddress HttpConfig  `mapstructure:"httpAddress"`
 	Redis       RedisConfig `mapstructure:"userRedis"`
 	JwtSecret   string      `mapstructure:"jwtSecret"`
+	UploadModel string      `mapstructure:"uploadModel"`
+	AccessKey   string      `mapstructure:"accessKey"`
+	SecretKey   string      `mapstructure:"secretKey"`
+	Bucket      string      `mapstructure:"bucket"`
+	OssDomain   string      `mapstructure:"ossDomain"`
 }
 
 var SystemConfig System

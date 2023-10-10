@@ -1,12 +1,18 @@
-mode: "production"
+mode: "debug"
 jwtSecret: "DYF的抖音项目"
-
+uploadModel: "oss" #上传文件的模式 本地:local 七牛云:oss
+bucket: "chenxi-douyin"
+accessKey: "JX4aa7pcISC4JmMHPR4b-xvT0e3tJHRAF3DL-DQQ"
+secretKey: "JJX6-zdTfN_ndXzWjLTW__HVtni3S-jatNnRoRf0"
+ossDomain: "http://s2a5yl4lg.hn-bkt.clouddn.com"
 httpAddress:
-  host: 127.0.0.1
-  port: 30000
-
+  host: 0.0.0.0 #需要更换为主机的ip
+  port: 7777 #更换为运行的端口
+  videoAddress: "./douyinVideo"
+  imageAddress: "./douyinImage"
+  defaltCoverURL: "https://img.zcool.cn/community/0159355d7dad02a801211d53f6aa65.png@1280w_1l_2o_100sh.png"
 mysqlMaster:
-  host: 127.0.0.1
+  host: 127.0.0.1 # docker：mysql-master 本机：127.0.0.1:13306
   port: 13306
   username: root
   password: admin123456
@@ -15,7 +21,7 @@ mysqlMaster:
   maxIdleConn: 10
 
 mysqlSlave:
-  host: 127.0.0.1
+  host: 127.0.0.1 # docker：mysql-slave:3306 本机：127.0.0.1:13307
   port: 13307
   username: root
   password: admin123456
@@ -24,7 +30,7 @@ mysqlSlave:
   maxIdleConn: 10
 
 userRedis:
-  host: 127.0.0.1
+  host: 127.0.0.1 # docker：redis:6379 本机：127.0.0.1:6379
   port: 6379
   password:
   db: 0

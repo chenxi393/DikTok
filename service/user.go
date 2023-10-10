@@ -18,7 +18,7 @@ type UserService struct {
 	Username string `query:"username"`
 	// 用户鉴权token
 	Token string `query:"token"`
-	// 用户id 注意上面token会带一个userID 
+	// 用户id 注意上面token会带一个userID
 	UserID uint64 `query:"user_id"`
 }
 
@@ -60,7 +60,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
-	// 将 UserID 添加到布隆过滤器中TODO
+	// TODO将 UserID 添加到布隆过滤器中
 	// redis 预热？？ 维持关注用户列表 redis key 的存在 维持点赞视频列表 redis key 的存在
 
 	return &response.UserRegisterOrLogin{
@@ -112,8 +112,8 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 
 func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, error) {
 	// TODO 使用布隆过滤器判断用户ID是否存在
-	// TODO 去redis里查询用户信息 这是热点数据
-	// TODO 缓存未命中再去查数据库
+	// 去redis里查询用户信息 这是热点数据
+	// 缓存未命中再去查数据库
 	// 去数据库查询用户信息
 	user, err := dao.SelectUserByID(service.UserID)
 	if err != nil {
@@ -121,11 +121,15 @@ func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, 
 	}
 	// 判断是否是关注用户
 	// TODO正常来说这是热点数据 应当去redis里查 没查到 再去数据库查
-	isFollowed, err := dao.IsFollowed(userID, service.UserID)
-	if err != nil {
-		return nil, err
+	var isFollowed bool // 自己查自己 当然是关注了的
+	if userID == service.UserID {
+		isFollowed = true
+	} else {
+		isFollowed, err = dao.IsFollowed(userID, service.UserID)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	return &response.InfoResponse{
 		StatusCode: response.Success,
 		User:       response.UserInfo(user, isFollowed),

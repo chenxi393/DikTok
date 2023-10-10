@@ -19,6 +19,8 @@ func SelectFeedVideoList(numberVideos int, lastTime *int64) ([]response.Video, e
 	}
 	res := make([]response.Video, 0, 30)
 	// 这里使用外连接 双表联查 可以考虑单次拿出30个video 再构造一个map（包含30个uid）去数据库里查
+	// FIX 这里有问题 两表联查有重复字段  需要重新开一个结构体 手动select而不是* 然后对应字段
+	// 或者干脆一次只查一个表 然后走批量查询
 	err := global_db.Model(&model.User{}).Select("*").Joins(
 		"right join video on video.author_id = user.id").Where("video.publish_time <= ? ",
 		time.UnixMilli(*lastTime)).Limit(numberVideos).Scan(&res).Error

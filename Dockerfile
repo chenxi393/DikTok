@@ -1,16 +1,17 @@
 FROM golang:latest
 
-# 设置工作目录
-WORKDIR /app
+# Ignore APT warnings about not having a TTY
+ENV DEBIAN_FRONTEND noninteractive
 
-# 拷贝本地源代码到容器内
+# install build essentials
+RUN apt-get update && \
+    apt-get install -y wget build-essential pkg-config --no-install-recommends
+
+# Install ffmpeg 提取视频第一帧
+RUN apt-get install -y ffmpeg
+
+WORKDIR /go/projects/douyin
 COPY . .
 
-# 安装依赖
-RUN go mod download
-
-# 构建可执行文件
-RUN go build -o main .
-
-# 容器启动时运行可执行文件
-ENTRYPOINT ["./main"]
+RUN go install
+CMD /go/bin/douyin

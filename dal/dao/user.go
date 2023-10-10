@@ -5,7 +5,7 @@ import (
 )
 
 func CreateUser(user *model.User) (uint64, error) {
-	// 不select指定更新的自动 无法使用默认值？？？？ TODO 待验证
+	//TODO 待验证 不select指定更新的自动 无法使用默认值？？？？
 	err := global_db.Model(&model.User{}).Create(user).Error
 	if err != nil {
 		return 0, err
@@ -41,4 +41,13 @@ func IsFollowed(userID uint64, id uint64) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func SelectWorkCount(userID uint64) (int64, error) {
+	var cnt int64
+	err := global_db.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
 }

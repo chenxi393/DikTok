@@ -1,8 +1,20 @@
 ### TODO
 参照gin-mall和其他单体 架构 快速构建一个可用的。 先模仿再改进
 之后进行压力测试，然后考虑使用微服务，对比测试（考虑接入AI）
-本机运行打开了window的端口 docker内似乎就不用 记得关闭 还做了端口转发
+
 只要接受到请求了就只能返回200 其他状态吗 应该是别的地方做的
+
+可以考虑加入ELK体系 自己已经在docker部署了
+
+refreshToken 考虑token的续期 但是接口其实没有需要返回token
+有机会可以试试navicat 类似数据库可视化软件 自己一直用的vscode插件
+
+golang的一些常用的框架 可以在项目中多使用使用
+web：gin fiber hertz 
+微服务：go-zero go-micro, kitex
+grpc
+
+FIX 视频上传肯定要用消息队列异步了 不然太慢了
 
 ### Point
 1. 读写分离（基于主从复制） 查询select 在从库 插入更新update在主库
@@ -13,6 +25,9 @@
        * 业务量比较大，单机无法满足需求，使用多机器的存储，提高单机的IO性能（单机多库感觉没有意义）
    * [参考配置的文章](https://zhuanlan.zhihu.com/p/650314645)
 2. redis各个地方要统筹考虑
+3. 注意这里视频和封面（ffmeng截取第一帧 只在docker内部署了）的存储
+   * 全都写在本地 且是当前目录下 这不合适 而且封面截取 需要ffmeng
+   * 使用对象存储（七牛云每月有免费额度） 也可以试试CDN（但是这玩意要怎么看到效果）
 
 ### RIGHT JOIN LEFT JOIN WHERE
 where和inner join是内连接 只保留公共部分
@@ -45,11 +60,11 @@ user right join video on author_id=id
 user right join video等价于video left join user
 
 where author_id=id 或者 直接join
-| id   | name  | title   |
-| ---- | ----- | ------- |
-| 1    | Alice | Video 1 |
-| 2    | Bob   | Video 2 |
-| 2    | Bob   | Video 3 |
+| id  | name  | title   |
+| --- | ----- | ------- |
+| 1   | Alice | Video 1 |
+| 2   | Bob   | Video 2 |
+| 2   | Bob   | Video 3 |
 
 ### Fiber
 fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也是我们是Zero Allocation)
@@ -77,8 +92,6 @@ fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也�
     * ETCD集群 投票 redia哨兵集群 mysql集群 这是高可用
     * 数据一致性 --订阅 mysql binlog？？？
     * 可以使用大模型做视频推荐系统？？？⭐⭐ 这很好 可以了解
-    * 这个项目还是太拉了 不如用抖音那个
-
 
 * [第一名 必看](https://z37kw7eggp.feishu.cn/docx/Y3KCdaFMSoKKNjxPOHAcWMiInZb)
 * [这个是第三名 有详细的开发流程和规范 可以参考](https://gagjcxhxrb.feishu.cn/docx/SCEddZcB3oQwKOxrWQNcqicQnxd)
@@ -106,7 +119,7 @@ kafaka
 * `ISR` 同步副本集，若副本相差比较多 会被踢出ISR的集合（等待副本追赶上）
 * Kafka集群由`broker 消息代理`组成 一个服务器启动一个broker实例
 
-#### 问题
+问题
 * 异步怎么保证 下游一定成功呢 失败了怎么办
 * 一致性怎么办 返回给用户成功 怎么保证时效性----所以消息队列是有适用场景的
 * 当上游服务器必须等待下游的处理结果返回就不适用

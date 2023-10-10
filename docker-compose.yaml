@@ -1,14 +1,19 @@
 # Creating network "douyin_default" with the default driver
 # 首次会自动创建一个默认网络 供所有服务连接
 services:
-  # douyin: 
-  #   build: . # 会在指定目录寻找Dockerfile 构建镜像
-  #   container_name: go_server
-  #   ports:
-  #     - "9999:9999"
-  #   depends_on:
-  #     - mysql-master
-  #     - redis
+  douyin: 
+    build: . # 会在指定目录寻找Dockerfile 构建镜像
+    container_name: go_server
+    ports:
+      - "9999:9999"
+    depends_on:
+      - mysql-master
+      - redis
+    stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
+    tty: true    #分配一个伪终端 与-t类似    docker run -dit
+    networks:
+      - shardingSphere
+      - backend
 
   mysql-master:
     container_name: mysql-master 
@@ -63,6 +68,8 @@ services:
     container_name: redis_douyin
     ports:
       - 6379:6379
+    networks:
+      - backend
 
 
 networks:
@@ -71,3 +78,4 @@ networks:
       driver: default
       config:
         - subnet: "192.168.0.0/24"
+  backend: 

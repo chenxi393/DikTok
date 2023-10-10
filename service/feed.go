@@ -12,9 +12,9 @@ import (
 
 type FeedService struct {
 	// 可选参数，限制返回视频的最新投稿时间戳，精确到秒，不填表示当前时间
-	LatestTime *int64 `json:"latest_time,omitempty"`
+	LatestTime *int64 `query:"latest_time"`
 	// 用户登录状态下设置
-	Token *string `json:"token,omitempty"`
+	Token *string `query:"token"`
 }
 
 var maxVideoNum = 30
