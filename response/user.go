@@ -1,6 +1,6 @@
 package response
 
-import "douyin/dal/model"
+import "douyin/model"
 
 type UserRegisterOrLogin struct {
 	// 状态码，0-成功，其他值-失败
@@ -39,7 +39,7 @@ type User struct {
 	// true-已关注，false-未关注
 	IsFollow bool `json:"is_follow"`
 	// 用户名称
-	Name string `json:"name"`
+	Name string `json:"name" gorm:"column:username"` //done
 	// 个人简介
 	Signature string `json:"signature"`
 	// 获赞数量

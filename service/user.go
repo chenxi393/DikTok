@@ -1,8 +1,8 @@
 package service
 
 import (
-	"douyin/dal/dao"
-	"douyin/dal/model"
+	"douyin/database"
+	"douyin/model"
 	"douyin/package/util"
 	"douyin/response"
 	"fmt"
@@ -33,7 +33,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 	}
 
 	//先判断用户存不存在
-	_, err := dao.SelectUserByName(service.Username)
+	_, err := database.SelectUserByName(service.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -49,7 +49,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 		Username: service.Username,
 		Password: encryptedPassword,
 	}
-	userID, err := dao.CreateUser(user)
+	userID, err := database.CreateUser(user)
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -74,7 +74,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error) {
 	logTag := "service.user.Login err:"
 	//先判断用户存不存在
-	user, err := dao.SelectUserByName(service.Username)
+	user, err := database.SelectUserByName(service.Username)
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -115,7 +115,7 @@ func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, 
 	// 去redis里查询用户信息 这是热点数据
 	// 缓存未命中再去查数据库
 	// 去数据库查询用户信息
-	user, err := dao.SelectUserByID(service.UserID)
+	user, err := database.SelectUserByID(service.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (service *UserService) InfoService(userID uint64) (*response.InfoResponse, 
 	if userID == service.UserID {
 		isFollowed = true
 	} else {
-		isFollowed, err = dao.IsFollowed(userID, service.UserID)
+		isFollowed, err = database.IsFollowed(userID, service.UserID)
 		if err != nil {
 			return nil, err
 		}

@@ -1,4 +1,8 @@
 ### TODO
+10.11 感觉自己写的有点乱起八糟了 应该找一个实例
+找一个对应的web框架的示例 看看别人怎么写的
+[有现成的代码hertz 。。。。。](https://github.com/cloudwego/hertz-examples/tree/main/bizdemo/tiktok_demo)
+
 参照gin-mall和其他单体 架构 快速构建一个可用的。 先模仿再改进
 之后进行压力测试，然后考虑使用微服务，对比测试（考虑接入AI）
 
@@ -15,6 +19,8 @@ web：gin fiber hertz
 grpc
 
 FIX 视频上传肯定要用消息队列异步了 不然太慢了
+
+[GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)
 
 ### Point
 1. 读写分离（基于主从复制） 查询select 在从库 插入更新update在主库
@@ -125,3 +131,16 @@ kafaka
 * 当上游服务器必须等待下游的处理结果返回就不适用
 * 消息不丢失？？
 * 重复消息
+
+
+#### Q
+考虑traefik 做反向代理？？ Nginx也可以试试？？
+
+是不是微服务架构就用不到Nginx了 有了服务注册和服务发现之后 就可以扩展多个服务实例
+直接走服务注册和发现中心 还要Nginx干吗
+
+#### MySQL 主从遇到的问题 
+原因应该是 从库业务里是写入的 我却使用插件连接主库 写入
+
+应该保证一端写入 一段查询
+[[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)

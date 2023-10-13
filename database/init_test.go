@@ -1,12 +1,12 @@
-package dao_test
+package database_test
 
 import (
 	"douyin/config"
-	"douyin/dal/dao"
+	"douyin/database"
 	"testing"
 )
 
 func TestInit(t *testing.T) {
 	config.Init()
-	dao.InitMysql()
+	database.InitMysql()
 }

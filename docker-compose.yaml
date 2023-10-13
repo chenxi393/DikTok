@@ -1,19 +1,20 @@
 # Creating network "douyin_default" with the default driver
 # 首次会自动创建一个默认网络 供所有服务连接
+version: '3.8'
 services:
-  douyin: 
-    build: . # 会在指定目录寻找Dockerfile 构建镜像
-    container_name: go_server
-    ports:
-      - "9999:9999"
-    depends_on:
-      - mysql-master
-      - redis
-    stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
-    tty: true    #分配一个伪终端 与-t类似    docker run -dit
-    networks:
-      - shardingSphere
-      - backend
+  # web: 
+  #   build: . # 会在指定目录寻找Dockerfile 构建镜像
+  #   container_name: go_server
+  #   ports:
+  #     - "9999:9999"
+  #   depends_on:
+  #     - mysql-master
+  #     - redis
+  #   #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
+  #   #tty: true    #分配一个伪终端 与-t类似    docker run -dit
+  #   networks:
+  #     - shardingSphere
+  #     - backend
 
   mysql-master:
     container_name: mysql-master 
@@ -79,3 +80,8 @@ networks:
       config:
         - subnet: "192.168.0.0/24"
   backend: 
+
+# TODO 记得volume 持久化数据
+#    env_file:
+#      - .env
+# 可以用evn file 保存compose里的环境变量 明文

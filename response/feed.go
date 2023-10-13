@@ -11,10 +11,9 @@ type FeedResponse struct {
 	VideoList []Video `json:"video_list"`
 }
 
-// Video FIX 这样response 会出问题 有重复的字段 无法识别
 type Video struct {
 	// 视频作者信息
-	User `json:"author"`
+	Author User `json:"author"`
 	// 视频的评论总数
 	CommentCount int64 `json:"comment_count"`
 	// 视频封面地址
@@ -29,4 +28,33 @@ type Video struct {
 	PlayURL string `json:"play_url"`
 	// 视频标题
 	Title string `json:"title"`
+}
+
+type VideoData struct {
+	User               `json:"author"`
+	VideoID            uint64 `gorm:"column:vid" json:"id"`
+	PlayURL            string `gorm:"column:play_url" json:"play_url"`
+	CoverURL           string `gorm:"column:cover_url" json:"cover_url"`
+	VideoFavoriteCount int64  `gorm:"column:vfavorite_count" json:"favorite_count"`
+	CommentCount       int64  `gorm:"column:comment_count" json:"comment_count"`
+	Title              string `gorm:"column:title" json:"title"`
+	IsFavorite         bool   `json:"is_favorite"`
+}
+
+func VideoDataInfo(data []VideoData) []Video {
+	items := make([]Video, 0, len(data))
+	for _, item := range data {
+		v := Video{
+			Author:        item.User,
+			ID:            item.VideoID,
+			PlayURL:       item.PlayURL,
+			CoverURL:      item.CoverURL,
+			FavoriteCount: item.VideoFavoriteCount,
+			CommentCount:  item.CommentCount,
+			Title:         item.Title,
+			
+		}
+		items = append(items, v)
+	}
+	return items
 }

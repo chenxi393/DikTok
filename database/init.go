@@ -1,8 +1,8 @@
-package dao
+package database
 
 import (
 	"douyin/config"
-	"douyin/dal/model"
+	"douyin/model"
 	"strings"
 
 	"gorm.io/driver/mysql"

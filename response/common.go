@@ -9,3 +9,8 @@ var (
 	WrongToken      = "token不匹配"
 	FeedSuccess     = "视频列表获取成功"
 )
+
+type CommonResponse struct {
+	StatusCode int    `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}

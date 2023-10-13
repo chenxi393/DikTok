@@ -1,7 +1,7 @@
-package dao
+package database
 
 import (
-	"douyin/dal/model"
+	"douyin/model"
 )
 
 func CreateUser(user *model.User) (uint64, error) {
@@ -50,4 +50,14 @@ func SelectWorkCount(userID uint64) (int64, error) {
 		return 0, err
 	}
 	return cnt, nil
+}
+
+// 通过一组id 批量获取用户信息
+func SelectUserListByIDs(userIDs []uint64) ([]model.User, error) {
+	var users []model.User
+	err := global_db.Model(&model.User{}).Where("id IN ( ? ) ", userIDs).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
 }

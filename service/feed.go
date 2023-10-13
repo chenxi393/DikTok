@@ -1,7 +1,7 @@
 package service
 
 import (
-	"douyin/dal/dao"
+	"douyin/database"
 	"douyin/package/util"
 	"douyin/response"
 	"fmt"
@@ -23,14 +23,15 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	// TODO: 已登录可以有一个用户画像 做一个视频推荐功能
 	// 直接去数据库里查出30个数据  LatestTime 限制返回视频的最晚时间
 	logTag := "service.feed.GetFeed err:"
-	videoData, err := dao.SelectFeedVideoList(maxVideoNum, service.LatestTime)
+	videos, err := database.SelectFeedVideoList(maxVideoNum, service.LatestTime)
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
+	videoData := response.VideoDataInfo(videos)
 	var nextTime time.Time
 	if len(videoData) != 0 {
-		nextTime, err = dao.SelectPublishTimeByVideoID(videoData[len(videoData)-1].ID)
+		nextTime, err = database.SelectPublishTimeByVideoID(videoData[len(videoData)-1].ID)
 		if err != nil {
 			zap.L().Error(logTag, zap.Error(err))
 			return nil, err
@@ -53,7 +54,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	}
 	// 获取用户的关注列表
 	// TODO 去redis拿关注列表
-	following, err := dao.SelectFollowingByUserID(userClaim.UserID)
+	following, err := database.SelectFollowingByUserID(userClaim.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +63,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 		followingMap[f] = struct{}{}
 	}
 	// 获取用户的喜欢视频列表
-	likingVideos, err := dao.SelectFavoriteVideoByUserID(userClaim.UserID)
+	likingVideos, err := database.SelectFavoriteVideoByUserID(userClaim.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +71,15 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	for _, f := range likingVideos {
 		likingMap[f] = struct{}{}
 	}
+	// 要注意 自己的视频算被自己关注了
 	// 判断是否点赞和是否关注
-	for _, rr := range videoData {
+	followingMap[userClaim.UserID] = struct{}{}
+	for i, rr := range videoData {
 		if _, ok := followingMap[rr.ID]; ok {
-			rr.IsFollow = true
+			videoData[i].Author.IsFollow = true
 		}
 		if _, ok := likingMap[rr.ID]; ok {
-			rr.IsFavorite = true
+			videoData[i].IsFavorite = true
 		}
 	}
 

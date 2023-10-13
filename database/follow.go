@@ -1,6 +1,7 @@
-package dao
+package database
 
-import "douyin/dal/model"
+import "douyin/model"
+
 
 func SelectFollowingByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
