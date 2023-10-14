@@ -32,11 +32,10 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	if service.ActionType == "1" {
-		err = service.FavoriteAction(Claims.UserID)
+		err = service.FavoriteAction(Claims.UserID, 1)
 	} else { //取消点赞
-		err = service.UnFavoriteAction(Claims.UserID)
+		err = service.FavoriteAction(Claims.UserID, -1)
 	}
-
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,

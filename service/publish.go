@@ -43,7 +43,6 @@ func (service *PublisService) PublishAction(userID uint64, buf []byte) (*respons
 	} else {
 		playURL, coverURL, err = util.UploadVideoToLocal(&reader, fileName)
 	}
-
 	if err != nil {
 		return nil, err
 	}

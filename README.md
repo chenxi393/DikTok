@@ -1,26 +1,19 @@
 ### TODO
-10.11 感觉自己写的有点乱起八糟了 应该找一个实例
-找一个对应的web框架的示例 看看别人怎么写的
-[有现成的代码hertz 。。。。。](https://github.com/cloudwego/hertz-examples/tree/main/bizdemo/tiktok_demo)
-
-参照gin-mall和其他单体 架构 快速构建一个可用的。 先模仿再改进
-之后进行压力测试，然后考虑使用微服务，对比测试（考虑接入AI）
-
-只要接受到请求了就只能返回200 其他状态吗 应该是别的地方做的
-
-可以考虑加入ELK体系 自己已经在docker部署了
-
-refreshToken 考虑token的续期 但是接口其实没有需要返回token
-有机会可以试试navicat 类似数据库可视化软件 自己一直用的vscode插件
+* 参照gin-mall和其他单体 架构 快速构建一个可用的。 先模仿再改进 。之后进行压力测试，然后考虑使用微服务，对比测试（考虑接入AI）
+* 要接受到请求了就只能返回200 其他状态吗 应该是别的地方做的
+* 可以考虑加入ELK体系 自己在docker部署尝试过了
+* refreshToken 考虑token的续期 但是接口其实没有需要返回token
+* 有机会可以试试navicat 类似数据库可视化软件 自己一直用的vscode插件
+* 完善 FIX 和 TODO 
+* 视频上传肯定要用消息队列异步了 不然太慢了
+* 考虑traefik 做反向代理？？ Nginx也可以试试？？
+* 是不是微服务架构就用不到Nginx了 有了服务注册和服务发现之后 就可以扩展多个服务实例
+* 直接走服务注册和发现中心 还要Nginx干吗
+* 点赞和关注 这些非常频繁的操作 主键自增可能会消耗很快 可以考虑软删除（自己实现 不依赖GORM）
 
 golang的一些常用的框架 可以在项目中多使用使用
-web：gin fiber hertz 
-微服务：go-zero go-micro, kitex
-grpc
-
-FIX 视频上传肯定要用消息队列异步了 不然太慢了
-
-[GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)
+* web：gin fiber hertz 
+* 微服务：go-zero go-micro, kitex，grpc
 
 ### Point
 1. 读写分离（基于主从复制） 查询select 在从库 插入更新update在主库
@@ -81,6 +74,12 @@ fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也�
 也可以配置为不可变（Immutable ） 但是有性能开销
 [Zero Allocation](https://docs.gofiber.io/#zero-allocation)
 
+### 遇到的问题 
+1. MySQL 主从同步 1032 error 主库用来update，从库同来select
+   * 应该保证一端写入 一端查询？还没有很好的解决 具体原因再看看
+   * [[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)
+2. GORM Scan的两个问题 Scan的要求类型是什么，它是如何匹配相应字段的
+   * [GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)
 
 ### 可以考虑的 观看青训营答辩得出的 9.28 
 1. go-zero进行微服务开发 使用数据库集群存储数据 实现软删除和分页分表 `redis缓存`降低数据库的压力  redis缓存热点数据（注意缓存命中率）---但是感觉只有真实业务才能确定什么是热点 `缓存穿透 缓存击穿 缓存雪崩`
@@ -131,16 +130,3 @@ kafaka
 * 当上游服务器必须等待下游的处理结果返回就不适用
 * 消息不丢失？？
 * 重复消息
-
-
-#### Q
-考虑traefik 做反向代理？？ Nginx也可以试试？？
-
-是不是微服务架构就用不到Nginx了 有了服务注册和服务发现之后 就可以扩展多个服务实例
-直接走服务注册和发现中心 还要Nginx干吗
-
-#### MySQL 主从遇到的问题 
-原因应该是 从库业务里是写入的 我却使用插件连接主库 写入
-
-应该保证一端写入 一段查询
-[[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)

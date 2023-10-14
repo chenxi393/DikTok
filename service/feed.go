@@ -48,7 +48,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	}
 	userClaim, err := util.ParseToken(*service.Token)
 	if err != nil || userClaim.UserID == 0 {
-		err := fmt.Errorf("解析token失败")
+		err := fmt.Errorf("解析token失败") // 这里哪怕鉴权失败页给用户返回信息
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	// 判断是否点赞和是否关注
 	followingMap[userClaim.UserID] = struct{}{}
 	for i, rr := range videoData {
-		if _, ok := followingMap[rr.ID]; ok {
+		if _, ok := followingMap[rr.Author.ID]; ok {
 			videoData[i].Author.IsFollow = true
 		}
 		if _, ok := likingMap[rr.ID]; ok {

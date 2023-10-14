@@ -55,7 +55,8 @@ func SelectWorkCount(userID uint64) (int64, error) {
 // 通过一组id 批量获取用户信息
 func SelectUserListByIDs(userIDs []uint64) ([]model.User, error) {
 	var users []model.User
-	err := global_db.Model(&model.User{}).Where("id IN ( ? ) ", userIDs).Find(&users).Error
+	// (?)  ( ? )会多加一个括号
+	err := global_db.Model(&model.User{}).Where("id IN (?)  ", userIDs).Find(&users).Error
 	if err != nil {
 		return nil, err
 	}

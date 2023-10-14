@@ -52,7 +52,6 @@ func VideoDataInfo(data []VideoData) []Video {
 			FavoriteCount: item.VideoFavoriteCount,
 			CommentCount:  item.CommentCount,
 			Title:         item.Title,
-			
 		}
 		items = append(items, v)
 	}

@@ -11,23 +11,20 @@ import (
 
 type FavoriteService struct {
 	// 1-点赞，2-取消点赞
-	ActionType string `json:"action_type"`
+	ActionType string `query:"action_type"`
 	// 用户鉴权token
-	Token string `json:"token"`
+	Token string `query:"token"`
 	// 视频id
-	VideoID uint64 `json:"video_id"`
+	VideoID uint64 `query:"video_id"`
 	// 要查询的用户id
-	UserID uint64 `json:"user_id"`
+	UserID uint64 `query:"user_id"`
 }
 
-func (service *FavoriteService) FavoriteAction(userID uint64) error {
-	// TODO 这里用到了消息队列
-	return database.FavoriteVideo(userID, service.VideoID)
-}
-
-func (service *FavoriteService) UnFavoriteAction(userID uint64) error {
-	// TODO 这里用到了消息队列
-	return database.UnFavoriteVideo(userID, service.VideoID)
+// cnt 1 表示点赞 -1取消点赞
+func (service *FavoriteService) FavoriteAction(userID uint64, cnt int64) error {
+	// TODO 消息队列
+	// TODO要注意 所有POST操作都要检查 会不会影响别的表
+	return database.FavoriteVideo(userID, service.VideoID, cnt)
 }
 
 func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, error) {
