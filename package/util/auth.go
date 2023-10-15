@@ -33,7 +33,7 @@ func SignToken(userID uint64) (string, error) {
 func ParseToken(token string) (*UserClaims, error) {
 	signingKey :=  []byte(config.SystemConfig.JwtSecret)
 	tokenClaims, err := jwt.ParseWithClaims(token, &UserClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return signingKey, nil
+		return signingKey, nil 
 	})
 	if err != nil {
 		zap.L().Error("util.jwt.ParseToken err:", zap.Error(err))

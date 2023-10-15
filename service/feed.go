@@ -24,6 +24,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	// 直接去数据库里查出30个数据  LatestTime 限制返回视频的最晚时间
 	logTag := "service.feed.GetFeed err:"
 	videos, err := database.SelectFeedVideoList(maxVideoNum, service.LatestTime)
+	// FIX 这里视频数有可能为0
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
@@ -48,7 +49,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	}
 	userClaim, err := util.ParseToken(*service.Token)
 	if err != nil || userClaim.UserID == 0 {
-		err := fmt.Errorf("解析token失败") // 这里哪怕鉴权失败页给用户返回信息
+		err := fmt.Errorf("解析token失败 请重新登录") // 这里哪怕鉴权失败页给用户返回信息
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}

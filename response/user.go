@@ -53,7 +53,7 @@ func UserInfo(user *model.User, isFollowed bool) *User {
 		Avatar:          user.Avatar,
 		BackgroundImage: user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
-		FollowCount:     user.FollowingCount,
+		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,
 		ID:              user.ID,
 		IsFollow:        isFollowed,

@@ -8,7 +8,7 @@ import (
 
 // cnt=1表示 点赞 cnt=-1 表示取消赞
 func FavoriteVideo(userID, videoID uint64, cnt int64) error {
-	favorite := model.UserFavoriteVideo{
+	favorite := model.Favorite{
 		UserID:  userID,
 		VideoID: videoID,
 	}
@@ -17,9 +17,9 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 		// 点赞表里更新 TODO 这里是不是可以考虑软删除
 		var err error
 		if cnt == 1 {
-			err = tx.Model(&model.UserFavoriteVideo{}).Create(&favorite).Error
+			err = tx.Model(&model.Favorite{}).Create(&favorite).Error
 		} else {
-			err = tx.Model(&model.UserFavoriteVideo{}).Where("user_id = ? AND video_id = ? ", userID, videoID).Delete(&favorite).Error
+			err = tx.Model(&model.Favorite{}).Where("user_id = ? AND video_id = ? ", userID, videoID).Delete(&favorite).Error
 		}
 		if err != nil {
 			return err
@@ -62,6 +62,6 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 }
 func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := global_db.Model(&model.UserFavoriteVideo{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error
+	err := global_db.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error
 	return res, err
 }

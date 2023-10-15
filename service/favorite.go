@@ -21,15 +21,21 @@ type FavoriteService struct {
 }
 
 // cnt 1 表示点赞 -1取消点赞
-func (service *FavoriteService) FavoriteAction(userID uint64, cnt int64) error {
+func (service *FavoriteService) FavoriteAction(userID uint64) error {
 	// TODO 消息队列
 	// TODO要注意 所有POST操作都要检查 会不会影响别的表
-	return database.FavoriteVideo(userID, service.VideoID, cnt)
+	err := fmt.Errorf("ActionType 错误")
+	if service.ActionType == "1" {
+		err = database.FavoriteVideo(userID, service.VideoID, 1)
+	} else if service.ActionType == "2" { //取消点赞
+		err = database.FavoriteVideo(userID, service.VideoID, -1)
+	}
+	return err
 }
 
 func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, error) {
 	// 先查找所有喜欢的视频ID
-	videoIDs, err := database.SelectFavoriteVideoByUserID(userID)
+	videoIDs, err := database.SelectFavoriteVideoByUserID(service.UserID) //done
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err

@@ -18,6 +18,10 @@ func SelectFeedVideoList(numberVideos int, lastTime *int64) ([]response.VideoDat
 		currentTime := time.Now().UnixMilli()
 		lastTime = &currentTime
 	}
+	// FIX 这里视频流会有个问题 客户端第一次请时间是0 会用现在的时间
+	// 但是第二次请求 会用上次最晚的时间 会导致
+	// 还有下面的时间是毫秒 要用小于 不能等于 可以考虑-1 用小于等于
+	// 这里用小于第二次甚至没有视频（当视频数不够用的时候） 得解决这个问题
 	res := make([]response.VideoData, 0, 30)
 	// 这里使用外连接 双表联查
 	err := global_db.Model(&model.User{}).Select(`user.*,
@@ -27,8 +31,8 @@ func SelectFeedVideoList(numberVideos int, lastTime *int64) ([]response.VideoDat
     video.favorite_count as vfavorite_count,
     video.comment_count,
     video.title`).Joins(
-		"right join video on video.author_id = user.id").Where("video.publish_time <= ? ",
-		time.UnixMilli(*lastTime)).Limit(numberVideos).Scan(&res).Error
+		"right join video on video.author_id = user.id").Where("video.publish_time < ? ",
+		time.UnixMilli(*lastTime)).Order("video.publish_time desc").Limit(numberVideos).Scan(&res).Error
 	if err != nil {
 		return nil, err
 	}

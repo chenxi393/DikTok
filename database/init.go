@@ -51,7 +51,7 @@ func InitMysql() {
 		DSN:                       masterDNS,
 		DefaultStringSize:         256,   // string 类型字段的默认长度
 		SkipInitializeWithVersion: false, // 根据当前 MySQL 版本自动配置
-		
+
 	}), &gorm.Config{
 		Logger: ormLogger,
 		NamingStrategy: schema.NamingStrategy{
@@ -85,7 +85,8 @@ func migration() {
 		&model.User{},
 		&model.Follow{},
 		&model.Video{},
-		&model.UserFavoriteVideo{},
+		&model.Favorite{},
+		&model.Comment{},
 	)
 	if err != nil {
 		panic(err.Error())

@@ -15,6 +15,9 @@ golang的一些常用的框架 可以在项目中多使用使用
 * web：gin fiber hertz 
 * 微服务：go-zero go-micro, kitex，grpc
 
+wc -l `find ./ -name "*.go";find -name "*.yaml"`
+上面可以统计代码行数
+
 ### Point
 1. 读写分离（基于主从复制） 查询select 在从库 插入更新update在主库
    * 实时性强的，例如即时写即时查，直接指定主库进行操作，避免主从同步延迟而导致查询出bug，即查询比插入快

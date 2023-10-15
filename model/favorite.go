@@ -1,6 +1,6 @@
 package model
 
-type UserFavoriteVideo struct {
+type Favorite struct {
 	ID          uint64    `json:"id"`
 	UserID      uint64    `gorm:"not null" json:"user_id"`
 	VideoID     uint64    `gorm:"not null" json:"video_id"`
