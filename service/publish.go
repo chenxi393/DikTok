@@ -7,7 +7,6 @@ import (
 	"douyin/model"
 	"douyin/package/util"
 	"douyin/response"
-	"io"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -28,26 +27,19 @@ type PublishListService struct {
 	UserID uint64 `query:"user_id"`
 }
 
-func (service *PublisService) PublishAction(userID uint64, buf []byte) (*response.CommonResponse, error) {
-	var reader io.Reader = bytes.NewReader(buf)
-	cnt := len(buf)
+func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*response.CommonResponse, error) {
 	u1, err := uuid.NewV4()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
 	fileName := u1.String() + "." + "mp4"
-	var playURL, coverURL string
-	if config.SystemConfig.UploadModel == "oss" {
-		playURL, coverURL, err = util.UploadVideoToOSS(&reader, cnt, fileName)
-	} else {
-		playURL, coverURL, err = util.UploadVideoToLocal(&reader, fileName)
-	}
+	playURL, coverURL, err := util.UploadVideo(buf.Bytes(), fileName)
 	if err != nil {
 		return nil, err
 	}
 	//TODO : 返回被忽略了 需要加入布隆过滤器
-	_, err = database.CreateVideo(&model.Video{
+	video_id, err := database.CreateVideo(&model.Video{
 		PublishTime:   time.Now(),
 		AuthorID:      userID,
 		PlayURL:       playURL,
@@ -60,6 +52,24 @@ func (service *PublisService) PublishAction(userID uint64, buf []byte) (*respons
 		zap.L().Error(err.Error())
 		return nil, err
 	}
+	// 异步上传到对象存储
+	go func() {
+		// 记得删除本地的
+		playURL, err := util.UploadToOSS(fileName, config.SystemConfig.HttpAddress.VideoAddress+"/"+fileName)
+		if err != nil {
+			// 这里要不要重试？？
+			zap.L().Error(err.Error())
+		}
+		if coverURL != config.SystemConfig.HttpAddress.DefaultCoverURL {
+			coverFileName := fileName + ".jpeg"
+			coverURL, err = util.UploadToOSS(coverFileName, config.SystemConfig.HttpAddress.ImageAddress+"/"+coverFileName)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}
+		database.UpdateVideoURL(playURL, coverURL, video_id)
+		// 更新数据库
+	}()
 	return &response.CommonResponse{
 		StatusCode: response.Success,
 		StatusMsg:  "上传视频成功",
@@ -67,7 +77,7 @@ func (service *PublisService) PublishAction(userID uint64, buf []byte) (*respons
 }
 
 func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*response.PublishListResponse, error) {
-	// TODO 加分布式锁 redis
+	// TODO 加分布式锁 redis  记得倒序
 	// 第一步查找 所有的 service.user_id 的视频记录
 	// 然后 对这些视频判断 loginUserID 有没有点赞
 	//视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）

@@ -25,20 +25,29 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 	logTag := "service.feed.GetFeed err:"
 	videos, err := database.SelectFeedVideoList(maxVideoNum, service.LatestTime)
 	// FIX 这里视频数有可能为0
+	// 可以goroutine 去定时1分钟(或者10m 或者当收到请求的时候channel发送)
+	// 去获取最晚视频的时间 如果这个时间都没有就更新时间
 	if err != nil {
 		zap.L().Error(logTag, zap.Error(err))
 		return nil, err
 	}
 	videoData := response.VideoDataInfo(videos)
-	var nextTime time.Time
+	nextTime := time.Now()
 	if len(videoData) != 0 {
 		nextTime, err = database.SelectPublishTimeByVideoID(videoData[len(videoData)-1].ID)
 		if err != nil {
 			zap.L().Error(logTag, zap.Error(err))
 			return nil, err
 		}
+	} else { //当视频数为0 的时候返回友好提示
+		return &response.FeedResponse{
+			StatusCode: response.Success, //返回成功 客户端下次才会更新时间
+			StatusMsg:  "视频见底了",
+			VideoList:  nil,
+			NextTime:   nextTime.UnixMilli(),
+		}, nil
 	}
-	// 查看有没有token
+	// 查看有没有token  视频数为0也立刻返回
 	if service.Token == nil || *service.Token == "" {
 		return &response.FeedResponse{
 			StatusCode: response.Success,

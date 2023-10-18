@@ -56,6 +56,7 @@ func CommentList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		c.JSON(res)
 	}
+	// 这里是不是要fix一下 未登录用户也能查看评论
 	claims, err := util.ParseToken(service.Token)
 	if err != nil {
 		res := response.CommentListResponse{

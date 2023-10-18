@@ -49,7 +49,7 @@ func FollowList(c *fiber.Ctx) error {
 	var service service.RelationService
 	err := c.QueryParser(&service)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
 		}
@@ -58,7 +58,7 @@ func FollowList(c *fiber.Ctx) error {
 	}
 	claims, err := util.ParseToken(service.Token)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.WrongToken,
 		}
@@ -67,7 +67,7 @@ func FollowList(c *fiber.Ctx) error {
 	}
 	resp, err := service.RelationFollowList(claims.UserID)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
 		}
@@ -82,7 +82,7 @@ func FollowerList(c *fiber.Ctx) error {
 	var service service.RelationService
 	err := c.QueryParser(&service)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
 		}
@@ -91,7 +91,7 @@ func FollowerList(c *fiber.Ctx) error {
 	}
 	claims, err := util.ParseToken(service.Token)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.WrongToken,
 		}
@@ -100,7 +100,48 @@ func FollowerList(c *fiber.Ctx) error {
 	}
 	resp, err := service.RelationFollowerList(claims.UserID)
 	if err != nil {
-		res := response.CommonResponse{
+		res := response.RelationListResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  err.Error(),
+		}
+		c.Status(fiber.StatusOK)
+		return c.JSON(res)
+	}
+	c.Status(fiber.StatusOK)
+	return c.JSON(resp)
+}
+
+func FriendList(c *fiber.Ctx) error {
+	var service service.RelationService
+	err := c.QueryParser(&service)
+	if err != nil {
+		res := response.RelationListResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  err.Error(),
+		}
+		c.Status(fiber.StatusOK)
+		return c.JSON(res)
+	}
+	claims, err := util.ParseToken(service.Token)
+	if err != nil {
+		res := response.RelationListResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  response.WrongToken,
+		}
+		c.Status(fiber.StatusOK)
+		return c.JSON(res)
+	}
+	if claims.UserID != service.UserID {
+		res := response.RelationListResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  "无法查看别人的好友列表",
+		}
+		c.Status(fiber.StatusOK)
+		return c.JSON(res)
+	}
+	resp, err := service.RelationFriendList()
+	if err != nil {
+		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
 		}

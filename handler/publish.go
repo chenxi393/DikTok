@@ -23,7 +23,6 @@ func PublishAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	// FIX 似乎鉴权甚至应该在参数校验之前 我记得商城是使用鉴权中间件的
-	// token中间件使用失败了 目前还是手动调用  失败原因 应该还是没有找到合适的API
 	Claims, err := util.ParseToken(publishService.Token)
 	if err != nil {
 		res := response.CommonResponse{
@@ -33,7 +32,6 @@ func PublishAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// TODO：怎么拿到视频数据 这一块HTTP视频传输还有一些API还是不清楚
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -64,7 +62,7 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	res, err := publishService.PublishAction(Claims.UserID, buf.Bytes())
+	res, err := publishService.PublishAction(Claims.UserID, buf)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -87,7 +85,8 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	// 需要鉴权
+	// TODO 需要鉴权 没登陆 只要刷视频就会调用
+	// 这些list publish list favorite list 是不是要考虑没有登录也让看
 	Claims, err := util.ParseToken(listService.Token)
 	if err != nil {
 		res := response.UserRegisterOrLogin{

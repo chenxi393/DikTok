@@ -50,3 +50,8 @@ func SelectVideoListByVideoID(videoIDList []uint64) ([]model.Video, error) {
 	}
 	return res, err
 }
+
+func UpdateVideoURL(playURL, coverURL string, videoID uint64) error {
+	//  Don’t use Save with Model, it’s an Undefined Behavior.
+	return global_db.Model(&model.Video{ID: videoID}).Updates(&model.Video{PlayURL: playURL, CoverURL: coverURL}).Error
+}

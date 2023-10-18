@@ -36,17 +36,17 @@ func ParseToken(token string) (*UserClaims, error) {
 		return signingKey, nil 
 	})
 	if err != nil {
-		zap.L().Error("util.jwt.ParseToken err:", zap.Error(err))
+		zap.L().Info("util.jwt.ParseToken err:", zap.Error(err))
 		return nil, err
 	} else if tokenClaims == nil {
 		err = fmt.Errorf("jwtToken身份识别失败")
-		zap.L().Error("util.jwt.ParseToken err:", zap.Error(err))
+		zap.L().Info("util.jwt.ParseToken err:", zap.Error(err))
 		return nil, err
 	}
 	if claims, ok := tokenClaims.Claims.(*UserClaims); ok && tokenClaims.Valid {
 		return claims, nil
 	}
 	err = fmt.Errorf("jwtToken身份识别失败")
-	zap.L().Error("util.jwt.ParseToken err:", zap.Error(err))
+	zap.L().Info("util.jwt.ParseToken err:", zap.Error(err))
 	return nil, err
 }

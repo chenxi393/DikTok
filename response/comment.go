@@ -34,6 +34,8 @@ type Comment struct {
 func BuildComment(comment *model.Comment, user *model.User, isFollow bool) *Comment {
 	return &Comment{
 		Content:    comment.Content,
+		// 这个评论的时间客户端哈好像可以到毫秒2006-01-02 15:04:05.999
+		// 但是感觉每必要 日期就够了 
 		CreateDate: comment.CreatedTime.Format("01-02"),
 		ID:         comment.ID,
 		User:       *UserInfo(user, isFollow),

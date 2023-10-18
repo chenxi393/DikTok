@@ -6,23 +6,20 @@ import (
 	"douyin/service"
 
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
 
-func FavoriteVideoAction(c *fiber.Ctx) error {
-	var service service.FavoriteService
+func MessageAction(c *fiber.Ctx) error {
+	var service service.MessageService
 	err := c.QueryParser(&service)
 	if err != nil {
-		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 鉴权
-	Claims, err := util.ParseToken(service.Token)
+	claims, err := util.ParseToken(service.Token)
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
@@ -31,7 +28,7 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	err = service.FavoriteAction(Claims.UserID)
+	err = service.MessageAction(claims.UserID)
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
@@ -42,51 +39,42 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	}
 	res := response.CommonResponse{
 		StatusCode: response.Success,
-		StatusMsg:  "点赞成功",
+		StatusMsg:  "发送成功",
 	}
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
 }
 
-func FavoriteList(c *fiber.Ctx) error {
-	var service service.FavoriteService
+// 一旦进入消息界面 客户端每秒会调用一次
+func MessageChat(c *fiber.Ctx) error {
+	var service service.MessageService
 	err := c.QueryParser(&service)
 	if err != nil {
-		zap.L().Error(err.Error())
-		res := response.PublishListResponse{
+		res := response.MessageResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
-			VideoList:  nil,
+			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 鉴权 
-	Claims, err := util.ParseToken(service.Token)
+	claims, err := util.ParseToken(service.Token)
 	if err != nil {
-		res := response.PublishListResponse{
+		res := response.MessageResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.WrongToken,
-			VideoList:  nil,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	resp, err := service.FavoriteList(Claims.UserID)
+	resp, err := service.MessageChat(claims.UserID)
 	if err != nil {
-		res := response.PublishListResponse{
+		res := response.MessageResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-			VideoList:  nil,
+			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
-	}
-	res := response.PublishListResponse{
-		StatusCode: response.Success,
-		StatusMsg:  "查询喜欢视频列表成功",
-		VideoList:  resp,
 	}
 	c.Status(fiber.StatusOK)
-	return c.JSON(res)
+	return c.JSON(resp)
 }

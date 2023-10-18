@@ -14,7 +14,6 @@ func CommentAdd(comment *string, videoID, userID uint64) (*model.Comment, error)
 		Content:     *comment,
 		CreatedTime: time.Now(),
 	}
-	// 还是需要使用事务 先更新评论表 再更新视频表
 	err := global_db.Transaction(func(tx *gorm.DB) error {
 		err := tx.Model(&model.Comment{}).Create(&com).Error
 		if err != nil {
@@ -38,12 +37,10 @@ func CommentAdd(comment *string, videoID, userID uint64) (*model.Comment, error)
 }
 
 func CommentDelete(commentID *string, videoID, userID uint64) (*model.Comment, error) {
-	// 还是需要使用事务 先更新评论表 再更新视频表
 	comment := model.Comment{}
-	// fix 这里返回的评论没有东西 一点也没有
+	// delete 不会回写到comment里  Clauses(clause.Returning{}) 这个才会回写
 	err := global_db.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&model.Comment{}).Where("id = ? AND video_id = ? AND user_id = ?",
-			commentID, videoID, userID).Delete(&comment).Error
+		err := tx.Where("id = ? AND video_id = ? AND user_id = ?", commentID, videoID, userID).Delete(&comment).Error
 		if err != nil {
 			return err
 		}

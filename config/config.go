@@ -19,11 +19,11 @@ type MysqlConfig struct {
 }
 
 type HttpConfig struct {
-	Host          string `mapstructure:"host"`
-	Port          string `mapstructure:"port"`
-	VideoAddress  string `mapstructure:"videoAddress"`
-	ImageAddress  string `mapstructure:"imageAddress"`
-	DefaltImagURL string `mapstructure:"defaltCoverURL"`
+	Host            string `mapstructure:"host"`
+	Port            string `mapstructure:"port"`
+	VideoAddress    string `mapstructure:"videoAddress"`
+	ImageAddress    string `mapstructure:"imageAddress"`
+	DefaultCoverURL string `mapstructure:"defaultCoverURL"`
 }
 
 type RedisConfig struct {
@@ -46,6 +46,7 @@ type System struct {
 	SecretKey   string      `mapstructure:"secretKey"`
 	Bucket      string      `mapstructure:"bucket"`
 	OssDomain   string      `mapstructure:"ossDomain"`
+	MyIP        string      `mapstructure:"myIP"`
 }
 
 var SystemConfig System

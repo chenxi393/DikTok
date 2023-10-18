@@ -87,6 +87,7 @@ func migration() {
 		&model.Video{},
 		&model.Favorite{},
 		&model.Comment{},
+		&model.Message{},
 	)
 	if err != nil {
 		panic(err.Error())

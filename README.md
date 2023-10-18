@@ -1,15 +1,20 @@
 ### TODO
-* 参照gin-mall和其他单体 架构 快速构建一个可用的。 先模仿再改进 。之后进行压力测试，然后考虑使用微服务，对比测试（考虑接入AI）
-* 要接受到请求了就只能返回200 其他状态吗 应该是别的地方做的
+* 压力测试 接入redis 测耗时 接入消息队列 测耗时
+* 考虑使用微服务，对比测试（考虑接入AI）
 * 可以考虑加入ELK体系 自己在docker部署尝试过了
 * refreshToken 考虑token的续期 但是接口其实没有需要返回token
 * 有机会可以试试navicat 类似数据库可视化软件 自己一直用的vscode插件
-* 完善 FIX 和 TODO 
-* 视频上传肯定要用消息队列异步了 不然太慢了
 * 考虑traefik 做反向代理？？ Nginx也可以试试？？
 * 是不是微服务架构就用不到Nginx了 有了服务注册和服务发现之后 就可以扩展多个服务实例
 * 直接走服务注册和发现中心 还要Nginx干吗
 * 点赞和关注 这些非常频繁的操作 主键自增可能会消耗很快 可以考虑软删除（自己实现 不依赖GORM）
+* SZTU下的这个IP 10.161.41.233 访问不了我主机ip 10.117.32.47 的所有服务 但是能ping 防火墙也关了
+* 一些list操作 是不是考虑未登录用户也可以查看 
+* 对象存储可以试试 miniO 开源的 需要自己搭建好像
+* 00:26:16 | 200 |  32.94481547s |       127.0.0.1 | POST    | /douyin/publish/action/ 这也太太太慢了 客户端直接超时了
+* 视频上传肯定要用消息队列异步了 不然太慢了
+* 只要main函数不结束，子goroutine会一直执行(main不结束 所有的协程都会运行)
+
 
 golang的一些常用的框架 可以在项目中多使用使用
 * web：gin fiber hertz 
@@ -29,7 +34,8 @@ wc -l `find ./ -name "*.go";find -name "*.yaml"`
 2. redis各个地方要统筹考虑
 3. 注意这里视频和封面（ffmeng截取第一帧 只在docker内部署了）的存储
    * 全都写在本地 且是当前目录下 这不合适 而且封面截取 需要ffmeng
-   * 使用对象存储（七牛云每月有免费额度） 也可以试试CDN（但是这玩意要怎么看到效果）
+   * 使用对象存储（七牛云每月有免费额度） 对象存储需要自己的域名 CDN是默认开启的
+4. 只要服务端收到了请求了就只能返回200
 
 ### RIGHT JOIN LEFT JOIN WHERE
 where和inner join是内连接 只保留公共部分
@@ -74,13 +80,17 @@ fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也�
 只能在handler里面处理  若要传参或返回值 
 得深拷贝copy(buffer, result)  或者调用utils.CopyString(c.Params("foo")) 
 
-也可以配置为不可变（Immutable ） 但是有性能开销
+也可以配置为不可变（Immutable） 但是有性能开销
 [Zero Allocation](https://docs.gofiber.io/#zero-allocation)
 
 ### 遇到的问题 
 1. MySQL 主从同步 1032 error 主库用来update，从库同来select
    * 应该保证一端写入 一端查询？还没有很好的解决 具体原因再看看
    * [[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)
+   * 解决办法就是 查看 日志 插入重复失败 就删除 删除失败就插入 但是为什么会重复插入啊 明明已经插入了 `找到不同步的点` 让他们同步 ？？ 
+   * 查看binlog 但是这个问题老是出现 出现的原因是什么 
+   * [错误复现](https://cloud.tencent.com/developer/article/1564571)
+   * show binlog events in 'binlog.000004';
 2. GORM Scan的两个问题 Scan的要求类型是什么，它是如何匹配相应字段的
    * [GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)
 

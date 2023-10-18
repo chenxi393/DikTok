@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"douyin/config"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,13 +15,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func UploadVideoToLocal(file *io.Reader, fileName string) (videoURL, coverURL string, err error) {
-	path := "http://" + config.SystemConfig.HttpAddress.Host + ":" + config.SystemConfig.HttpAddress.Port
-	err = os.MkdirAll(config.SystemConfig.HttpAddress.VideoAddress, os.ModePerm)
+func UploadVideo(file []byte, fileName string) (string, string, error) {
+	err := os.MkdirAll(config.SystemConfig.HttpAddress.VideoAddress, os.ModePerm)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return "", "", err
 	}
+	// 还得有个变量是宿主机ip
+	path := "http://" + config.SystemConfig.MyIP + ":" + config.SystemConfig.HttpAddress.Port
 	outputFilePath := filepath.Join(config.SystemConfig.HttpAddress.VideoAddress, fileName)
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
@@ -30,22 +30,21 @@ func UploadVideoToLocal(file *io.Reader, fileName string) (videoURL, coverURL st
 		return "", "", err
 	}
 	defer outputFile.Close()
-	_, err = io.Copy(outputFile, *file)
+	_, err = outputFile.Write(file)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return "", "", err
 	}
-	videoPath := path + "/video/" + fileName
 	zap.L().Info(fileName + "已成功写入文件夹")
-	if config.SystemConfig.Mode == "debug" { // 本地没有装ffmpeg 这里直接返回默认的url
-		return videoPath, config.SystemConfig.HttpAddress.DefaltImagURL, nil
-	}
+	videoURL := path + "/video/" + fileName
+	// if config.SystemConfig.Mode == "debug" { // 本地没有装ffmpeg 这里直接返回默认的url
+	// 	return videoURL, config.SystemConfig.HttpAddress.DefaultCoverURL, nil
+	// }
 	err = GetVideoFrame(outputFilePath, fileName)
 	if err != nil {
-		return videoPath, "", nil
+		return videoURL, config.SystemConfig.HttpAddress.DefaultCoverURL, nil
 	}
-	coverURL = path + "/image/" + fileName + ".jpeg"
-	return videoPath, coverURL, nil
+	return videoURL, path + "/image/" + fileName + ".jpeg", nil
 }
 
 func GetVideoFrame(outputFilePath, fileName string) error {
@@ -72,12 +71,16 @@ func GetVideoFrame(outputFilePath, fileName string) error {
 		return err
 	}
 	// 保存
-	imagPath := config.SystemConfig.HttpAddress.ImageAddress + fileName + ".jpeg"
+	imagPath := config.SystemConfig.HttpAddress.ImageAddress +"/"+ fileName + ".jpeg"
 	err = imaging.Save(img, imagPath)
-	return err
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil
+	}
+	return nil
 }
 
-func UploadVideoToOSS(file *io.Reader, size int, fileName string) (videoURL, coverURL string, err error) {
+func UploadToOSS(fileName, filePath string) (string, error) {
 	putPolicy := storage.PutPolicy{
 		Scope: config.SystemConfig.Bucket,
 	}
@@ -101,20 +104,14 @@ func UploadVideoToOSS(file *io.Reader, size int, fileName string) (videoURL, cov
 		},
 	}
 	// 这里其实耗时很久 感觉有3/4秒
-	err = formUploader.Put(context.Background(), &ret, upToken, fileName, *file, int64(size), &putExtra)
+	err := formUploader.PutFile(context.Background(), &ret, upToken, fileName, filePath, &putExtra)
 	if err != nil {
 		zap.L().Error(err.Error())
-		return
+		return "", nil
 	}
 	// FIX 10.11这里很奇怪的是 生成的URL 一天了都可以访问？？ 如果那就不用定时更新数据库的URL了
 	// 如果采用私有空间 url有限制时间访问的 那就应该异步定时更新数据库的URL 否则用户访问不到啊
-	// 或者采取公有空间??  有没有更好的办法？
+	// 这里好像是返回了CND 因为那个域名是开启了CDN的 都能访问
 	deadline := time.Now().Add(time.Second * 3600).Unix() //1小时有效期
-	videoURL = storage.MakePrivateURL(mac, config.SystemConfig.OssDomain, ret.Key, deadline)
-
-	if config.SystemConfig.Mode == "debug" { // 本地没有装ffmpeg 这里直接返回默认的url
-		return videoURL, config.SystemConfig.HttpAddress.DefaltImagURL, nil
-	}
-	return videoURL, config.SystemConfig.HttpAddress.DefaltImagURL, nil
-	// FIX这里提取封面还得考虑一下（主要是这里上传逻辑写的很烂 找时间优化一下代码） 暂时返回默认的
+	return storage.MakePrivateURL(mac, config.SystemConfig.OssDomain, ret.Key, deadline), nil
 }

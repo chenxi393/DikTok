@@ -41,13 +41,13 @@ func InitRouter(app *fiber.App) {
 			relation.Post("/action/", handler.RelationAction)
 			relation.Get("/follow/list/", handler.FollowList)
 			relation.Get("/follower/list/", handler.FollowerList)
+			relation.Get("/friend/list/", handler.FriendList)
+		}
+		messgae := api.Group("/message")
+		{
+			messgae.Post("/action/", handler.MessageAction)
+			messgae.Get("/chat/", handler.MessageChat)
 		}
 
-		// apiRouter.GET("/relation/friend/list/", handler.FriendList)
 	}
-
-	// // extra apis - II
-
-	// apiRouter.GET("/message/chat/", handler.MessageChat)
-	// apiRouter.POST("/message/action/", handler.MessageAction)
 }
