@@ -6,7 +6,3 @@ up:
 
 down:
 	docker-compose down
-
-test: 
-	go run main.go route.go
-

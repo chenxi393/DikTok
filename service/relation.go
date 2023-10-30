@@ -2,8 +2,12 @@ package service
 
 import (
 	"douyin/database"
+	"douyin/package/cache"
+	"douyin/package/constant"
+	"douyin/package/mq"
 	"douyin/response"
 	"fmt"
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -19,36 +23,122 @@ type RelationService struct {
 	UserID uint64 `query:"user_id"`
 }
 
-func (service *RelationService) RelationAction(userID uint64) error {
+func (service *RelationService) FollowAction(userID uint64) error {
 	if userID == service.ToUserID {
-		err := fmt.Errorf("不能关注和取消关注自己")
+		err := fmt.Errorf("不能关注自己")
 		zap.L().Info(err.Error())
 		return err
 	}
-	// 关注
-	err := fmt.Errorf("ActionType 错误")
-	if service.ActionType == "1" {
-		err = database.Follow(userID, service.ToUserID, 1)
-	} else if service.ActionType == "2" {
-		err = database.Follow(userID, service.ToUserID, -1)
+	// 需要先看看有没有关注 不能重复关注
+	isFollow, err := cache.IsFollow(userID, service.ToUserID)
+	if err != nil { // 缓存不存在去查库
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		isFollow, err = database.IsFollowed(userID, service.ToUserID)
+		if err != nil {
+			zap.L().Sugar().Error(err)
+			return err
+		}
+		// 异步更新缓存
+		go func() {
+			//followIDs, err := database.SelectFollowingByUserID(userID)
+			if err != nil {
+				zap.L().Sugar().Error(err)
+				return
+			}
+			//err = cache.SetFollowUserIDSet(userID, followIDs)
+			if err != nil {
+				zap.L().Sugar().Error(err)
+			}
+		}()
 	}
-	return err
+	if isFollow {
+		err := fmt.Errorf("不能重复关注")
+		zap.L().Sugar().Error(err)
+		return err
+	}
+	// 放入消息队列 异步 返回成功
+	// 这里先写入redis 再写入数据库
+	mq.SendFollowMessage(userID, service.ToUserID, 1)
+	zap.L().Debug("service.relation.Follow: publish a message")
+	return nil
+}
+
+func (service *RelationService) UnFollowAction(userID uint64) error {
+	if userID == service.ToUserID {
+		err := fmt.Errorf("不能取关自己")
+		zap.L().Info(err.Error())
+		return err
+	}
+	isFollow, err := cache.IsFollow(userID, service.ToUserID)
+	if err != nil { // 缓存不存在去查库
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		isFollow, err = database.IsFollowed(userID, service.ToUserID)
+		if err != nil {
+			zap.L().Sugar().Error(err)
+			return err
+		}
+		// 异步更新缓存
+		go func() {
+			//followIDs, err := database.SelectFollowingByUserID(userID)
+			if err != nil {
+				zap.L().Sugar().Error(err)
+				return
+			}
+			//err = cache.SetFollowUserIDSet(userID, followIDs)
+			if err != nil {
+				zap.L().Sugar().Error(err)
+			}
+		}()
+	}
+	if !isFollow {
+		err := fmt.Errorf("不能取关未关注的人")
+		zap.L().Sugar().Error(err)
+		return err
+	}
+	mq.SendFollowMessage(userID, service.ToUserID, -1)
+	zap.L().Debug("service.relation.Follow: publish a message")
+	return nil
 }
 
 func (service *RelationService) RelationFollowList(userID uint64) (*response.RelationListResponse, error) {
-	// 先拿出所有的关注用户ID 再去用户表拿出所有信息 再判断有没有关注
-	following, err := database.SelectFollowingByUserID(service.UserID) //是service的UserID
-	if err != nil {
+	// 先使用布隆过滤器判断userID 存不存在
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+		err := fmt.Errorf(constant.BloomFilterRejected)
+		zap.L().Error(err.Error())
 		return nil, err
+	}
+	following, err := cache.GetFollowUserIDSet(service.UserID)
+	// 缓存未命中 查数据库
+	if err != nil {
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		following, err = database.SelectFollowingByUserID(service.UserID)
+		if err != nil {
+			return nil, err
+		}
+		// 将缓存写入
+		err = cache.SetFollowUserIDSet(service.UserID, following)
+		if err != nil {
+			zap.L().Error(err.Error())
+		}
 	}
 	users, err := database.SelectUserListByIDs(following)
 	if err != nil {
 		return nil, err
 	}
 	// 拿用户的关注列表
-	loginUserFollowing, err := database.SelectFollowingByUserID(userID)
+	loginUserFollowing, err := cache.GetFollowUserIDSet(userID)
 	if err != nil {
-		return nil, err
+		zap.L().Warn(constant.CacheMiss)
+		loginUserFollowing, err = database.SelectFollowingByUserID(userID)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			err := cache.SetFollowUserIDSet(userID, loginUserFollowing)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	// 判断用户的关注列表登录用户有没有关注
 	loginUserFollowingMap := make(map[uint64]struct{}, len(following))
@@ -71,10 +161,26 @@ func (service *RelationService) RelationFollowList(userID uint64) (*response.Rel
 }
 
 func (service *RelationService) RelationFollowerList(userID uint64) (*response.RelationListResponse, error) {
-	// 先拿出所有的粉丝用户ID 再去用户表拿出所有信息 再判断有没有关注
-	follower, err := database.SelectFollowerByUserID(service.UserID)
-	if err != nil {
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+		err := fmt.Errorf(constant.BloomFilterRejected)
+		zap.L().Error(err.Error())
 		return nil, err
+	}
+	follower, err := cache.GetFollowerUserIDSet(service.UserID)
+	// 缓存未命中 查数据库
+	if err != nil {
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		follower, err = database.SelectFollowerByUserID(service.UserID)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			// 将缓存写入
+			err = cache.SetFollowerUserIDSet(service.UserID, follower)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	// 拿粉丝列表的用户信息
 	users, err := database.SelectUserListByIDs(follower)
@@ -82,9 +188,20 @@ func (service *RelationService) RelationFollowerList(userID uint64) (*response.R
 		return nil, err
 	}
 	// 拿用户的关注列表
-	following, err := database.SelectFollowingByUserID(userID)
+	following, err := cache.GetFollowUserIDSet(userID)
 	if err != nil {
-		return nil, err
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		following, err = database.SelectFollowingByUserID(userID)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			// 将缓存写入
+			err = cache.SetFollowUserIDSet(userID, following)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	// 判断用户的粉丝列表有没有关注
 	followingMap := make(map[uint64]struct{}, len(following))
@@ -108,18 +225,47 @@ func (service *RelationService) RelationFollowerList(userID uint64) (*response.R
 }
 
 // 好友列表 互相关注即为好友
-// TODO 这个api文档好像不对 客户端似乎需要知道最近的一条消息
+// 客户端需要知道最近的一条消息
 func (service *RelationService) RelationFriendList() (*response.FriendResponse, error) {
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+		err := fmt.Errorf(constant.BloomFilterRejected)
+		zap.L().Error(err.Error())
+		return nil, err
+	}
 	//应该是可以用自连接的
 	//或者先去关注表找自己已经关注的人 然后去关注表 找关注自己的人 （可以用in）
 	//拿到一组ID 就是好友 然后再批量拿出信息
-	following, err := database.SelectFollowingByUserID(service.UserID)
+	// 拿用户的关注列表
+	following, err := cache.GetFollowUserIDSet(service.UserID)
 	if err != nil {
-		return nil, err
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		following, err = database.SelectFollowingByUserID(service.UserID)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			// 将缓存写入
+			err = cache.SetFollowUserIDSet(service.UserID, following)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
-	follower, err := database.SelectFollowerByUserID(service.UserID)
+	follower, err := cache.GetFollowerUserIDSet(service.UserID)
+	// 缓存未命中 查数据库
 	if err != nil {
-		return nil, err
+		zap.L().Sugar().Warn(constant.CacheMiss)
+		follower, err = database.SelectFollowerByUserID(service.UserID)
+		if err != nil {
+			return nil, err
+		}
+		go func() {
+			// 将缓存写入
+			err = cache.SetFollowerUserIDSet(service.UserID, follower)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	// 判断用户的粉丝列表有没有关注
 	followerMap := make(map[uint64]struct{}, len(follower))
@@ -138,10 +284,9 @@ func (service *RelationService) RelationFriendList() (*response.FriendResponse, 
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	// TODO 所以还要去消息列表拿最近的一条消息 接口文档有误
 	usersResponse := make([]response.FriendUser, 0, len(friends))
 	for i := range friendsInfo {
-		// fix 这里循环查库了 记得规避
+		// FIXME这里循环查库了 记得规避
 		msg, err := database.GetMessageNewest(service.UserID, friendsInfo[i].ID)
 		if err != nil || msg == "" {
 			msg = "快来开启和好友的第一次对话吧！！！"

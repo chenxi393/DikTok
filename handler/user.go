@@ -6,6 +6,7 @@ import (
 	"douyin/service"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 func UserRegister(c *fiber.Ctx) error {
@@ -19,7 +20,6 @@ func UserRegister(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 参数匹配正确开始注册
 	res, err := userService.RegisterService()
 	if err != nil {
 		res := response.UserRegisterOrLogin{
@@ -61,6 +61,7 @@ func UserInfo(c *fiber.Ctx) error {
 	var userService service.UserService
 	err := c.QueryParser(&userService)
 	if err != nil {
+		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
 			StatusCode: response.Failed,
 			StatusMsg:  response.BadParaRequest,
@@ -68,8 +69,7 @@ func UserInfo(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 这个路由的意思似乎是  已登录用户打开用户页面的场景
-	userClaims, err := util.ParseToken(userService.Token)
+	claims, err := util.ParseToken(userService.Token)
 	if err != nil {
 		res := response.UserRegisterOrLogin{
 			StatusCode: response.Failed,
@@ -78,7 +78,7 @@ func UserInfo(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res, err := userService.InfoService(userClaims.UserID)
+	res, err := userService.InfoService(claims.UserID)
 	if err != nil {
 		res := response.UserRegisterOrLogin{
 			StatusCode: response.Failed,

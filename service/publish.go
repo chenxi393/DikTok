@@ -5,8 +5,11 @@ import (
 	"douyin/config"
 	"douyin/database"
 	"douyin/model"
+	"douyin/package/cache"
+	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
+	"strconv"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -34,11 +37,11 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		return nil, err
 	}
 	fileName := u1.String() + "." + "mp4"
+	// 这里暂时上传到本地
 	playURL, coverURL, err := util.UploadVideo(buf.Bytes(), fileName)
 	if err != nil {
 		return nil, err
 	}
-	//TODO : 返回被忽略了 需要加入布隆过滤器
 	video_id, err := database.CreateVideo(&model.Video{
 		PublishTime:   time.Now(),
 		AuthorID:      userID,
@@ -52,9 +55,10 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		zap.L().Error(err.Error())
 		return nil, err
 	}
+	//加入布隆过滤器
+	cache.VideoIDBloomFilter.AddString(strconv.FormatUint(video_id, 10))
 	// 异步上传到对象存储
 	go func() {
-		// 记得删除本地的
 		playURL, err := util.UploadToOSS(fileName, config.SystemConfig.HttpAddress.VideoAddress+"/"+fileName)
 		if err != nil {
 			// 这里要不要重试？？
@@ -67,8 +71,21 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 				zap.L().Error(err.Error())
 			}
 		}
-		database.UpdateVideoURL(playURL, coverURL, video_id)
-		// 更新数据库
+		// 先更新数据库 再更新缓存
+		err = database.UpdateVideoURL(playURL, coverURL, video_id)
+		if err != nil {
+			zap.L().Error(err.Error())
+		}
+		var video model.Video
+		err = constant.DB.Model(&model.Video{ID: video_id}).First(&video).Error
+		if err != nil {
+			zap.L().Error(err.Error())
+			return
+		}
+		// FIXME 发布视频会有一致性的问题 缓存没变
+		cache.SetVideoInfo(&video)
+		
+		// TODO 记得删除本地的视频和图片
 	}()
 	return &response.CommonResponse{
 		StatusCode: response.Success,
@@ -77,35 +94,70 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 }
 
 func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*response.PublishListResponse, error) {
-	// TODO 加分布式锁 redis  记得倒序
 	// 第一步查找 所有的 service.user_id 的视频记录
 	// 然后 对这些视频判断 loginUserID 有没有点赞
-	//视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
+	// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
+	// TODO 加分布式锁 redis  记得倒序
 	videos, err := database.SelectVideosByUserID(service.UserID)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
 	// 不都是一个作者嘛 拿一次信息不就好了
-	author, err := database.SelectUserByID(service.UserID)
+	author, err := cache.GetUserInfo(service.UserID)
 	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
+		zap.L().Warn(constant.CacheMiss)
+		author, err = database.SelectUserByID(service.UserID)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		go func() {
+			err := cache.SetUserInfo(author)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	var isFollowed bool
 	if service.UserID == loginUserID {
 		isFollowed = true
 	} else {
-		isFollowed, err = database.IsFollowed(loginUserID, service.UserID)
+		isFollowed, err = cache.IsFollow(loginUserID, service.UserID)
+		if err != nil {
+			zap.L().Warn(constant.CacheMiss)
+			isFollowed, err = database.IsFollowed(loginUserID, service.UserID)
+			if err != nil {
+				zap.L().Error(err.Error())
+				return nil, err
+			}
+			go func() {
+				following, err := database.SelectFollowingByUserID(loginUserID)
+				if err != nil {
+					zap.L().Error(err.Error())
+					return
+				}
+				err = cache.SetFollowUserIDSet(loginUserID, following)
+				if err != nil {
+					zap.L().Error(err.Error())
+				}
+			}()
+		}
 	}
+	favorite, err := cache.GetFavoriteSet(loginUserID)
 	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
-	favorite, err := database.SelectFavoriteVideoByUserID(service.UserID)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
+		zap.L().Warn(constant.CacheMiss)
+		favorite, err = database.SelectFavoriteVideoByUserID(loginUserID)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		go func() {
+			err := cache.SetFavoriteSet(loginUserID, favorite)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
 	}
 	favoriteMap := make(map[uint64]struct{}, len(favorite))
 	for _, ff := range favorite {
@@ -123,7 +175,6 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 			Title:         videos[i].Title,
 			Author:        *response.UserInfo(author, isFollowed),
 		}
-		response.UserInfo(author, isFollowed)
 		if _, ok := favoriteMap[ff.ID]; ok {
 			item.IsFavorite = true
 		}

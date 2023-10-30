@@ -2,8 +2,12 @@ package service
 
 import (
 	"douyin/database"
+	"douyin/package/cache"
+	"douyin/package/constant"
 	"douyin/response"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 type MessageService struct {
@@ -31,6 +35,56 @@ func (service *MessageService) MessageAction(loginUserID uint64) error {
 		err := fmt.Errorf("ActionType 错误")
 		return err
 	}
+	// 发送的id是不是朋友
+	isfollowing, err := cache.IsFollow(loginUserID, service.ToUserID)
+	if err != nil {
+		zap.L().Warn(constant.CacheMiss)
+		isfollowing, err = database.IsFollowed(loginUserID, service.ToUserID)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return err
+		}
+		go func() {
+			following, err := database.SelectFollowingByUserID(loginUserID)
+			if err != nil {
+				zap.L().Error(err.Error())
+				return
+			}
+			err = cache.SetFollowUserIDSet(loginUserID, following)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
+	}
+	if !isfollowing {
+		err := fmt.Errorf("对方不是你的好友")
+		return err
+	}
+	isfollowied, err := cache.IsFollow(service.ToUserID, loginUserID)
+	if err != nil {
+		zap.L().Warn(constant.CacheMiss)
+		isfollowied, err = database.IsFollowed(service.ToUserID, loginUserID)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return err
+		}
+		go func() {
+			following, err := database.SelectFollowingByUserID(service.ToUserID)
+			if err != nil {
+				zap.L().Error(err.Error())
+				return
+			}
+			err = cache.SetFollowUserIDSet(service.ToUserID, following)
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+		}()
+	}
+	if !isfollowied {
+		err := fmt.Errorf("对方不是你的好友")
+		return err
+	}
+	// 发送消息考虑用不用消息队列 比较qps应该不大
 	return database.CreateMessage(loginUserID, service.ToUserID, service.Content)
 }
 
@@ -40,6 +94,7 @@ func (service *MessageService) MessageChat(loginUserID uint64) (*response.Messag
 		return nil, err
 	}
 	// 查询所有的聊天记录 按时间顺序
+	// 这里并未建立缓存
 	msgs, err := database.MessageList(loginUserID, service.ToUserID, service.Pre_msg_time)
 	if err != nil {
 		return nil, err

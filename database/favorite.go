@@ -2,6 +2,7 @@ package database
 
 import (
 	"douyin/model"
+	"douyin/package/cache"
 
 	"gorm.io/gorm"
 )
@@ -14,7 +15,6 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 	}
 	// 一般输入流程 在是事务里 使用tx而不是db 返回任何错误都会回滚事务
 	return global_db.Transaction(func(tx *gorm.DB) error {
-		// 点赞表里更新 TODO 这里是不是可以考虑软删除 redis 看看怎么用
 		var err error
 		if cnt == 1 {
 			err = tx.Model(&model.Favorite{}).Create(&favorite).Error
@@ -55,10 +55,10 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 		if err != nil {
 			return err
 		}
-		//返回nil提交事务
-		return nil
+		return cache.FavoriteAction(userID, author.ID, videoID, cnt)
 	})
 }
+
 func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
 	err := global_db.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error

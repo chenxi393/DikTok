@@ -1,16 +1,16 @@
 package model
 
-// Username 唯一 且建立了索引
+// 这些count是不是可以考虑解耦 要的时候再去表里计算
 type User struct {
-	ID              uint64 `json:"id"`                                                                  // 自增主键
-	Username        string `gorm:"index:idx_username,unique;type:varchar(63);not null" json:"username"` // 用户名
-	Password        string `gorm:"type:varchar(255);not null" json:"password"`                          // 用户密码
-	FollowCount  int64  `gorm:"default:0;not null" json:"follow_count"`                           // 关注数
-	FollowerCount   int64  `gorm:"default:0;not null" json:"follower_count"`                            // 粉丝数
-	Avatar          string `gorm:"type:varchar(255);null" json:"avatar"`                                // 用户头像
-	BackgroundImage string `gorm:"type:varchar(255);not null" json:"background_image"`                  // 用户个人页顶部大图
-	Signature       string `gorm:"type:varchar(255);not null" json:"signature"`                         // 个人简介
-	TotalFavorited  int64  `gorm:"default:0;not null" json:"total_favorited"`                           // 获赞数量
-	WorkCount       int64  `gorm:"default:0;not null" json:"work_count"`                                // 作品数量
-	FavoriteCount   int64  `gorm:"default:0;not null" json:"favorite_count"`                            // 点赞数量
+	ID              uint64 `gorm:"primaryKey" json:"id"`
+	Username        string `gorm:"uniqueIndex;type:varchar(63);not null" json:"username"`
+	Password        string `gorm:"type:varchar(255);not null" json:"password"`
+	Avatar          string `gorm:"type:varchar(255);not null" json:"avatar"`
+	BackgroundImage string `gorm:"type:varchar(255);not null" json:"background_image"`
+	Signature       string `gorm:"type:varchar(255);not null" json:"signature"`
+	FollowCount     int64  `gorm:"default:0;not null" json:"follow_count"`
+	FollowerCount   int64  `gorm:"default:0;not null" json:"follower_count"`
+	TotalFavorited  int64  `gorm:"default:0;not null" json:"total_favorited"`
+	FavoriteCount   int64  `gorm:"default:0;not null" json:"favorite_count"`
+	WorkCount       int64  `gorm:"default:0;not null" json:"work_count"`
 }

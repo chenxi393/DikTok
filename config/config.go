@@ -1,10 +1,9 @@
 package config
 
 import (
-	"log"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 type MysqlConfig struct {
@@ -34,19 +33,28 @@ type RedisConfig struct {
 	Password string `mapstructure:"password"`
 }
 
+type RabbitMQ struct {
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+}
+
 type System struct {
-	MysqlMaster MysqlConfig `mapstructure:"mysqlMaster"`
-	MysqlSlave  MysqlConfig `mapstructure:"mysqlSlave"`
-	Mode        string      `mapstructure:"mode"`
-	HttpAddress HttpConfig  `mapstructure:"httpAddress"`
-	Redis       RedisConfig `mapstructure:"userRedis"`
-	JwtSecret   string      `mapstructure:"jwtSecret"`
-	UploadModel string      `mapstructure:"uploadModel"`
-	AccessKey   string      `mapstructure:"accessKey"`
-	SecretKey   string      `mapstructure:"secretKey"`
-	Bucket      string      `mapstructure:"bucket"`
-	OssDomain   string      `mapstructure:"ossDomain"`
-	MyIP        string      `mapstructure:"myIP"`
+	MysqlMaster  MysqlConfig `mapstructure:"mysqlMaster"`
+	MysqlSlave   MysqlConfig `mapstructure:"mysqlSlave"`
+	HttpAddress  HttpConfig  `mapstructure:"httpAddress"`
+	UserRedis    RedisConfig `mapstructure:"userRedis"`
+	VideoRedis   RedisConfig `mapstructure:"videoRedis"`
+	CommentRedis RedisConfig `mapstructure:"commentRedis"`
+	MQ           RabbitMQ    `mapstructure:"rabbitmq"`
+	Mode         string      `mapstructure:"mode"`
+	JwtSecret    string      `mapstructure:"jwtSecret"`
+	AccessKey    string      `mapstructure:"accessKey"`
+	SecretKey    string      `mapstructure:"secretKey"`
+	Bucket       string      `mapstructure:"bucket"`
+	OssDomain    string      `mapstructure:"ossDomain"`
+	MyIP         string      `mapstructure:"myIP"`
 }
 
 var SystemConfig System
@@ -58,18 +66,19 @@ func Init() {
 
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
-		log.Fatal("fatal error config file: ", err.Error())
+		zap.L().Fatal("fatal error config file: ", zap.Error(err))
 	}
 
 	// 解析mysql的配置文件
 	err = viper.Unmarshal(&SystemConfig)
 	if err != nil {
-		log.Fatal("fatal error unmarshal config: ", err.Error())
+		zap.L().Fatal("fatal error unmarshal config: ", zap.Error(err))
 	}
 
 	// 监视配置文件的变化
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Println("配置文件被修改")
+		zap.L().Info("配置文件被修改")
 	})
+	zap.L().Info("viper读取配置文件成功")
 }

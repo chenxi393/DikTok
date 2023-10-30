@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
+	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -36,6 +37,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/bits-and-blooms/bloom/v3 v3.6.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -45,7 +47,9 @@ require (
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/qiniu/go-sdk/v7 v7.17.1
+	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/sony/sonyflake v1.2.0
 	github.com/spf13/viper v1.16.0
 	github.com/u2takey/ffmpeg-go v0.5.0
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

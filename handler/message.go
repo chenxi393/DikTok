@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"douyin/package/util"
+	"douyin/package/constant"
 	"douyin/response"
 	"douyin/service"
 
@@ -19,16 +19,8 @@ func MessageAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
-	err = service.MessageAction(claims.UserID)
+	userID := c.Locals(constant.UserID).(uint64)
+	err = service.MessageAction(userID)
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
@@ -57,16 +49,8 @@ func MessageChat(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.MessageResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
-	resp, err := service.MessageChat(claims.UserID)
+	userID := c.Locals(constant.UserID).(uint64)
+	resp, err := service.MessageChat(userID)
 	if err != nil {
 		res := response.MessageResponse{
 			StatusCode: response.Failed,

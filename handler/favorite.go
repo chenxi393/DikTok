@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"douyin/package/util"
+	"douyin/package/constant"
 	"douyin/response"
 	"douyin/service"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -21,17 +22,15 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 鉴权
-	Claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+	userID := c.Locals(constant.UserID).(uint64)
+	var resp *response.CommonResponse
+	if service.ActionType == constant.DoAction {
+		resp, err = service.Favorite(userID)
+	} else if service.ActionType == constant.UndoAction {
+		resp, err = service.UnFavorite(userID)
+	} else {
+		err = fmt.Errorf(constant.BadParaRequest)
 	}
-	err = service.FavoriteAction(Claims.UserID)
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
@@ -40,12 +39,8 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res := response.CommonResponse{
-		StatusCode: response.Success,
-		StatusMsg:  "点赞成功",
-	}
 	c.Status(fiber.StatusOK)
-	return c.JSON(res)
+	return c.JSON(resp)
 }
 
 func FavoriteList(c *fiber.Ctx) error {
@@ -61,18 +56,8 @@ func FavoriteList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 鉴权 
-	Claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.PublishListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-			VideoList:  nil,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
-	resp, err := service.FavoriteList(Claims.UserID)
+	userID := c.Locals(constant.UserID).(uint64)
+	resp, err := service.FavoriteList(userID)
 	if err != nil {
 		res := response.PublishListResponse{
 			StatusCode: response.Failed,

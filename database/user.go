@@ -5,7 +5,6 @@ import (
 )
 
 func CreateUser(user *model.User) (uint64, error) {
-	//TODO 待验证 不select指定更新的自动 无法使用默认值？？？？
 	err := global_db.Model(&model.User{}).Create(user).Error
 	if err != nil {
 		return 0, err
@@ -31,17 +30,6 @@ func SelectUserByID(userID uint64) (*model.User, error) {
 	return &user, nil
 }
 
-// 查询userID 有没有关注 id
-func IsFollowed(userID uint64, id uint64) (bool, error) {
-	var cnt int64
-	err := global_db.Model(&model.Follow{}).Where("user_id= ? AND to_user_id = ? ", userID, id).Count(&cnt).Error
-	if err != nil {
-		return false, err
-	} else if cnt == 0 {
-		return false, nil
-	}
-	return true, nil
-}
 
 func SelectWorkCount(userID uint64) (int64, error) {
 	var cnt int64

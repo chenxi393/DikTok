@@ -2,6 +2,7 @@ package database
 
 import (
 	"douyin/model"
+	"douyin/package/cache"
 
 	"gorm.io/gorm"
 )
@@ -12,12 +13,11 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 		ToUserID: toUserID,
 	}
 	return global_db.Transaction(func(tx *gorm.DB) error {
-		// TODO前面很多POST应该都需要检查一下
 		// 关注表里更新
 		var err error
 		var ff model.Follow
 		if cnt == 1 {
-			// FIX没有唯一约束 可以插入多条记录 要不插入前检查一下
+			//  这里设置联合唯一索引 应该不需要检查了
 			err = tx.Model(&model.Follow{}).Create(&follow).Error
 		} else if cnt == -1 {
 			err = tx.Model(&model.Follow{}).Where("user_id = ? AND to_user_id = ?", userID, toUserID).Delete(&ff).Error
@@ -46,12 +46,12 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 		if err != nil {
 			return err
 		}
-		return nil
+		return cache.FollowAction(userID, toUserID, cnt)
 	})
 }
 
 func SelectFollowingByUserID(userID uint64) ([]uint64, error) {
-	res := make([]uint64,0)
+	res := make([]uint64, 0)
 	err := global_db.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Find(&res).Error
 	return res, err
 }
@@ -60,4 +60,16 @@ func SelectFollowerByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
 	err := global_db.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Find(&res).Error
 	return res, err
+}
+
+// 查询userID 有没有关注 id
+func IsFollowed(userID uint64, id uint64) (bool, error) {
+	var cnt int64
+	err := global_db.Model(&model.Follow{}).Where("user_id= ? AND to_user_id = ? ", userID, id).Count(&cnt).Error
+	if err != nil {
+		return false, err
+	} else if cnt == 0 {
+		return false, nil
+	}
+	return true, nil
 }

@@ -22,7 +22,7 @@ func UploadVideo(file []byte, fileName string) (string, string, error) {
 		return "", "", err
 	}
 	// 还得有个变量是宿主机ip
-	path := "http://" + config.SystemConfig.MyIP + ":" + config.SystemConfig.HttpAddress.Port
+	path := "http://" + config.SystemConfig.MyIP
 	outputFilePath := filepath.Join(config.SystemConfig.HttpAddress.VideoAddress, fileName)
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
@@ -37,9 +37,6 @@ func UploadVideo(file []byte, fileName string) (string, string, error) {
 	}
 	zap.L().Info(fileName + "已成功写入文件夹")
 	videoURL := path + "/video/" + fileName
-	// if config.SystemConfig.Mode == "debug" { // 本地没有装ffmpeg 这里直接返回默认的url
-	// 	return videoURL, config.SystemConfig.HttpAddress.DefaultCoverURL, nil
-	// }
 	err = GetVideoFrame(outputFilePath, fileName)
 	if err != nil {
 		return videoURL, config.SystemConfig.HttpAddress.DefaultCoverURL, nil
@@ -109,8 +106,6 @@ func UploadToOSS(fileName, filePath string) (string, error) {
 		zap.L().Error(err.Error())
 		return "", nil
 	}
-	// FIX 10.11这里很奇怪的是 生成的URL 一天了都可以访问？？ 如果那就不用定时更新数据库的URL了
-	// 如果采用私有空间 url有限制时间访问的 那就应该异步定时更新数据库的URL 否则用户访问不到啊
 	// 这里好像是返回了CND 因为那个域名是开启了CDN的 都能访问
 	deadline := time.Now().Add(time.Second * 3600).Unix() //1小时有效期
 	return storage.MakePrivateURL(mac, config.SystemConfig.OssDomain, ret.Key, deadline), nil

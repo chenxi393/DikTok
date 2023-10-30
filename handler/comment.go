@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,17 +22,15 @@ func CommentAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		c.JSON(res)
 	}
-	Claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.CommentActionResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-			Comment:    nil,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+	userID := c.Locals(constant.UserID).(uint64)
+	var resp *response.CommentActionResponse
+	if service.ActionType == constant.DoAction && service.CommentText != nil {
+		resp, err = service.PostComment(userID)
+	} else if service.ActionType == constant.UndoAction && service.CommentID != nil {
+		resp, err = service.DeleteComment(userID)
+	} else {
+		err = fmt.Errorf(constant.BadParaRequest)
 	}
-	resp, err := service.CommentAction(Claims.UserID)
 	if err != nil {
 		res := response.CommentActionResponse{
 			StatusCode: response.Failed,
@@ -56,18 +56,23 @@ func CommentList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		c.JSON(res)
 	}
-	// 这里是不是要fix一下 未登录用户也能查看评论
-	claims, err := util.ParseToken(service.Token)
-	if err != nil {
-		res := response.CommentListResponse{
-			StatusCode:  response.Failed,
-			StatusMsg:   response.WrongToken,
-			CommentList: nil,
+	var userID uint64
+	if service.Token == "" {
+		userID = 0
+	} else {
+		claims, err := util.ParseToken(service.Token)
+		if err != nil {
+			res := response.CommentListResponse{
+				StatusCode:  response.Failed,
+				StatusMsg:   response.WrongToken,
+				CommentList: nil,
+			}
+			c.Status(fiber.StatusOK)
+			return c.JSON(res)
 		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		userID = claims.UserID
 	}
-	resp, err := service.CommentList(claims.UserID)
+	resp, err := service.CommentList(userID)
 	if err != nil {
 		res := response.CommentActionResponse{
 			StatusCode: response.Failed,

@@ -2,6 +2,7 @@ package router
 
 import (
 	"douyin/handler"
+	"douyin/package/util"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -9,7 +10,8 @@ import (
 func InitRouter(app *fiber.App) {
 	//用户登录数据保存在内存中，单次运行过程中有效
 	//视频上传后会保存到本地 public 目录中，访问时用 127.0.0.1:8080/static/video_name 即可
-	app.Static("/video", "./douyinVideo") // 是可以用绝对路径
+	app.Static("/video", "./douyinVideo",
+		fiber.Static{ByteRange: true}) // 好像可以分块传输 但是客户端没啥用。
 	app.Static("/image", "./douyinImage") // 是可以用绝对路径
 	api := app.Group("/douyin")
 	{
@@ -24,19 +26,19 @@ func InitRouter(app *fiber.App) {
 		publish := api.Group("/publish")
 		{
 			publish.Post("/action/", handler.PublishAction)
-			publish.Get("/list/", handler.ListPublishedVideo)
+			publish.Get("/list/", util.Authentication,handler.ListPublishedVideo)
 		}
-		favorite := api.Group("/favorite")
+		favorite := api.Group("/favorite", util.Authentication)
 		{
 			favorite.Post("/action/", handler.FavoriteVideoAction)
 			favorite.Get("/list/", handler.FavoriteList)
 		}
 		comment := api.Group("/comment")
 		{
-			comment.Post("/action/", handler.CommentAction)
+			comment.Post("/action/", util.Authentication, handler.CommentAction)
 			comment.Get("/list/", handler.CommentList)
 		}
-		relation := api.Group("/relation")
+		relation := api.Group("/relation", util.Authentication) // 这里暂时关注和粉丝列表都需要鉴权
 		{
 			relation.Post("/action/", handler.RelationAction)
 			relation.Get("/follow/list/", handler.FollowList)
@@ -45,9 +47,8 @@ func InitRouter(app *fiber.App) {
 		}
 		messgae := api.Group("/message")
 		{
-			messgae.Post("/action/", handler.MessageAction)
-			messgae.Get("/chat/", handler.MessageChat)
+			messgae.Post("/action/", util.Authentication, handler.MessageAction)
+			messgae.Get("/chat/", util.Authentication, handler.MessageChat)
 		}
-
 	}
 }

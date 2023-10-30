@@ -9,13 +9,14 @@ services:
       - "9999:9999"
     depends_on:
       - mysql-master
-      #- mysql-slave
+      - mysql-slave
       - redis
     #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
     #tty: true    #分配一个伪终端 与-t类似    docker run -dit
     networks:
       - shardingSphere
       - backend
+    restart: always
 
   mysql-master:
     container_name: mysql-master 
@@ -36,37 +37,39 @@ services:
       R_W_DATABASE: '*'
       TZ: Asia/Shanghai
     volumes:
-      #- ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
+      - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
       - ./config/mysql/master.cnf:/etc/my.cnf
+      - mysqlMasterData:/var/lib/mysql/
     networks:
       shardingSphere:
         ipv4_address: 192.168.0.100
 
-  # mysql-slave:
-  #   container_name: mysql-slave
-  #   image: mysql:latest
-  #   ports:
-  #     - "13307:3306"
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: admin123456
-  #     MYSQL_DATABASE: 'douyin'
-  #     MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
-  #     MASTER_HOST: 192.168.0.100
-  #     MASTER_PORT: 3306
-  #     MASTER_SYNC_USER: syncuser
-  #     MASTER_SYNC_PASSWORD: sync123456
-  #     R_USER: r_user
-  #     R_USER_PASSWORD: r123456
-  #     R_USER_HOST: '%'
-  #     TZ: Asia/Shanghai
-  #   volumes:
-  #     - ./config/mysql/slave.sh:/docker-entrypoint-initdb.d/slave.sh
-  #     - ./config/mysql/slave.cnf:/etc/my.cnf
-  #   networks:
-  #     shardingSphere:
-  #       ipv4_address: 192.168.0.101
-  #   depends_on:
-  #     - mysql-master
+  mysql-slave:
+    container_name: mysql-slave
+    image: mysql:latest
+    ports:
+      - "13307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123456
+      MYSQL_DATABASE: 'douyin'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+      MASTER_HOST: 192.168.0.100
+      MASTER_PORT: 3306
+      MASTER_SYNC_USER: syncuser
+      MASTER_SYNC_PASSWORD: sync123456
+      R_USER: r_user
+      R_USER_PASSWORD: r123456
+      R_USER_HOST: '%'
+      TZ: Asia/Shanghai
+    volumes:
+      - ./config/mysql/slave.sh:/docker-entrypoint-initdb.d/slave.sh
+      - ./config/mysql/slave.cnf:/etc/my.cnf
+      - mysqlSlaveData:/var/lib/mysql/
+    networks:
+      shardingSphere:
+        ipv4_address: 192.168.0.101
+    depends_on:
+      - mysql-master
   
   redis:
     image: redis:latest
@@ -75,16 +78,38 @@ services:
       - 6379:6379
     networks:
       - backend
+    volumes:
+      - redisData:/data
+
+  dev-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dev-rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ./config/rabbitmq/definitions.json:/opt/definitions.json:ro
+      - ${PWD}/config/rabbitmq/rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      - backend
 
 networks:
   shardingSphere:
     ipam:
-      driver: bridge
+      driver: default
       config:
         - subnet: "192.168.0.0/24"
   backend: 
 
-# TODO 记得volume 持久化数据
+# volume 持久化数据
+volumes:
+  rabbitmq:
+  mysqlMasterData:
+  mysqlSlaveData:
+  redisData:
+
+
 #    env_file:
 #      - .env
 # 可以用evn file 保存compose里的环境变量 明文

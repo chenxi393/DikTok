@@ -3,8 +3,10 @@ package database
 import (
 	"douyin/config"
 	"douyin/model"
+	"douyin/package/constant"
 	"strings"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -18,7 +20,7 @@ func InitMysql() {
 	var ormLogger logger.Interface
 	if config.SystemConfig.Mode == "debug" { //根据配置文件设置不同的日志等级
 		ormLogger = logger.Default.LogMode(logger.Info) // Info应该是最低的等级 都会打印
-	} else {
+	} else { // default 的慢sql是200ms
 		ormLogger = logger.Default // 进去看 这里是Warn级别的
 	}
 	// dsn := "用户名:密码@tcp(地址:端口)/数据库名"
@@ -59,27 +61,32 @@ func InitMysql() {
 		},
 	})
 	if err != nil {
-		panic(err.Error())
+		zap.L().Fatal("MySQL 连接失败", zap.Error(err))
 	}
 	sqlDB, _ := db.DB()
 	sqlDB.SetMaxOpenConns(config.SystemConfig.MysqlMaster.MaxOpenConn) // 设置数据库最大连接数
 	sqlDB.SetMaxIdleConns(config.SystemConfig.MysqlMaster.MaxIdleConn) // 设置上数据库最大闲置连接数
 	// point:读写分离
 	// 查询在从库完成，其他操作如写入update在主库操作
-	db.Use(dbresolver.Register(dbresolver.Config{
-		Sources:  []gorm.Dialector{mysql.Open(masterDNS)}, // update使用
-		Replicas: []gorm.Dialector{mysql.Open(slaveDNS)},  // select 使用
+	err = db.Use(dbresolver.Register(dbresolver.Config{
+		//Sources:  []gorm.Dialector{mysql.Open(masterDNS)}, // update使用 这里应该是默认连接主库
+		Replicas: []gorm.Dialector{mysql.Open(slaveDNS)}, // select 使用
 		// sources/replicas load balancing policy
 		Policy: dbresolver.RandomPolicy{},
 		// print sources/replicas mode in logger
 		TraceResolverMode: true,
 	}))
+	if err != nil {
+		zap.L().Error("MySQL 读写分离创建失败", zap.Error(err))
+	}
 	// 连接池什么的不懂 先放着
 	global_db = db
+	constant.DB = db
 	// 自动建表 企业一般不用 这里为了方便 就不手动建表了
-	migration()
+	//migration()
 }
 
+// 企业一般不用自动建表 记得自己在主库里建表
 func migration() {
 	err := global_db.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 		&model.User{},
@@ -90,6 +97,10 @@ func migration() {
 		&model.Message{},
 	)
 	if err != nil {
-		panic(err.Error())
+		zap.L().Fatal("数据库migration失败", zap.Error(err))
 	}
+}
+
+func GetGloabDB() *gorm.DB {
+	return global_db
 }
