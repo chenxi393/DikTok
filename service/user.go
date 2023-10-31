@@ -7,6 +7,7 @@ import (
 	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -25,7 +26,11 @@ type UserService struct {
 	UserID uint64 `query:"user_id"`
 }
 
-func (service UserService) RegisterService() (*response.UserRegisterOrLogin, error) {
+func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, error) {
+	// 判断用户名是否合法
+	if len(service.Username) <= 0 || len(service.Username) > 32 {
+		return nil, errors.New(constant.BadParaRequest)
+	}
 	// TODO 复杂度判断 可以使用正则 记得去除常数
 	if len(service.Password) < 6 || len(service.Password) > 32 {
 		return nil, fmt.Errorf("密码长度错误")
@@ -33,7 +38,6 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 	if service.Password == "123456" {
 		return nil, fmt.Errorf("密码太简单")
 	}
-
 	//先判断用户存不存在
 	_, err := database.SelectUserByName(service.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -42,7 +46,7 @@ func (service UserService) RegisterService() (*response.UserRegisterOrLogin, err
 	}
 	if err != gorm.ErrRecordNotFound {
 		err := fmt.Errorf("用户名已被注册")
-		zap.L().Error(err.Error())
+		zap.L().Info(err.Error())
 		return nil, err
 	}
 	// 对密码进行加密并存储

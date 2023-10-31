@@ -3,6 +3,8 @@ package database
 import (
 	"douyin/model"
 	"douyin/package/cache"
+	"douyin/package/constant"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -15,11 +17,18 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 	}
 	// 一般输入流程 在是事务里 使用tx而不是db 返回任何错误都会回滚事务
 	return global_db.Transaction(func(tx *gorm.DB) error {
-		var err error
-		if cnt == 1 {
+		// 先看有没有点赞过
+		var isFavorite int64
+		err := tx.Model(&model.Favorite{}).Where("user_id = ? AND video_id = ?", userID, videoID).Count(&isFavorite).Error
+		if err != nil {
+			return err
+		}
+		if cnt == 1 && isFavorite == 0 {
 			err = tx.Model(&model.Favorite{}).Create(&favorite).Error
-		} else {
+		} else if cnt == -1 && isFavorite == 1 {
 			err = tx.Model(&model.Favorite{}).Where("user_id = ? AND video_id = ? ", userID, videoID).Delete(&favorite).Error
+		} else {
+			err = errors.New(constant.BadParaRequest)
 		}
 		if err != nil {
 			return err

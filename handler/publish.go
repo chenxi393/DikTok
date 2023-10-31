@@ -32,6 +32,7 @@ func PublishAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
+	// TODO 需要检查文件后缀 还是文件实际的内容是不是mp4
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -90,7 +91,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	if err != nil {
 		res := response.UserRegisterOrLogin{
 			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
+			StatusMsg:  err.Error(),
 		}
 		return c.JSON(res)
 	}

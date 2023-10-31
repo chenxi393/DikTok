@@ -40,7 +40,18 @@ func InitRedis() {
 	})
 	_, err = VideoRedisClient.Ping().Result()
 	if err != nil {
-		zap.L().Fatal("user_redis连接失败", zap.Error(err))
+		zap.L().Fatal("video_redis连接失败", zap.Error(err))
+	}
+	// videoRedis 连接
+	CommentRedisClient = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", config.SystemConfig.CommentRedis.Host, config.SystemConfig.CommentRedis.Port),
+		Password: config.SystemConfig.CommentRedis.Password,
+		DB:       config.SystemConfig.CommentRedis.Database,
+		PoolSize: config.SystemConfig.CommentRedis.PoolSize, //每个CPU最大连接数
+	})
+	_, err = VideoRedisClient.Ping().Result()
+	if err != nil {
+		zap.L().Fatal("comment_redis连接失败", zap.Error(err))
 	}
 	//
 	zap.L().Info("redis连接成功成功")

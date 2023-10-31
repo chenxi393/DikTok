@@ -88,9 +88,9 @@ func commentConsume() {
 		zap.L().Sugar().Error(err, "Failed to declare a queue")
 	}
 	err = channel.QueueBind(
-		q.Name,     // queue name
-		"",         // routing key
-		"relation", // exchange
+		q.Name,    // queue name
+		"",        // routing key
+		"comment", // exchange
 		false,
 		nil,
 	)

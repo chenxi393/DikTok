@@ -16,7 +16,7 @@ services:
     networks:
       - shardingSphere
       - backend
-    restart: always
+    restart: on-failure:15
 
   mysql-master:
     container_name: mysql-master 

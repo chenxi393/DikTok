@@ -7,6 +7,7 @@ import (
 	"douyin/package/constant"
 	"douyin/package/mq"
 	"douyin/package/util"
+	"errors"
 
 	"douyin/response"
 	"fmt"
@@ -31,6 +32,9 @@ type CommentService struct {
 
 func (service *CommentService) PostComment(userID uint64) (*response.CommentActionResponse, error) {
 	// TODO 增加敏感词过滤 可以异步实现 comment表多一列屏蔽信息
+	if service.CommentText == nil || *service.CommentText == "" {
+		return nil, errors.New(constant.BadParaRequest)
+	}
 	id, err := util.GetSonyFlakeID()
 	if err != nil {
 		zap.L().Error(err.Error())

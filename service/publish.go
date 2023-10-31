@@ -84,7 +84,7 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		}
 		// FIXME 发布视频会有一致性的问题 缓存没变
 		cache.SetVideoInfo(&video)
-		
+
 		// TODO 记得删除本地的视频和图片
 	}()
 	return &response.CommonResponse{
@@ -97,7 +97,8 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 	// 第一步查找 所有的 service.user_id 的视频记录
 	// 然后 对这些视频判断 loginUserID 有没有点赞
 	// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
-	// TODO 加分布式锁 redis  记得倒序
+	// TODO 加分布式锁 redis
+	// TODO 这里其实应当先去redis拿列表 再去数据库拿数据
 	videos, err := database.SelectVideosByUserID(service.UserID)
 	if err != nil {
 		zap.L().Error(err.Error())

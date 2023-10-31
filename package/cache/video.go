@@ -148,24 +148,20 @@ func GetPubulishSet(userID uint64) ([]uint64, error) {
 	return res, nil
 }
 
-// func PublishAction(userID, videoID uint64, cnt int64) error {
-// 	videoInfoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(videoID, 10)
-// 	favoriteKey := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
-// 	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
-// 	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(author_id, 10)
-// 	pp := UserRedisClient.Pipeline()
-// 	if cnt == 1 {
-// 		pp.SAdd(favoriteKey, strconv.FormatUint(videoID, 10))
-// 	} else {
-// 		pp.SRem(favoriteKey, strconv.FormatUint(videoID, 10))
-// 	}
-// 	pp.HIncrBy(videoInfoCountKey, constant.FavoritedCountField, cnt)
-// 	pp.HIncrBy(userInfoCountKey, constant.FavoriteCountField, cnt)
-// 	pp.HIncrBy(authorInfoCountKey, constant.TotalFavoritedField, cnt)
-// 	_, err := pp.Exec()
-// 	if err != nil {
-// 		zap.L().Error(err.Error())
-// 		return err
-// 	}
-// 	return nil
-// }
+func PublishVideo(userID, videoID uint64) error {
+	publishSet := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
+	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
+	err := UserRedisClient.HIncrBy(authorInfoCountKey, constant.WorkCountField, 1).Err()
+	if err != nil {
+		zap.L().Error(err.Error())
+		return err
+	}
+	// 应该删缓存 而不是增加 或者重新设置整个集合
+	// TODO可以考虑把视频加入 以便feed使用
+	err = VideoRedisClient.Del(publishSet).Err()
+	if err != nil {
+		zap.L().Error(err.Error())
+		return err
+	}
+	return nil
+}

@@ -39,7 +39,7 @@ func InitMQ() {
 			reason, ok := <-produceChannel.NotifyClose(make(chan *amqp.Error))
 			// exit this goroutine if closed by developer
 			if !ok || produceChannel.IsClosed() {
-				zap.L().Warn("channel closed")
+				zap.L().Error("channel closed")
 				_ = produceChannel.Close() // close again, ensure closed flag set when connection closed
 				break
 			}

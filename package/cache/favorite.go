@@ -2,7 +2,9 @@ package cache
 
 import (
 	"douyin/package/constant"
+	"math/rand"
 	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -13,7 +15,11 @@ func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 	for i := range favoriteIDSet {
 		favoriteIDStrings = append(favoriteIDStrings, strconv.FormatUint(favoriteIDSet[i], 10))
 	}
-	return VideoRedisClient.SAdd(key, favoriteIDStrings).Err()
+	pp := VideoRedisClient.Pipeline()
+	pp.SAdd(key, favoriteIDStrings)
+	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
+	_, err := pp.Exec()
+	return err
 }
 
 func GetFavoriteSet(userID uint64) ([]uint64, error) {
@@ -47,7 +53,7 @@ func FavoriteAction(userID, author_id, videoID uint64, cnt int64) error {
 	} else {
 		pp.SRem(favoriteKey, strconv.FormatUint(videoID, 10))
 	}
-	pp.HIncrBy(videoInfoCountKey, constant.FavoritedCountField, cnt)
+	pp.Expire(favoriteKey, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	pp.HIncrBy(userInfoCountKey, constant.FavoriteCountField, cnt)
 	pp.HIncrBy(authorInfoCountKey, constant.TotalFavoritedField, cnt)
 	_, err := pp.Exec()
@@ -55,28 +61,10 @@ func FavoriteAction(userID, author_id, videoID uint64, cnt int64) error {
 		zap.L().Error(err.Error())
 		return err
 	}
+	err = VideoRedisClient.HIncrBy(videoInfoCountKey, constant.FavoritedCountField, cnt).Err()
+	if err != nil {
+		zap.L().Error(err.Error())
+		return err
+	}
 	return nil
 }
-
-// // 注意使用了Zset 因为关注是有顺序的 最近关注的在上 顺序按照数据库的ID排序
-// func SetFavoriteVideoIDSet(userID uint64, favorites []Favorite) error {
-// 	pp := VideoRedisClient.Pipeline()
-// 	favoriteKey := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
-// 	zset := make([]redis.Z, len(favorites))
-// 	for i := range favorites {
-// 		zset[i] = redis.Z{
-// 			Score:  float64(favorites[i].ID),
-// 			Member: favorites[i].VideoID,
-// 		}
-// 	}
-// 	err1 := pp.ZAdd(favoriteKey, zset...).Err()
-// 	err2 := pp.Expire(favoriteKey, constant.Expiration+time.Duration(rand.Intn(100))*time.Second).Err()
-// 	_, err := pp.Exec()
-// 	if err1 != nil {
-// 		zap.L().Error(err1.Error())
-// 	}
-// 	if err2 != nil {
-// 		zap.L().Error(err2.Error())
-// 	}
-// 	return err
-// }

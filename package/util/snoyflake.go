@@ -1,6 +1,7 @@
 package util
 
 import (
+	"douyin/package/constant"
 	"time"
 
 	"github.com/sony/sonyflake"
@@ -14,7 +15,9 @@ var (
 func init() {
 	var err error
 	instance, err = sonyflake.New(sonyflake.Settings{
-		StartTime: time.Now(),
+		// 这里若设置成time.Now 那么运行之后就不应该停止
+		// 否则可能出现ID重复
+		StartTime: time.UnixMilli(constant.SnoyFlakeStartTime),
 	})
 	if err != nil {
 		zap.L().Fatal(err.Error())

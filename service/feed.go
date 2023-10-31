@@ -113,6 +113,7 @@ func (service *FeedService) GetFeed() (*response.FeedResponse, error) {
 
 	return &response.FeedResponse{
 		StatusCode: response.Success,
+		StatusMsg:  response.FeedSuccess,
 		VideoList:  videoData,
 		NextTime:   nextTime.UnixMilli(),
 	}, nil

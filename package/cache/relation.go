@@ -2,7 +2,9 @@ package cache
 
 import (
 	"douyin/package/constant"
+	"math/rand"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis"
 	"go.uber.org/zap"
@@ -17,7 +19,11 @@ func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 	for i := range followIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followIDSet[i], 10))
 	}
-	return UserRedisClient.SAdd(key, followIDStrings).Err()
+	pp := UserRedisClient.Pipeline()
+	pp.SAdd(key, followIDStrings)
+	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
+	_, err := pp.Exec()
+	return err
 }
 
 // 设置粉丝信息

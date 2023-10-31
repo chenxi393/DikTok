@@ -16,26 +16,15 @@ import (
 // 评论列表zset吧 按照评论时间排序（可以考虑时间加赞数加权排序）
 func CommentAdd(c *model.Comment) error {
 	zsetKey := constant.CommentPrefix + strconv.FormatUint(c.VideoID, 10)
-	dataJSON, err := json.Marshal(c)
+	// 应该删缓存 而不是增加 有过期时间的 过期了怎么办
+	// 更新倒是可以考虑 但是可能有数据不一致的情况
+	err := CommentRedisClient.Del(zsetKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
-	member := redis.Z{
-		Score:  float64(c.CreatedTime.UnixMilli()),
-		Member: dataJSON,
-	}
-	pp := CommentRedisClient.Pipeline()
-	pp.ZAdd(zsetKey, member).Err()
-	pp.Expire(zsetKey, constant.Expiration+time.Duration(rand.Intn(200))*time.Second)
-	// 增加视频的评论数
 	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(c.VideoID, 10)
-	err = VideoRedisClient.HIncrBy(videoCountKey, constant.CommentCountField, 1).Err()
-	if err != nil {
-		zap.L().Error(err.Error())
-		return err
-	}
-	_, err = pp.Exec()
+	err = VideoRedisClient.Del(videoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
@@ -57,7 +46,7 @@ func CommentDelete(c *model.Comment) error {
 	}
 	// 减少视频的评论数
 	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(c.VideoID, 10)
-	err = VideoRedisClient.HIncrBy(videoCountKey, constant.CommentCountField, -1).Err()
+	err = VideoRedisClient.Del(videoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
@@ -93,7 +82,7 @@ func SetComments(videoID uint64, comments []*model.Comment) error {
 
 func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
 	zsetKey := constant.CommentPrefix + strconv.FormatUint(videoID, 10)
-	commentsJSON, err := CommentRedisClient.ZRange(zsetKey, 0, -1).Result()
+	commentsJSON, err := CommentRedisClient.ZRevRange(zsetKey, 0, -1).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err

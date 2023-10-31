@@ -9,9 +9,10 @@ const (
 	TokenTimeOut    = 12 * time.Hour
 	TokenMaxRefresh = 3 * time.Hour
 
-	DoAction   = "1"
-	UndoAction = "2"
-	UserID     = "userID"
+	DoAction           = "1"
+	UndoAction         = "2"
+	UserID             = "userID"
+	SnoyFlakeStartTime = 1698775594477
 )
 
 // redis 的key
@@ -24,14 +25,14 @@ const (
 	// + user_id
 	UserInfoCountPrefix = "user_info_count:"
 	// + video_id
-	VideoInfoPrefix = "user_info:"
+	VideoInfoPrefix = "video_info:"
 	// + video_id
-	VideoInfoCountPrefix = "user_info_count:"
+	VideoInfoCountPrefix = "video_info_count:"
 
 	// user 哈希hset 的键
 	FollowCountField    = "follow_count:"
-	FollowerCountField = "follower_count:"
-	TotalFavoritedField = "favorited_count:"
+	FollowerCountField  = "follower_count:"
+	TotalFavoritedField = "total_favorited_count:"
 	WorkCountField      = "work_count:"
 	FavoriteCountField  = "favorite_count:"
 
@@ -46,7 +47,7 @@ const (
 	// + user_id
 	FavoriteIDPrefix = "favorite_id:"
 	// + user_id
-	PublishIDPrefix = "pubulish_id:"
+	PublishIDPrefix = "publish_id:"
 	// + video_id
 	CommentPrefix = "comment:"
 )

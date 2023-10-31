@@ -2,6 +2,7 @@ package database
 
 import (
 	"douyin/model"
+	"douyin/package/cache"
 	"douyin/response"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 func CreateVideo(video *model.Video) (uint64, error) {
 	err := global_db.Transaction(func(tx *gorm.DB) error {
 		// If value doesn't contain a matching primary key, value is inserted.
-		err := tx.Model(&model.Video{}).Save(video).Error
+		err := tx.Create(video).Error
 		if err != nil {
 			return err
 		}
@@ -25,7 +26,7 @@ func CreateVideo(video *model.Video) (uint64, error) {
 		if err != nil {
 			return err
 		}
-		return nil
+		return cache.PublishVideo(video.AuthorID, video.ID)
 	})
 	if err != nil {
 		return 0, err
@@ -35,7 +36,7 @@ func CreateVideo(video *model.Video) (uint64, error) {
 
 func SelectVideosByUserID(userID uint64) ([]model.Video, error) {
 	videos := make([]model.Video, 0)
-	err := global_db.Model(&model.Video{}).Where("author_id = ? ", userID).Find(&videos).Error
+	err := global_db.Model(&model.Video{}).Where("author_id = ? ", userID).Order("publish_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}

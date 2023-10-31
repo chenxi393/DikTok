@@ -9,12 +9,13 @@ import (
 
 func CommentAdd(com *model.Comment) error {
 	err := global_db.Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&model.Comment{}).Create(&com).Error
+		// 先查询videoID是否存在
+		video := model.Video{ID: com.VideoID}
+		err := tx.First(&video).Error
 		if err != nil {
 			return err
 		}
-		video := model.Video{ID: com.VideoID}
-		err = tx.Model(&video).Select("comment_count").First(&video).Error
+		err = tx.Model(&model.Comment{}).Create(&com).Error
 		if err != nil {
 			return err
 		}
@@ -62,7 +63,7 @@ func CommentDelete(commentID *string, videoID, userID uint64) (*model.Comment, e
 
 func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
-	err := global_db.Model(&model.Comment{}).Where("video_id = ?", videoID).Find(&videos).Error
+	err := global_db.Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}
