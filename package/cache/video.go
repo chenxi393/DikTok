@@ -151,7 +151,9 @@ func GetPubulishSet(userID uint64) ([]uint64, error) {
 func PublishVideo(userID, videoID uint64) error {
 	publishSet := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
 	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
-	err := UserRedisClient.HIncrBy(authorInfoCountKey, constant.WorkCountField, 1).Err()
+	authorInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
+	// 这里也应该删缓存 不能增加
+	err := UserRedisClient.Del(authorInfoCountKey, authorInfoKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

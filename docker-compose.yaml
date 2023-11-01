@@ -17,6 +17,8 @@ services:
       - shardingSphere
       - backend
     restart: on-failure:15
+    environment:
+      - TZ=Asia/Shanghai
 
   mysql-master:
     container_name: mysql-master 

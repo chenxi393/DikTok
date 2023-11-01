@@ -1,2 +1,3 @@
 *.mp4
 /config/example.yaml
+/config/docker.yaml

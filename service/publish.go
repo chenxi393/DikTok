@@ -14,6 +14,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
+	"gorm.io/plugin/dbresolver"
 )
 
 type PublisService struct {
@@ -76,8 +77,10 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		if err != nil {
 			zap.L().Error(err.Error())
 		}
+		// 这里会有主从复制延时导致缓存不一致的问题。。
+		// 对于即时写即时读的要指定主库去读 不能读从库
 		var video model.Video
-		err = constant.DB.Model(&model.Video{ID: video_id}).First(&video).Error
+		err = constant.DB.Clauses(dbresolver.Write).Where("id = ?", video_id).First(&video).Error
 		if err != nil {
 			zap.L().Error(err.Error())
 			return

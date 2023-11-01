@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
 
@@ -24,10 +25,14 @@ func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 
 func GetFavoriteSet(userID uint64) ([]uint64, error) {
 	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
+	// 若key不存在会返回空集合
 	idSet, err := VideoRedisClient.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
+	}
+	if len(idSet) == 0 {
+		return nil, redis.Nil
 	}
 	res := make([]uint64, 0, len(idSet))
 	for _, t := range idSet {
@@ -41,27 +46,19 @@ func GetFavoriteSet(userID uint64) ([]uint64, error) {
 	return res, nil
 }
 
-// FIXME 注意要更新redis 视频表的点赞数 点赞表 用户的点赞数 用户表的被点赞数
+// 注意要更新redis 视频表的点赞数 点赞表 用户的点赞数 用户表的被点赞数（弃用）（目前采取删缓存）
 func FavoriteAction(userID, author_id, videoID uint64, cnt int64) error {
 	videoInfoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(videoID, 10)
+	videoInfoKey := constant.VideoInfoPrefix + strconv.FormatUint(videoID, 10)
 	favoriteKey := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
 	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
 	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(author_id, 10)
-	pp := UserRedisClient.Pipeline()
-	if cnt == 1 {
-		pp.SAdd(favoriteKey, strconv.FormatUint(videoID, 10))
-	} else {
-		pp.SRem(favoriteKey, strconv.FormatUint(videoID, 10))
-	}
-	pp.Expire(favoriteKey, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
-	pp.HIncrBy(userInfoCountKey, constant.FavoriteCountField, cnt)
-	pp.HIncrBy(authorInfoCountKey, constant.TotalFavoritedField, cnt)
-	_, err := pp.Exec()
+	err := UserRedisClient.Del(userInfoCountKey, authorInfoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
-	err = VideoRedisClient.HIncrBy(videoInfoCountKey, constant.FavoritedCountField, cnt).Err()
+	err = VideoRedisClient.Del(videoInfoCountKey, videoInfoKey, favoriteKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

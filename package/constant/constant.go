@@ -67,6 +67,7 @@ const (
 	BloomFilterRejected = "布隆过滤器拦截"
 	BadParaRequest      = "参数错误"
 	SetCacheError       = "设置缓存失败"
+	EmptyKey            = "键不存在"
 
 	// 评论
 	CommentSuccess       = "评论成功"

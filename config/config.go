@@ -1,9 +1,10 @@
 package config
 
 import (
+	"log"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 type MysqlConfig struct {
@@ -66,19 +67,18 @@ func Init() {
 
 	err := viper.ReadInConfig() // Find and read the config file
 	if err != nil {             // Handle errors reading the config file
-		zap.L().Fatal("fatal error config file: ", zap.Error(err))
+		log.Fatal("fatal error config file: ", err.Error())
 	}
 
-	// 解析mysql的配置文件
 	err = viper.Unmarshal(&SystemConfig)
 	if err != nil {
-		zap.L().Fatal("fatal error unmarshal config: ", zap.Error(err))
+		log.Fatal("fatal error unmarshal config: ", err.Error())
 	}
 
 	// 监视配置文件的变化
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		zap.L().Info("配置文件被修改")
+		log.Println("配置文件被修改")
 	})
-	zap.L().Info("viper读取配置文件成功")
+	log.Println("viper读取配置文件成功")
 }

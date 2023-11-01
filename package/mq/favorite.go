@@ -121,21 +121,15 @@ func favoriteConsume() {
 			userID, err := strconv.ParseUint(ans[0], 10, 64)
 			if err != nil {
 				zap.L().Sugar().Error(err)
-				message.Ack(true)
-				continue
 			}
 			videoID, err := strconv.ParseUint(ans[1], 10, 64)
 			if err != nil {
 				zap.L().Sugar().Error(err)
-				message.Ack(true)
-				continue
 			}
 			cnt, _ := strconv.ParseInt(ans[2], 10, 64)
 			err = database.FavoriteVideo(userID, videoID, cnt)
 			if err != nil {
 				zap.L().Sugar().Error(err)
-				message.Ack(true)
-				continue
 			}
 			message.Ack(false) //手动确认消息
 		}

@@ -20,7 +20,7 @@ func CommentAction(c *fiber.Ctx) error {
 			Comment:    nil,
 		}
 		c.Status(fiber.StatusOK)
-		c.JSON(res)
+		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
 	var resp *response.CommentActionResponse
@@ -54,7 +54,7 @@ func CommentList(c *fiber.Ctx) error {
 			CommentList: nil,
 		}
 		c.Status(fiber.StatusOK)
-		c.JSON(res)
+		return c.JSON(res)
 	}
 	var userID uint64
 	if service.Token == "" {

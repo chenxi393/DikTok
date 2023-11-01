@@ -4,6 +4,7 @@ import (
 	"douyin/model"
 	"douyin/package/constant"
 	"encoding/json"
+	"errors"
 	"math/rand"
 	"strconv"
 	"time"
@@ -92,8 +93,8 @@ func GetUserInfo(userID uint64) (*model.User, error) {
 	// 使用管道加速
 	pipeline := UserRedisClient.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil
-	userInfoCmd := pipeline.Get(infoKey)
-	userInfoCountCmd := pipeline.HGetAll(infoCountKey)
+	userInfoCmd := pipeline.Get(infoKey)               // key 不存在会返回 redis:nil err
+	userInfoCountCmd := pipeline.HGetAll(infoCountKey) // 注意这里键不存在又不会返回nil err
 	_, err := pipeline.Exec()
 	if err != nil {
 		zap.L().Sugar().Error(err)
@@ -107,6 +108,11 @@ func GetUserInfo(userID uint64) (*model.User, error) {
 	}
 	userInfoCount, err := userInfoCountCmd.Result()
 	if err != nil {
+		zap.L().Sugar().Error(err)
+		return nil, err
+	}
+	if len(userInfoCount) == 0 {
+		err = errors.New("")
 		zap.L().Sugar().Error(err)
 		return nil, err
 	}

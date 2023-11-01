@@ -15,8 +15,8 @@ import (
 
 func main() {
 	// 手动调用初始化函数
-	util.InitZap()
 	config.Init()
+	util.InitZap()
 	database.InitMysql()
 	cache.InitRedis()
 	mq.InitMQ()

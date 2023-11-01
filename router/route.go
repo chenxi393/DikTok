@@ -5,11 +5,11 @@ import (
 	"douyin/package/util"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func InitRouter(app *fiber.App) {
-	//用户登录数据保存在内存中，单次运行过程中有效
-	//视频上传后会保存到本地 public 目录中，访问时用 127.0.0.1:8080/static/video_name 即可
+	app.Use(cors.New())
 	app.Static("/video", "./douyinVideo",
 		fiber.Static{ByteRange: true}) // 好像可以分块传输 但是客户端没啥用。
 	app.Static("/image", "./douyinImage") // 是可以用绝对路径
@@ -26,7 +26,7 @@ func InitRouter(app *fiber.App) {
 		publish := api.Group("/publish")
 		{
 			publish.Post("/action/", handler.PublishAction)
-			publish.Get("/list/", util.Authentication,handler.ListPublishedVideo)
+			publish.Get("/list/", util.Authentication, handler.ListPublishedVideo)
 		}
 		favorite := api.Group("/favorite", util.Authentication)
 		{

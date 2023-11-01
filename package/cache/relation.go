@@ -33,6 +33,9 @@ func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 	for i := range followerIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followerIDSet[i], 10))
 	}
+	pp := UserRedisClient.Pipeline()
+	pp.SAdd(key, followIDStrings)
+	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	return UserRedisClient.SAdd(key, followIDStrings).Err()
 }
 
@@ -48,10 +51,15 @@ func IsFollow(loginUserID, userID uint64) (bool, error) {
 
 func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
+	// 注意 若key不存在 则会返回空集合
 	idSet, err := UserRedisClient.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
+	}
+	if len(idSet) == 0 {
+		zap.L().Error(redis.Nil.Error())
+		return nil, redis.Nil
 	}
 	res := make([]uint64, 0, len(idSet))
 	for _, t := range idSet {
@@ -72,6 +80,10 @@ func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
+	if len(idSet) == 0 {
+		zap.L().Error(redis.Nil.Error())
+		return nil, redis.Nil
+	}
 	res := make([]uint64, 0, len(idSet))
 	for _, t := range idSet {
 		id, err := strconv.ParseUint(t, 10, 64)
@@ -84,53 +96,22 @@ func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
 	return res, nil
 }
 
-// lua保证原子性
+// lua保证原子性 弃用 通通删缓存
 // userID 点赞集合加1
 // touserID 粉丝集合加1
 // user表关注+1
 // toUser 粉丝加1
 func FollowAction(userID, toUserID uint64, cnt int64) error {
 	followKey := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
-	followerKey := constant.FollowerCountField + strconv.FormatUint(toUserID, 10)
+	followerKey := constant.FollowerIDPrefix + strconv.FormatUint(toUserID, 10)
 	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
 	toUserInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(toUserID, 10)
-	pp := UserRedisClient.Pipeline()
-	if cnt == 1 {
-		pp.SAdd(followKey, strconv.FormatUint(toUserID, 10))
-		pp.SAdd(followerKey, strconv.FormatUint(userID, 10))
-	} else {
-		pp.SRem(followKey, strconv.FormatUint(toUserID, 10))
-		pp.SRem(followerKey, strconv.FormatUint(userID, 10))
-	}
-	pp.HIncrBy(userInfoCountKey, constant.FollowCountField, cnt)
-	pp.HIncrBy(toUserInfoCountKey, constant.FollowerCountField, cnt)
-	_, err := pp.Exec()
+	userInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
+	toUserInfoKey := constant.UserInfoPrefix + strconv.FormatUint(toUserID, 10)
+	err := UserRedisClient.Del(followKey, followerKey, userInfoCountKey, toUserInfoCountKey, userInfoKey, toUserInfoKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
 	return nil
 }
-
-// // 使用Zset 排序使用数据库关注表的ID
-// func SetFollowUserIDSet(userID uint64, followIDSet []Follow) error {
-// 	pp := UserRedisClient.Pipeline()
-// 	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
-// 	zset := make([]redis.Z, len(followIDSet))
-// 	for i := range followIDSet {
-// 		zset[i] = redis.Z{
-// 			Score:  float64(followIDSet[i].ID),
-// 			Member: followIDSet[i].UserID,
-// 		}
-// 	}
-// 	err1 := pp.ZAdd(key, zset...).Err()
-// 	err2 := pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second).Err()
-// 	_, err := pp.Exec()
-// 	if err1 != nil {
-// 		zap.L().Error(err1.Error())
-// 	}
-// 	if err2 != nil {
-// 		zap.L().Error(err2.Error())
-// 	}
-// 	return err
-// }

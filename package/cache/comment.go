@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// FIXME评论增加 会影响视频的评论数 和评论表 需要lua脚本保证原子性
+// 评论增加 会影响视频的评论数 和评论表 需要lua脚本保证原子性 （目前采取删缓存）
 // 评论列表zset吧 按照评论时间排序（可以考虑时间加赞数加权排序）
 func CommentAdd(c *model.Comment) error {
 	zsetKey := constant.CommentPrefix + strconv.FormatUint(c.VideoID, 10)
@@ -32,7 +32,7 @@ func CommentAdd(c *model.Comment) error {
 	return nil
 }
 
-// FIXME lua脚本保证原子性
+// lua脚本保证原子性 （目前采取删缓存）
 func CommentDelete(c *model.Comment) error {
 	zsetKey := constant.CommentPrefix + strconv.FormatUint(c.VideoID, 10)
 	dataJSON, err := json.Marshal(c)
