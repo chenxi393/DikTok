@@ -18,7 +18,7 @@ type UserClaims struct {
 }
 
 func SignToken(userID uint64) (string, error) {
-	signingKey := []byte(config.SystemConfig.JwtSecret)
+	signingKey := []byte(config.System.JwtSecret)
 	// 配置 userClaims ,并生成 token
 	claims := UserClaims{
 		userID,
@@ -33,7 +33,7 @@ func SignToken(userID uint64) (string, error) {
 }
 
 func ParseToken(token string) (*UserClaims, error) {
-	signingKey := []byte(config.SystemConfig.JwtSecret)
+	signingKey := []byte(config.System.JwtSecret)
 	tokenClaims, err := jwt.ParseWithClaims(token, &UserClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return signingKey, nil
 	})

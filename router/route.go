@@ -9,28 +9,34 @@ import (
 )
 
 func InitRouter(app *fiber.App) {
+	// 允许所有跨域请求
 	app.Use(cors.New())
 	app.Static("/video", "./douyinVideo",
 		fiber.Static{ByteRange: true}) // 好像可以分块传输 但是客户端没啥用。
 	app.Static("/image", "./douyinImage") // 是可以用绝对路径
+
 	api := app.Group("/douyin")
 	{
+		// 新增接口 搜索功能 可以拓展搜索用户
+		search := api.Group("/search")
+		{
+			search.Get("/video/", handler.SearchVideo)
+		}
 		api.Get("/feed/", handler.Feed)
-		// 客户端（前端） 用户注册或者登录后 紧接着就调用 /douyin/user/
 		user := api.Group("/user")
-		user.Get("/", handler.UserInfo)
+		user.Get("/", handler.UserInfo) // 这里是用来看个人主页的需要鉴权
 		{
 			user.Post("/register/", handler.UserRegister)
 			user.Post("/login/", handler.UserLogin)
 		}
 		publish := api.Group("/publish")
 		{
-			publish.Post("/action/", handler.PublishAction)
-			publish.Get("/list/", util.Authentication, handler.ListPublishedVideo)
+			publish.Post("/action/", util.Authentication, handler.PublishAction)
+			publish.Get("/list/", handler.ListPublishedVideo)
 		}
-		favorite := api.Group("/favorite", util.Authentication)
+		favorite := api.Group("/favorite")
 		{
-			favorite.Post("/action/", handler.FavoriteVideoAction)
+			favorite.Post("/action/", util.Authentication, handler.FavoriteVideoAction)
 			favorite.Get("/list/", handler.FavoriteList)
 		}
 		comment := api.Group("/comment")
@@ -38,12 +44,12 @@ func InitRouter(app *fiber.App) {
 			comment.Post("/action/", util.Authentication, handler.CommentAction)
 			comment.Get("/list/", handler.CommentList)
 		}
-		relation := api.Group("/relation", util.Authentication) // 这里暂时关注和粉丝列表都需要鉴权
+		relation := api.Group("/relation")
 		{
-			relation.Post("/action/", handler.RelationAction)
+			relation.Post("/action/", util.Authentication, handler.RelationAction)
 			relation.Get("/follow/list/", handler.FollowList)
 			relation.Get("/follower/list/", handler.FollowerList)
-			relation.Get("/friend/list/", handler.FriendList)
+			relation.Get("/friend/list/", util.Authentication, handler.FriendList)
 		}
 		messgae := api.Group("/message")
 		{

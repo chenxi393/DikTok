@@ -60,14 +60,14 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 	cache.VideoIDBloomFilter.AddString(strconv.FormatUint(video_id, 10))
 	// 异步上传到对象存储
 	go func() {
-		playURL, err := util.UploadToOSS(fileName, config.SystemConfig.HttpAddress.VideoAddress+"/"+fileName)
+		playURL, err := util.UploadToOSS(fileName, config.System.HttpAddress.VideoAddress+"/"+fileName)
 		if err != nil {
 			// 这里要不要重试？？
 			zap.L().Error(err.Error())
 		}
-		if coverURL != config.SystemConfig.HttpAddress.DefaultCoverURL {
+		if coverURL != config.System.HttpAddress.DefaultCoverURL {
 			coverFileName := fileName + ".jpeg"
-			coverURL, err = util.UploadToOSS(coverFileName, config.SystemConfig.HttpAddress.ImageAddress+"/"+coverFileName)
+			coverURL, err = util.UploadToOSS(coverFileName, config.System.HttpAddress.ImageAddress+"/"+coverFileName)
 			if err != nil {
 				zap.L().Error(err.Error())
 			}
@@ -85,18 +85,16 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 			zap.L().Error(err.Error())
 			return
 		}
-		// FIXME 发布视频会有一致性的问题 缓存没变
 		cache.SetVideoInfo(&video)
-
 		// TODO 记得删除本地的视频和图片
 	}()
 	return &response.CommonResponse{
 		StatusCode: response.Success,
-		StatusMsg:  "上传视频成功",
+		StatusMsg:  response.UploadVideoSuccess,
 	}, nil
 }
 
-func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*response.PublishListResponse, error) {
+func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*response.VideoListResponse, error) {
 	// 第一步查找 所有的 service.user_id 的视频记录
 	// 然后 对这些视频判断 loginUserID 有没有点赞
 	// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
@@ -110,7 +108,7 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 	// 不都是一个作者嘛 拿一次信息不就好了
 	author, err := cache.GetUserInfo(service.UserID)
 	if err != nil {
-		zap.L().Warn(constant.CacheMiss)
+		zap.L().Warn(constant.CacheMiss, zap.Error(err))
 		author, err = database.SelectUserByID(service.UserID)
 		if err != nil {
 			zap.L().Error(err.Error())
@@ -124,6 +122,9 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 		}()
 	}
 	var isFollowed bool
+	if loginUserID == 0 {
+		isFollowed = false
+	}
 	if service.UserID == loginUserID {
 		isFollowed = true
 	} else {
@@ -148,20 +149,23 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 			}()
 		}
 	}
-	favorite, err := cache.GetFavoriteSet(loginUserID)
-	if err != nil {
-		zap.L().Warn(constant.CacheMiss)
-		favorite, err = database.SelectFavoriteVideoByUserID(loginUserID)
+	var favorite []uint64
+	if loginUserID != 0 {
+		favorite, err = cache.GetFavoriteSet(loginUserID)
 		if err != nil {
-			zap.L().Error(err.Error())
-			return nil, err
-		}
-		go func() {
-			err := cache.SetFavoriteSet(loginUserID, favorite)
+			zap.L().Warn(constant.CacheMiss)
+			favorite, err = database.SelectFavoriteVideoByUserID(loginUserID)
 			if err != nil {
 				zap.L().Error(err.Error())
+				return nil, err
 			}
-		}()
+			go func() {
+				err := cache.SetFavoriteSet(loginUserID, favorite)
+				if err != nil {
+					zap.L().Error(err.Error())
+				}
+			}()
+		}
 	}
 	favoriteMap := make(map[uint64]struct{}, len(favorite))
 	for _, ff := range favorite {
@@ -184,9 +188,9 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 		}
 		reps = append(reps, item)
 	}
-	return &response.PublishListResponse{
+	return &response.VideoListResponse{
 		StatusCode: response.Success,
-		StatusMsg:  "视频列表加载成功",
+		StatusMsg:  response.PubulishListSuccess,
 		VideoList:  reps,
 	}, nil
 }

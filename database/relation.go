@@ -3,6 +3,7 @@ package database
 import (
 	"douyin/model"
 	"douyin/package/cache"
+	"douyin/package/constant"
 
 	"gorm.io/gorm"
 )
@@ -12,7 +13,7 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 		UserID:   userID,
 		ToUserID: toUserID,
 	}
-	return global_db.Transaction(func(tx *gorm.DB) error {
+	return constant.DB.Transaction(func(tx *gorm.DB) error {
 		// 关注表里更新
 		var err error
 		var ff model.Follow
@@ -52,20 +53,20 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 
 func SelectFollowingByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := global_db.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Find(&res).Error
 	return res, err
 }
 
 func SelectFollowerByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := global_db.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Find(&res).Error
 	return res, err
 }
 
 // 查询userID 有没有关注 id
 func IsFollowed(userID uint64, id uint64) (bool, error) {
 	var cnt int64
-	err := global_db.Model(&model.Follow{}).Where("user_id= ? AND to_user_id = ? ", userID, id).Count(&cnt).Error
+	err := constant.DB.Model(&model.Follow{}).Where("user_id= ? AND to_user_id = ? ", userID, id).Count(&cnt).Error
 	if err != nil {
 		return false, err
 	} else if cnt == 0 {

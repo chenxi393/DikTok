@@ -1,5 +1,7 @@
 package response
 
+import "time"
+
 type FeedResponse struct {
 	// 本次返回的视频中，发布最早的时间，作为下次请求时的latest_time
 	NextTime int64 `json:"next_time"`
@@ -28,6 +30,8 @@ type Video struct {
 	PlayURL string `json:"play_url"`
 	// 视频标题
 	Title string `json:"title"`
+	// 新增返回视频发布时间
+	PublishTime string `json:"publish_time"`
 }
 
 type VideoData struct {
@@ -39,6 +43,16 @@ type VideoData struct {
 	CommentCount       int64  `gorm:"column:comment_count" json:"comment_count"`
 	Title              string `gorm:"column:title" json:"title"`
 	IsFavorite         bool   `json:"is_favorite"`
+	PublishTime        time.Time
+}
+
+type VideoListResponse struct {
+	// 状态码，0-成功，其他值-失败
+	StatusCode int `json:"status_code"`
+	// 返回状态描述
+	StatusMsg string `json:"status_msg"`
+	// 用户发布的视频列表
+	VideoList []Video `json:"video_list"`
 }
 
 func VideoDataInfo(data []VideoData) []Video {
@@ -52,6 +66,7 @@ func VideoDataInfo(data []VideoData) []Video {
 			FavoriteCount: item.VideoFavoriteCount,
 			CommentCount:  item.CommentCount,
 			Title:         item.Title,
+			PublishTime:   item.PublishTime.Format("2006-01-02 15:04"),
 		}
 		items = append(items, v)
 	}

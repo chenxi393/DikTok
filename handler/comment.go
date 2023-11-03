@@ -5,15 +5,17 @@ import (
 	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
-	"fmt"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
 func CommentAction(c *fiber.Ctx) error {
 	var service service.CommentService
 	err := c.QueryParser(&service)
 	if err != nil {
+		zap.L().Error(err.Error())
 		res := response.CommentActionResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.BadParaRequest,
@@ -29,13 +31,12 @@ func CommentAction(c *fiber.Ctx) error {
 	} else if service.ActionType == constant.UndoAction && service.CommentID != nil {
 		resp, err = service.DeleteComment(userID)
 	} else {
-		err = fmt.Errorf(constant.BadParaRequest)
+		err = errors.New(constant.BadParaRequest)
 	}
 	if err != nil {
 		res := response.CommentActionResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
-			Comment:    nil,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)

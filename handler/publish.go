@@ -16,39 +16,31 @@ func PublishAction(c *fiber.Ctx) error {
 	var publishService service.PublisService
 	err := c.BodyParser(&publishService)
 	if err != nil {
-		zap.L().Info(err.Error())
+		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.BadParaRequest,
 		}
 		return c.JSON(res)
 	}
-	claims, err := util.ParseToken(publishService.Token)
-	if err != nil {
-		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	// TODO 需要检查文件后缀 还是文件实际的内容是不是mp4
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  err.Error(),
+			StatusMsg:  response.FileFormatError,
 		}
 		return c.JSON(res)
 	}
-	zap.L().Info("handler.publish_service.PublishAction Filename:" + fileHeader.Filename)
+	zap.L().Info("PublishAction Filename:" + fileHeader.Filename)
 	file, err := fileHeader.Open()
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  err.Error(),
+			StatusMsg:  response.FileFormatError,
 		}
 		return c.JSON(res)
 	}
@@ -59,11 +51,11 @@ func PublishAction(c *fiber.Ctx) error {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  err.Error(),
+			StatusMsg:  response.FileFormatError,
 		}
 		return c.JSON(res)
 	}
-	res, err := publishService.PublishAction(claims.UserID, buf)
+	res, err := publishService.PublishAction(userID, buf)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -80,13 +72,27 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	err := c.QueryParser(&listService)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.PublishListResponse{
+		res := response.VideoListResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  err.Error(),
+			StatusMsg:  response.BadParaRequest,
 		}
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	var userID uint64
+	if listService.Token == "" {
+		userID = 0
+	} else {
+		claims, err := util.ParseToken(listService.Token)
+		if err != nil {
+			res := response.UserRegisterOrLogin{
+				StatusCode: response.Failed,
+				StatusMsg:  response.WrongToken,
+			}
+			c.Status(fiber.StatusOK)
+			return c.JSON(res)
+		}
+		userID = claims.UserID
+	}
 	resp, err := listService.GetPublishVideos(userID)
 	if err != nil {
 		res := response.UserRegisterOrLogin{

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"douyin/package/constant"
+	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
 	"fmt"
@@ -48,7 +49,7 @@ func FavoriteList(c *fiber.Ctx) error {
 	err := c.QueryParser(&service)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.PublishListResponse{
+		res := response.VideoListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.BadParaRequest,
 			VideoList:  nil,
@@ -56,10 +57,24 @@ func FavoriteList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	var userID uint64
+	if service.Token == "" {
+		userID = 0
+	} else {
+		claims, err := util.ParseToken(service.Token)
+		if err != nil {
+			res := response.UserRegisterOrLogin{
+				StatusCode: response.Failed,
+				StatusMsg:  response.WrongToken,
+			}
+			c.Status(fiber.StatusOK)
+			return c.JSON(res)
+		}
+		userID = claims.UserID
+	}
 	resp, err := service.FavoriteList(userID)
 	if err != nil {
-		res := response.PublishListResponse{
+		res := response.VideoListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.WrongToken,
 			VideoList:  nil,
@@ -67,9 +82,9 @@ func FavoriteList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res := response.PublishListResponse{
+	res := response.VideoListResponse{
 		StatusCode: response.Success,
-		StatusMsg:  "查询喜欢视频列表成功",
+		StatusMsg:  response.FavoriteListSuccess,
 		VideoList:  resp,
 	}
 	c.Status(fiber.StatusOK)

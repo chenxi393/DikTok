@@ -5,86 +5,36 @@ import (
 	"douyin/model"
 	"douyin/package/cache"
 	"douyin/package/constant"
-	"douyin/package/mq"
 	"douyin/response"
 	"errors"
 
 	"go.uber.org/zap"
 )
 
-type FavoriteService struct {
-	// 1-点赞，2-取消点赞
-	ActionType string `query:"action_type"`
-	// 用户鉴权token
+type SearchService struct {
+	// 搜索框输入
+	KeyWord string `query:"keyword"`
+	// 用户登录状态下设置
 	Token string `query:"token"`
-	// 视频id
-	VideoID uint64 `query:"video_id"`
-	// 要查询的用户id
-	UserID uint64 `query:"user_id"`
 }
 
-func (service *FavoriteService) Favorite(userID uint64) (*response.CommonResponse, error) {
-	// TODO 可以拿redis限制一下用户点赞的速率 比如1分钟只能点赞10次
-	err := mq.SendFavoriteMessage(userID, service.VideoID, 1)
+func (service *SearchService) SearchVideo(userID uint64) (*response.VideoListResponse, error) {
+	if service.KeyWord == "" {
+		return nil, errors.New(constant.BadParaRequest)
+	}
+	// 去数据库利用全文索引拿出所有视频数据
+	videos, err := database.SearchVideoByKeyword(service.KeyWord)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	return &response.CommonResponse{
-		StatusCode: response.Success,
-		StatusMsg:  constant.FavoriteSuccess,
-	}, nil
-}
 
-func (service *FavoriteService) UnFavorite(userID uint64) (*response.CommonResponse, error) {
-	err := mq.SendFavoriteMessage(userID, service.VideoID, -1)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
-	return &response.CommonResponse{
-		StatusCode: response.Success,
-		StatusMsg:  constant.UnFavoriteSuccess,
-	}, nil
-}
-
-func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, error) {
-	// TODO 加分布式锁
-	// redis查找所有喜欢的视频ID
-	videoIDs, err := cache.GetFavoriteSet(service.UserID)
-	if err != nil {
-		zap.L().Warn(constant.CacheMiss)
-		videoIDs, err = database.SelectFavoriteVideoByUserID(service.UserID)
-		if err != nil {
-			zap.L().Error(err.Error())
-			return nil, err
-		}
-		// 加入到缓存里
-		go func() {
-			err := cache.SetFavoriteSet(service.UserID, videoIDs)
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-		}()
-	}
-	// 然后去数据库批量查找视频数据
-	// TODO 要去redis查找视频信息 否则存视频没有意义
-	// 但是我又觉得最终还是要走DB 一开始走不就行
-	// 再看看怎么写合理 暂时只走数据库（db肯定是顺序的）
-	// 最重点的redis返回的videoIDs 不是顺序的
-	// 那么走redis查到的数据是乱序的（用zset解决 但是代码复杂）
-	videos, err := database.SelectVideoListByVideoID(videoIDs)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
 	// 拿到视频数据之后 还得一个视频一个视频拿到作者信息
-	userIDs := make([]uint64, 0, len(videoIDs))
+	userIDs := make([]uint64, 0, len(videos))
 	for _, video := range videos {
 		userIDs = append(userIDs, video.AuthorID)
 	}
-	// 批量拿到作者信息 但是还需要填空 哪个作者对应哪个
-	// TODO 作者信息也应该先去redis里面拿 不然没有意义
+	// TODO 作者信息应该先去redis里面拿 没有再数据库填空
 	usersData, err := database.SelectUserListByIDs(userIDs)
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -114,7 +64,7 @@ func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, e
 		followingMap[i] = struct{}{}
 	}
 	// 把自己放进去
-	followingMap[userID] = struct{}{}
+	followingMap[userID]=struct{}{}
 	usersMap := make(map[uint64]*model.User, len(usersData))
 	for i, id := range usersData {
 		usersMap[id.ID] = &usersData[i]
@@ -145,9 +95,9 @@ func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, e
 	videoResponse := make([]response.Video, 0, len(videos))
 	for _, video := range videos {
 		if _, ok := usersMap[video.AuthorID]; ok {
-			_, isFollowing := followingMap[video.AuthorID]
+			_, isFollow := followingMap[video.AuthorID]
 			vv := response.Video{
-				Author:        *response.UserInfo(usersMap[video.AuthorID], isFollowing),
+				Author:        *response.UserInfo(usersMap[video.AuthorID], isFollow),
 				CommentCount:  video.CommentCount,
 				CoverURL:      video.CoverURL,
 				FavoriteCount: video.FavoriteCount,
@@ -166,5 +116,10 @@ func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, e
 			return nil, err
 		}
 	}
-	return videoResponse, nil
+	return &response.VideoListResponse{
+		StatusCode: response.Success,
+		StatusMsg:  response.ActionSuccess,
+		VideoList:  videoResponse,
+	}, nil
+
 }

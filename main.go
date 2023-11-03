@@ -14,18 +14,20 @@ import (
 )
 
 func main() {
-	// 手动调用初始化函数
+	// 手动调用初始化函数 可以考虑使用init函数
 	config.Init()
 	util.InitZap()
-	database.InitMysql()
+	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitMQ()
 
+	// 客户端文件超过30MB 返回413
 	app := fiber.New(fiber.Config{
-		BodyLimit: 40 * 1024 * 1024, // 不设置这个会返回413 客户端文件太大 导致返回413
+		BodyLimit: 30 * 1024 * 1024,
 	})
-	app.Use(logger.New()) // 使用中间件打印日志
+	// 使用中间件打印日志
+	app.Use(logger.New())
 	router.InitRouter(app)
-	zap.L().Fatal("fiber启动失败：", zap.Error(app.Listen(
-		config.SystemConfig.HttpAddress.Host+":"+config.SystemConfig.HttpAddress.Port)))
+	zap.L().Fatal("fiber启动失败: ", zap.Error(app.Listen(
+		config.System.HttpAddress.Host+":"+config.System.HttpAddress.Port)))
 }

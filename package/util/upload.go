@@ -16,14 +16,14 @@ import (
 )
 
 func UploadVideo(file []byte, fileName string) (string, string, error) {
-	err := os.MkdirAll(config.SystemConfig.HttpAddress.VideoAddress, os.ModePerm)
+	err := os.MkdirAll(config.System.HttpAddress.VideoAddress, os.ModePerm)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return "", "", err
 	}
 	// 还得有个变量是宿主机ip
-	path := "http://" + config.SystemConfig.MyIP
-	outputFilePath := filepath.Join(config.SystemConfig.HttpAddress.VideoAddress, fileName)
+	path := "http://" + config.System.MyIP
+	outputFilePath := filepath.Join(config.System.HttpAddress.VideoAddress, fileName)
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -39,7 +39,7 @@ func UploadVideo(file []byte, fileName string) (string, string, error) {
 	videoURL := path + "/video/" + fileName
 	err = GetVideoFrame(outputFilePath, fileName)
 	if err != nil {
-		return videoURL, config.SystemConfig.HttpAddress.DefaultCoverURL, nil
+		return videoURL, config.System.HttpAddress.DefaultCoverURL, nil
 	}
 	return videoURL, path + "/image/" + fileName + ".jpeg", nil
 }
@@ -62,13 +62,13 @@ func GetVideoFrame(outputFilePath, fileName string) error {
 		return err
 	}
 	// 创建图片文件夹
-	err = os.MkdirAll(config.SystemConfig.HttpAddress.ImageAddress, os.ModePerm)
+	err = os.MkdirAll(config.System.HttpAddress.ImageAddress, os.ModePerm)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
 	// 保存
-	imagPath := config.SystemConfig.HttpAddress.ImageAddress +"/"+ fileName + ".jpeg"
+	imagPath := config.System.HttpAddress.ImageAddress + "/" + fileName + ".jpeg"
 	err = imaging.Save(img, imagPath)
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -79,9 +79,9 @@ func GetVideoFrame(outputFilePath, fileName string) error {
 
 func UploadToOSS(fileName, filePath string) (string, error) {
 	putPolicy := storage.PutPolicy{
-		Scope: config.SystemConfig.Bucket,
+		Scope: config.System.Qiniu.Bucket,
 	}
-	mac := qbox.NewMac(config.SystemConfig.AccessKey, config.SystemConfig.SecretKey)
+	mac := qbox.NewMac(config.System.Qiniu.AccessKey, config.System.Qiniu.SecretKey)
 	upToken := putPolicy.UploadToken(mac)
 
 	cfg := storage.Config{}
@@ -108,5 +108,5 @@ func UploadToOSS(fileName, filePath string) (string, error) {
 	}
 	// 这里好像是返回了CND 因为那个域名是开启了CDN的 都能访问
 	deadline := time.Now().Add(time.Second * 3600).Unix() //1小时有效期
-	return storage.MakePrivateURL(mac, config.SystemConfig.OssDomain, ret.Key, deadline), nil
+	return storage.MakePrivateURL(mac, config.System.Qiniu.OssDomain, ret.Key, deadline), nil
 }

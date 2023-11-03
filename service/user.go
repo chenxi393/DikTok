@@ -8,7 +8,6 @@ import (
 	"douyin/package/util"
 	"douyin/response"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -31,23 +30,21 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 	if len(service.Username) <= 0 || len(service.Username) > 32 {
 		return nil, errors.New(constant.BadParaRequest)
 	}
-	// TODO 复杂度判断 可以使用正则 记得去除常数
 	if len(service.Password) < 6 || len(service.Password) > 32 {
-		return nil, fmt.Errorf("密码长度错误")
+		return nil, errors.New(constant.SecretFormatError)
 	}
-	if service.Password == "123456" {
-		return nil, fmt.Errorf("密码太简单")
+	// TODO 复杂度判断 可以使用正则 记得去除常数
+	if service.Password == constant.EasySecret {
+		return nil, errors.New(constant.SecretFormatEasy)
 	}
-	//先判断用户存不存在
+	//先判断用户存不存在 有唯一索引 其实可以不判断
 	_, err := database.SelectUserByName(service.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, err
 	}
 	if err != gorm.ErrRecordNotFound {
-		err := fmt.Errorf("用户名已被注册")
-		zap.L().Info(err.Error())
-		return nil, err
+		return nil, errors.New(constant.UserDepulicate)
 	}
 	// 对密码进行加密并存储
 	encryptedPassword := util.BcryptHash(service.Password)
@@ -106,13 +103,11 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 	} else {
 		logintimesInt, _ = strconv.Atoi(logintimes)
 		if logintimesInt >= constant.MaxLoginTime {
-			err := fmt.Errorf("登录次数过多 5分钟后再试")
-			zap.L().Error(err.Error())
-			return nil, err
+			return nil, errors.New(constant.FrequentLogin)
 		}
 	}
 	// 无论登录成功还是失败 这里redis记录的数据都+1
-	cache.UserRedisClient.Set(loginKey, logintimesInt+1, constant.MaxloginInernal)
+	go cache.UserRedisClient.Set(loginKey, logintimesInt+1, constant.MaxloginInernal)
 	//先判断用户存不存在
 	user, err := database.SelectUserByName(service.Username)
 	if err != nil {
@@ -120,14 +115,10 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 		return nil, err
 	}
 	if user.ID == 0 {
-		err := fmt.Errorf("用户不存在")
-		zap.L().Error(err.Error())
-		return nil, err
+		return nil, errors.New(constant.UserNoExist)
 	}
 	if !util.BcryptCheck(service.Password, user.Password) {
-		err := fmt.Errorf("用户密码错误")
-		zap.L().Error(err.Error())
-		return nil, err
+		return nil, errors.New(constant.SecretError)
 	}
 	// 签发token
 	token, err := util.SignToken(user.ID)
@@ -181,8 +172,8 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 
 func (service *UserService) InfoService(loginUserID uint64) (*response.InfoResponse, error) {
 	// 使用布隆过滤器判断用户ID是否存在
-	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(loginUserID, 10)) {
-		err := fmt.Errorf("布隆过滤器拦截 用户ID不存在")
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+		err := errors.New(constant.BloomFilterRejected)
 		zap.L().Sugar().Error(err)
 		return nil, err
 	}
@@ -200,14 +191,16 @@ func (service *UserService) InfoService(loginUserID uint64) (*response.InfoRespo
 		go func() {
 			err = cache.SetUserInfo(user)
 			if err != nil {
-				zap.L().Error("设置缓存失败", zap.Error(err))
+				zap.L().Error(constant.SetCacheError, zap.Error(err))
 			}
 		}()
 	}
 	// 判断是否是关注用户
 	var isFollow bool
-	// 自己查自己 当然是关注了的
-	if loginUserID == service.UserID {
+	// 用户未登录
+	if loginUserID == 0 {
+		isFollow = false
+	} else if loginUserID == service.UserID { // 自己查自己 当然是关注了的
 		isFollow = true
 	} else {
 		isFollow, err = cache.IsFollow(loginUserID, service.UserID)

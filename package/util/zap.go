@@ -9,7 +9,7 @@ import (
 func InitZap() {
 	// 先打印到控制台吧
 	var logger *zap.Logger
-	if config.SystemConfig.Mode == "debug" {
+	if config.System.Mode == "debug" {
 		logger, _ = zap.NewDevelopment()
 	} else {
 		logger, _ = zap.NewProduction()

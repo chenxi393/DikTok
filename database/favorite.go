@@ -16,7 +16,7 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 		VideoID: videoID,
 	}
 	// 一般输入流程 在是事务里 使用tx而不是db 返回任何错误都会回滚事务
-	return global_db.Transaction(func(tx *gorm.DB) error {
+	return constant.DB.Transaction(func(tx *gorm.DB) error {
 		// 先看有没有点赞过
 		var isFavorite int64
 		err := tx.Model(&model.Favorite{}).Where("user_id = ? AND video_id = ?", userID, videoID).Count(&isFavorite).Error
@@ -70,6 +70,6 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 
 func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := global_db.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error
 	return res, err
 }

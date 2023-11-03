@@ -16,10 +16,10 @@ func InitMQ() {
 	var err error
 	// Create a new RabbitMQ connection.
 	connRabbitMQ, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/",
-		config.SystemConfig.MQ.User,
-		config.SystemConfig.MQ.Password,
-		config.SystemConfig.MQ.Host,
-		config.SystemConfig.MQ.Port))
+		config.System.MQ.User,
+		config.System.MQ.Password,
+		config.System.MQ.Host,
+		config.System.MQ.Port))
 	if err != nil {
 		zap.L().Fatal("连接rabbitMQ 失败", zap.Error(err))
 	}

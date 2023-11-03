@@ -22,10 +22,10 @@ var VideoIDBloomFilter *bloom.BloomFilter
 func InitRedis() {
 	// userRedis 连接
 	UserRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.SystemConfig.UserRedis.Host, config.SystemConfig.UserRedis.Port),
-		Password: config.SystemConfig.UserRedis.Password,
-		DB:       config.SystemConfig.UserRedis.Database,
-		PoolSize: config.SystemConfig.UserRedis.PoolSize, //每个CPU最大连接数
+		Addr:     fmt.Sprintf("%s:%s", config.System.UserRedis.Host, config.System.UserRedis.Port),
+		Password: config.System.UserRedis.Password,
+		DB:       config.System.UserRedis.Database,
+		PoolSize: config.System.UserRedis.PoolSize, //每个CPU最大连接数
 	})
 	_, err := UserRedisClient.Ping().Result()
 	if err != nil {
@@ -33,10 +33,10 @@ func InitRedis() {
 	}
 	// videoRedis 连接
 	VideoRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.SystemConfig.VideoRedis.Host, config.SystemConfig.VideoRedis.Port),
-		Password: config.SystemConfig.VideoRedis.Password,
-		DB:       config.SystemConfig.VideoRedis.Database,
-		PoolSize: config.SystemConfig.VideoRedis.PoolSize, //每个CPU最大连接数
+		Addr:     fmt.Sprintf("%s:%s", config.System.VideoRedis.Host, config.System.VideoRedis.Port),
+		Password: config.System.VideoRedis.Password,
+		DB:       config.System.VideoRedis.Database,
+		PoolSize: config.System.VideoRedis.PoolSize, //每个CPU最大连接数
 	})
 	_, err = VideoRedisClient.Ping().Result()
 	if err != nil {
@@ -44,10 +44,10 @@ func InitRedis() {
 	}
 	// videoRedis 连接
 	CommentRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.SystemConfig.CommentRedis.Host, config.SystemConfig.CommentRedis.Port),
-		Password: config.SystemConfig.CommentRedis.Password,
-		DB:       config.SystemConfig.CommentRedis.Database,
-		PoolSize: config.SystemConfig.CommentRedis.PoolSize, //每个CPU最大连接数
+		Addr:     fmt.Sprintf("%s:%s", config.System.CommentRedis.Host, config.System.CommentRedis.Port),
+		Password: config.System.CommentRedis.Password,
+		DB:       config.System.CommentRedis.Database,
+		PoolSize: config.System.CommentRedis.PoolSize, //每个CPU最大连接数
 	})
 	_, err = VideoRedisClient.Ping().Result()
 	if err != nil {

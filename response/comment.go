@@ -23,7 +23,7 @@ type CommentListResponse struct {
 type Comment struct {
 	// 评论内容
 	Content string `json:"content"`
-	// 评论发布日期，格式 mm-dd
+	// 评论发布日期，格式 yyyy-mm-dd
 	CreateDate string `json:"create_date"`
 	// 评论id
 	ID uint64 `json:"id"`
@@ -36,7 +36,7 @@ func BuildComment(comment *model.Comment, user *model.User, isFollow bool) *Comm
 		Content:    comment.Content,
 		// 这个评论的时间客户端哈好像可以到毫秒2006-01-02 15:04:05.999
 		// 但是感觉每必要 日期就够了 
-		CreateDate: comment.CreatedTime.Format("01-02"),
+		CreateDate: comment.CreatedTime.Format("2006-01-02 15:04"),
 		ID:         comment.ID,
 		User:       *UserInfo(user, isFollow),
 	}

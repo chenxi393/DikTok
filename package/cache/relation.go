@@ -36,7 +36,8 @@ func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 	pp := UserRedisClient.Pipeline()
 	pp.SAdd(key, followIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
-	return UserRedisClient.SAdd(key, followIDStrings).Err()
+	_, err := pp.Exec()
+	return err
 }
 
 func IsFollow(loginUserID, userID uint64) (bool, error) {
@@ -58,7 +59,7 @@ func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 		return nil, err
 	}
 	if len(idSet) == 0 {
-		zap.L().Error(redis.Nil.Error())
+		zap.L().Info(redis.Nil.Error())
 		return nil, redis.Nil
 	}
 	res := make([]uint64, 0, len(idSet))

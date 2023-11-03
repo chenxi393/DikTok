@@ -20,5 +20,5 @@ type FriendResponse struct {
 type FriendUser struct {
 	User
 	Message string `json:"message"`
-	MsgType int64  `json:"msgType"`
+	MsgType int  `json:"msgType"`
 }

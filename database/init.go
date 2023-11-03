@@ -14,38 +14,37 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
-var global_db *gorm.DB
-
-func InitMysql() {
+func InitMySQL() {
 	var ormLogger logger.Interface
-	if config.SystemConfig.Mode == "debug" { //根据配置文件设置不同的日志等级
+	//根据配置文件设置不同的日志等级
+	if config.System.Mode == constant.DebugMode {
 		ormLogger = logger.Default.LogMode(logger.Info) // Info应该是最低的等级 都会打印
 	} else { // default 的慢sql是200ms
 		ormLogger = logger.Default // 进去看 这里是Warn级别的
 	}
 	// dsn := "用户名:密码@tcp(地址:端口)/数据库名"
 	masterDNS := strings.Join([]string{
-		config.SystemConfig.MysqlMaster.UserName,
+		config.System.MysqlMaster.UserName,
 		":",
-		config.SystemConfig.MysqlMaster.Password,
+		config.System.MysqlMaster.Password,
 		"@tcp(",
-		config.SystemConfig.MysqlMaster.Host,
+		config.System.MysqlMaster.Host,
 		":",
-		config.SystemConfig.MysqlMaster.Port,
+		config.System.MysqlMaster.Port,
 		")/",
-		config.SystemConfig.MysqlMaster.Database,
+		config.System.MysqlMaster.Database,
 		"?charset=utf8mb4&parseTime=True&loc=Local"}, "",
 	)
 	slaveDNS := strings.Join([]string{
-		config.SystemConfig.MysqlSlave.UserName,
+		config.System.MysqlSlave.UserName,
 		":",
-		config.SystemConfig.MysqlSlave.Password,
+		config.System.MysqlSlave.Password,
 		"@tcp(",
-		config.SystemConfig.MysqlSlave.Host,
+		config.System.MysqlSlave.Host,
 		":",
-		config.SystemConfig.MysqlSlave.Port,
+		config.System.MysqlSlave.Port,
 		")/",
-		config.SystemConfig.MysqlSlave.Database,
+		config.System.MysqlSlave.Database,
 		"?charset=utf8mb4&parseTime=True&loc=Local"}, "",
 	)
 
@@ -64,9 +63,8 @@ func InitMysql() {
 		zap.L().Fatal("MySQL 连接失败", zap.Error(err))
 	}
 	sqlDB, _ := db.DB()
-	sqlDB.SetMaxOpenConns(config.SystemConfig.MysqlMaster.MaxOpenConn) // 设置数据库最大连接数
-	sqlDB.SetMaxIdleConns(config.SystemConfig.MysqlMaster.MaxIdleConn) // 设置上数据库最大闲置连接数
-	// point:读写分离
+	sqlDB.SetMaxOpenConns(config.System.MysqlMaster.MaxOpenConn) // 设置数据库最大连接数
+	sqlDB.SetMaxIdleConns(config.System.MysqlMaster.MaxIdleConn) // 设置上数据库最大闲置连接数
 	// 查询在从库完成，其他操作如写入update在主库操作
 	err = db.Use(dbresolver.Register(dbresolver.Config{
 		//Sources:  []gorm.Dialector{mysql.Open(masterDNS)}, // update使用 这里应该是默认连接主库
@@ -80,15 +78,13 @@ func InitMysql() {
 		zap.L().Error("MySQL 读写分离创建失败", zap.Error(err))
 	}
 	// 连接池什么的不懂 先放着
-	global_db = db
 	constant.DB = db
-	// 自动建表 企业一般不用 这里为了方便 就不手动建表了
 	//migration()
 }
 
 // 企业一般不用自动建表 记得自己在主库里建表
 func migration() {
-	err := global_db.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
+	err := constant.DB.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 		&model.User{},
 		&model.Follow{},
 		&model.Video{},
@@ -99,8 +95,4 @@ func migration() {
 	if err != nil {
 		zap.L().Fatal("数据库migration失败", zap.Error(err))
 	}
-}
-
-func GetGloabDB() *gorm.DB {
-	return global_db
 }

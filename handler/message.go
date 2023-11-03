@@ -31,7 +31,7 @@ func MessageAction(c *fiber.Ctx) error {
 	}
 	res := response.CommonResponse{
 		StatusCode: response.Success,
-		StatusMsg:  "发送成功",
+		StatusMsg:  response.SendSuccess,
 	}
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
