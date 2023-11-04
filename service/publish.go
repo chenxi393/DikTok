@@ -9,6 +9,7 @@ import (
 	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
+	"os"
 	"strconv"
 	"time"
 
@@ -22,6 +23,8 @@ type PublisService struct {
 	Token string `form:"token"`
 	// 视频标题
 	Title string `form:"title"`
+	// 新增 topic
+	Topic string `form:"topic"`
 }
 
 type PublishListService struct {
@@ -32,16 +35,24 @@ type PublishListService struct {
 }
 
 func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*response.CommonResponse, error) {
+	// 生成唯一文件名
 	u1, err := uuid.NewV4()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
 	fileName := u1.String() + "." + "mp4"
-	// 这里暂时上传到本地
+	// 先上传到本地 上传到对象存储之后再删除
 	playURL, coverURL, err := util.UploadVideo(buf.Bytes(), fileName)
 	if err != nil {
 		return nil, err
+	}
+	switch service.Topic {
+	case constant.TopicSport:
+	case constant.TopicGame:
+	case constant.TopicMusic:
+	default:
+		service.Topic = constant.TopicDefualt + service.Topic
 	}
 	video_id, err := database.CreateVideo(&model.Video{
 		PublishTime:   time.Now(),
@@ -51,6 +62,7 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		FavoriteCount: 0,
 		CommentCount:  0,
 		Title:         service.Title,
+		Topic:         service.Topic,
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -60,19 +72,22 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 	cache.VideoIDBloomFilter.AddString(strconv.FormatUint(video_id, 10))
 	// 异步上传到对象存储
 	go func() {
-		playURL, err := util.UploadToOSS(fileName, config.System.HttpAddress.VideoAddress+"/"+fileName)
+		localVideoPath := config.System.HttpAddress.VideoAddress + "/" + fileName
+		playURL, err := util.UploadToOSS(fileName, localVideoPath)
 		if err != nil {
-			// 这里要不要重试？？
 			zap.L().Error(err.Error())
+			return
 		}
-		if coverURL != config.System.HttpAddress.DefaultCoverURL {
-			coverFileName := fileName + ".jpeg"
-			coverURL, err = util.UploadToOSS(coverFileName, config.System.HttpAddress.ImageAddress+"/"+coverFileName)
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-		}
+		// 这里直接使用七牛云的视频截帧服务 不使用FFmenpg
+		// if coverURL != config.System.HttpAddress.DefaultCoverURL {
+		// 	coverFileName := fileName + ".jpg"
+		// 	coverURL, err = util.UploadToOSS(coverFileName, config.System.HttpAddress.ImageAddress+"/"+coverFileName)
+		// 	if err != nil {
+		// 		zap.L().Error(err.Error())
+		// 	}
+		// }
 		// 先更新数据库 再更新缓存
+		coverURL = config.System.Qiniu.OssDomain + u1.String() + "." + "jpg"
 		err = database.UpdateVideoURL(playURL, coverURL, video_id)
 		if err != nil {
 			zap.L().Error(err.Error())
@@ -86,7 +101,11 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 			return
 		}
 		cache.SetVideoInfo(&video)
-		// TODO 记得删除本地的视频和图片
+		// 删除本地的视频
+		err = os.Remove(localVideoPath)
+		if err != nil {
+			zap.L().Error(err.Error())
+		}
 	}()
 	return &response.CommonResponse{
 		StatusCode: response.Success,

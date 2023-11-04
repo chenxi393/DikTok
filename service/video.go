@@ -15,13 +15,21 @@ type FeedService struct {
 	LatestTime int64 `query:"latest_time"`
 	// 用户登录状态下设置
 	Token string `query:"token"`
+	// 新增topic
+	Topic string `query:"topic"`
 }
 
 // userID =0 表示未登录
 func (service *FeedService) GetFeed(userID uint64) (*response.FeedResponse, error) {
 	// TODO: 已登录可以有一个用户画像 做一个视频推荐功能
 	// 直接去数据库里查出30个数据  LatestTime 限制返回视频的最晚时间
-	videos, err := database.SelectFeedVideoList(constant.MaxVideoNumber, service.LatestTime)
+	var videos []response.VideoData
+	var err error
+	if service.Topic == "" {
+		videos, err = database.SelectFeedVideoList(constant.MaxVideoNumber, service.LatestTime)
+	} else {
+		videos, err = database.SelectFeedVideoByTopic(constant.MaxVideoNumber, service.LatestTime, service.Topic)
+	}
 	// FIXME 这里视频数有可能为0
 	if err != nil {
 		zap.L().Error(err.Error())

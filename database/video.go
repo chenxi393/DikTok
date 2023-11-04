@@ -76,9 +76,34 @@ func SelectFeedVideoList(numberVideos int, lastTime int64) ([]response.VideoData
     video.favorite_count as vfavorite_count,
     video.comment_count,
     video.title,
-	video.publish_time`).Joins(
+	video.publish_time,
+	video.topic`).Joins(
 		"right join video on video.author_id = user.id").Where("video.publish_time < ? ",
 		time.UnixMilli(lastTime)).Order("video.publish_time desc").Limit(numberVideos).Scan(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func SelectFeedVideoByTopic(numberVideos int, lastTime int64, topic string) ([]response.VideoData, error) {
+	if lastTime == 0 {
+		lastTime = time.Now().UnixMilli()
+	}
+	// TODO 下面的时间要用小于 可以考虑减1 用小于等于（为了使用索引？？）
+	res := make([]response.VideoData, 0, 30)
+	// 这里使用外连接 双表联查 可以考虑改多次单表 联查太麻烦
+	err := constant.DB.Model(&model.User{}).Select(`user.*,
+    video.id as vid,
+    video.play_url,
+    video.cover_url,
+    video.favorite_count as vfavorite_count,
+    video.comment_count,
+    video.title,
+	video.publish_time,
+	video.topic`).Joins(
+		"right join video on video.author_id = user.id").Where("video.publish_time < ? and video.topic like ?",
+		time.UnixMilli(lastTime), topic+"%").Order("video.publish_time desc").Limit(numberVideos).Scan(&res).Error
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +118,6 @@ func SelectFeedVideoList(numberVideos int, lastTime int64) ([]response.VideoData
 
 func SearchVideoByKeyword(keyword string) ([]model.Video, error) {
 	var videos []model.Video
-	err := constant.DB.Raw("select * from video where match(title) against(?)", keyword).Scan(&videos).Error
+	err := constant.DB.Raw("select * from video where match(title,topic) against(?)", keyword).Scan(&videos).Error
 	return videos, err
 }

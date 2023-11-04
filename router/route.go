@@ -24,14 +24,15 @@ func InitRouter(app *fiber.App) {
 		}
 		api.Get("/feed/", handler.Feed)
 		user := api.Group("/user")
-		user.Get("/", handler.UserInfo) // 这里是用来看个人主页的需要鉴权
+		user.Get("/", handler.UserInfo)
 		{
 			user.Post("/register/", handler.UserRegister)
 			user.Post("/login/", handler.UserLogin)
 		}
 		publish := api.Group("/publish")
 		{
-			publish.Post("/action/", util.Authentication, handler.PublishAction)
+			// action token放在body端 不适用中间件鉴权
+			publish.Post("/action/", handler.PublishAction)
 			publish.Get("/list/", handler.ListPublishedVideo)
 		}
 		favorite := api.Group("/favorite")

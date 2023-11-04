@@ -64,7 +64,7 @@ func (service *SearchService) SearchVideo(userID uint64) (*response.VideoListRes
 		followingMap[i] = struct{}{}
 	}
 	// 把自己放进去
-	followingMap[userID]=struct{}{}
+	followingMap[userID] = struct{}{}
 	usersMap := make(map[uint64]*model.User, len(usersData))
 	for i, id := range usersData {
 		usersMap[id.ID] = &usersData[i]
@@ -105,6 +105,7 @@ func (service *SearchService) SearchVideo(userID uint64) (*response.VideoListRes
 				IsFavorite:    false,
 				PlayURL:       video.PlayURL,
 				Title:         video.Title,
+				PublishTime:   video.PublishTime.Format("2006-01-02 15:04"),
 			}
 			if _, ok := favoriteMap[video.ID]; ok {
 				vv.IsFavorite = true

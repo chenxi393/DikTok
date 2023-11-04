@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
@@ -23,7 +22,15 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userClaim, err := util.ParseToken(publishService.Token)
+	if err != nil {
+		zap.L().Error(err.Error())
+		res := response.CommonResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  response.WrongToken,
+		}
+		return c.JSON(res)
+	}
 	// TODO 需要检查文件后缀 还是文件实际的内容是不是mp4
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
@@ -55,7 +62,7 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	res, err := publishService.PublishAction(userID, buf)
+	res, err := publishService.PublishAction(userClaim.UserID, buf)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{

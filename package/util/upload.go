@@ -37,13 +37,11 @@ func UploadVideo(file []byte, fileName string) (string, string, error) {
 	}
 	zap.L().Info(fileName + "已成功写入文件夹")
 	videoURL := path + "/video/" + fileName
-	err = GetVideoFrame(outputFilePath, fileName)
-	if err != nil {
-		return videoURL, config.System.HttpAddress.DefaultCoverURL, nil
-	}
-	return videoURL, path + "/image/" + fileName + ".jpeg", nil
+	return videoURL, config.System.HttpAddress.DefaultCoverURL, nil
+
 }
 
+// 使用ffmpeg deprecated 已弃用
 func GetVideoFrame(outputFilePath, fileName string) error {
 	// 提取视频的第一帧
 	picBuffer := bytes.NewBuffer(nil)
@@ -68,7 +66,7 @@ func GetVideoFrame(outputFilePath, fileName string) error {
 		return err
 	}
 	// 保存
-	imagPath := config.System.HttpAddress.ImageAddress + "/" + fileName + ".jpeg"
+	imagPath := config.System.HttpAddress.ImageAddress + "/" + fileName + ".jpg"
 	err = imaging.Save(img, imagPath)
 	if err != nil {
 		zap.L().Error(err.Error())

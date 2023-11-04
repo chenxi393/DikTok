@@ -32,6 +32,8 @@ type Video struct {
 	Title string `json:"title"`
 	// 新增返回视频发布时间
 	PublishTime string `json:"publish_time"`
+	// 新增视频话题
+	Topic string `json:"topic"`
 }
 
 type VideoData struct {
@@ -44,6 +46,7 @@ type VideoData struct {
 	Title              string `gorm:"column:title" json:"title"`
 	IsFavorite         bool   `json:"is_favorite"`
 	PublishTime        time.Time
+	Topic              string // 11.3 新增字段
 }
 
 type VideoListResponse struct {
@@ -67,6 +70,7 @@ func VideoDataInfo(data []VideoData) []Video {
 			CommentCount:  item.CommentCount,
 			Title:         item.Title,
 			PublishTime:   item.PublishTime.Format("2006-01-02 15:04"),
+			Topic:         item.Topic,
 		}
 		items = append(items, v)
 	}

@@ -112,7 +112,7 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 	user, err := database.SelectUserByName(service.Username)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
-		return nil, err
+		return nil, errors.New(constant.UserNoExist)
 	}
 	if user.ID == 0 {
 		return nil, errors.New(constant.UserNoExist)

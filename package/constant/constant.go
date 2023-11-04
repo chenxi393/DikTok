@@ -16,6 +16,12 @@ const (
 	EasySecret         = "123456"
 	SnoyFlakeStartTime = 1698775594477
 	MaxVideoNumber     = 30
+
+	// topic字段 前后端都是写死的目前
+	TopicDefualt = "现在短视频非常的流行热门"
+	TopicSport   = "体育"
+	TopicGame    = "游戏"
+	TopicMusic   = "音乐"
 )
 
 // redis 的key
