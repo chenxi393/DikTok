@@ -3,7 +3,8 @@ package router
 import (
 	"douyin/handler"
 	"douyin/package/util"
-
+	"douyin/package/ws"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -52,10 +53,18 @@ func InitRouter(app *fiber.App) {
 			relation.Get("/follower/list/", handler.FollowerList)
 			relation.Get("/friend/list/", util.Authentication, handler.FriendList)
 		}
-		messgae := api.Group("/message")
+		messgae := api.Group("/message", util.Authentication)
 		{
-			messgae.Post("/action/", util.Authentication, handler.MessageAction)
-			messgae.Get("/chat/", util.Authentication, handler.MessageChat)
+			messgae.Post("/action/", handler.MessageAction)
+			messgae.Get("/chat/", handler.MessageChat)
 		}
+		// 使用websocket替换http每秒轮询
+		messgae.Use("/ws", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
+		messgae.Get("/ws", websocket.New(ws.HandleWebSocket()))
 	}
 }

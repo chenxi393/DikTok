@@ -62,7 +62,7 @@ func (service *RelationService) FollowAction(userID uint64) error {
 
 func (service *RelationService) UnFollowAction(userID uint64) error {
 	if userID == service.ToUserID {
-		err := errors.New(constant.UnFollowError)
+		err := errors.New(constant.CantNotUnFollowSelf)
 		zap.L().Sugar().Error(err)
 		return err
 	}

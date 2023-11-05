@@ -11,6 +11,7 @@ services:
       - mysql-master
       - mysql-slave
       - redis
+      - dev-rabbitmq
     #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
     #tty: true    #分配一个伪终端 与-t类似    docker run -dit
     networks:

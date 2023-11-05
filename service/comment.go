@@ -116,7 +116,7 @@ func (service *CommentService) CommentList(userID uint64) (*response.CommentList
 	comments, err := cache.GetCommentsByVideoID(service.VideoID)
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		comments, err = database.GetCommentsByVideoID(service.VideoID)
+		comments, err = database.GetCommentsByVideoIDFromMaster(service.VideoID)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 			return nil, err

@@ -6,6 +6,7 @@ import (
 	"douyin/package/constant"
 
 	"gorm.io/gorm"
+	"gorm.io/plugin/dbresolver"
 )
 
 func CommentAdd(com *model.Comment) error {
@@ -65,6 +66,16 @@ func CommentDelete(commentID *string, videoID, userID uint64) (*model.Comment, e
 func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
 	err := constant.DB.Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
+	if err != nil {
+		return nil, err
+	}
+	return videos, nil
+}
+
+
+func GetCommentsByVideoIDFromMaster(videoID uint64) ([]*model.Comment, error) {
+	videos := make([]*model.Comment, 0)
+	err := constant.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}

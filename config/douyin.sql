@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 8.1.0, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.2.0, for Linux (x86_64)
 --
 -- Host: localhost    Database: douyin
 -- ------------------------------------------------------
--- Server version	8.1.0
+-- Server version	8.2.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -37,10 +37,19 @@ CREATE TABLE `comment` (
   `content` varchar(255) NOT NULL,
   `created_time` datetime(3) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_comment_video_id` (`video_id`),
-  KEY `idx_comment_user_id` (`user_id`)
+  KEY `idx_comment_user_id` (`user_id`),
+  KEY `idx_comment_video_id` (`video_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `comment`
+--
+
+LOCK TABLES `comment` WRITE;
+/*!40000 ALTER TABLE `comment` DISABLE KEYS */;
+/*!40000 ALTER TABLE `comment` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `favorite`
@@ -57,6 +66,15 @@ CREATE TABLE `favorite` (
   UNIQUE KEY `idx_user_video` (`user_id`,`video_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `favorite`
+--
+
+LOCK TABLES `favorite` WRITE;
+/*!40000 ALTER TABLE `favorite` DISABLE KEYS */;
+/*!40000 ALTER TABLE `favorite` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `follow`
@@ -76,6 +94,15 @@ CREATE TABLE `follow` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `follow`
+--
+
+LOCK TABLES `follow` WRITE;
+/*!40000 ALTER TABLE `follow` DISABLE KEYS */;
+/*!40000 ALTER TABLE `follow` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `message`
 --
 
@@ -89,10 +116,19 @@ CREATE TABLE `message` (
   `from_user_id` bigint unsigned NOT NULL,
   `to_user_id` bigint unsigned NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_user_touser` (`from_user_id`,`to_user_id`),
-  KEY `idx_message_create_time` (`create_time`)
+  KEY `idx_message_create_time` (`create_time`),
+  KEY `idx_user_touser` (`from_user_id`,`to_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `message`
+--
+
+LOCK TABLES `message` WRITE;
+/*!40000 ALTER TABLE `message` DISABLE KEYS */;
+/*!40000 ALTER TABLE `message` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `user`
@@ -119,6 +155,15 @@ CREATE TABLE `user` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Dumping data for table `user`
+--
+
+LOCK TABLES `user` WRITE;
+/*!40000 ALTER TABLE `user` DISABLE KEYS */;
+/*!40000 ALTER TABLE `user` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `video`
 --
 
@@ -128,17 +173,28 @@ DROP TABLE IF EXISTS `video`;
 CREATE TABLE `video` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `author_id` bigint unsigned NOT NULL,
-  `play_url` varchar(777) NOT NULL,
-  `cover_url` varchar(777) NOT NULL,
+  `play_url` varchar(256) NOT NULL,
+  `cover_url` varchar(256) NOT NULL,
   `title` varchar(63) NOT NULL,
   `publish_time` datetime(3) NOT NULL,
   `favorite_count` bigint NOT NULL DEFAULT '0',
   `comment_count` bigint NOT NULL DEFAULT '0',
+  `topic` varchar(63) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_video_author_id` (`author_id`),
-  KEY `idx_video_publish_time` (`publish_time`)
+  KEY `idx_video_publish_time` (`publish_time`),
+  FULLTEXT KEY `idx_title_topic` (`title`,`topic`) /*!50100 WITH PARSER `ngram` */ 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `video`
+--
+
+LOCK TABLES `video` WRITE;
+/*!40000 ALTER TABLE `video` DISABLE KEYS */;
+/*!40000 ALTER TABLE `video` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -149,4 +205,4 @@ CREATE TABLE `video` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-10-31  4:59:42
+-- Dump completed on 2023-11-05  6:25:35

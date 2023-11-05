@@ -53,7 +53,6 @@ func InitRedis() {
 	if err != nil {
 		zap.L().Fatal("comment_redis连接失败", zap.Error(err))
 	}
-	//
 	zap.L().Info("redis连接成功成功")
 
 	initBloomFilter()

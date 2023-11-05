@@ -99,9 +99,10 @@ const (
 	VideoServerBug = "视频缺少作者 服务端bug"
 
 	// relation
-	CantNotFollowSelf = "不能关注自己"
-	FollowError       = "关注失败"
-	UnFollowError     = "取关失败"
-	UnFollowError1    = "不能取关未关注的人"
-	DefaultMessage    = "快来开启和好友的第一次对话吧！！！"
+	CantNotFollowSelf   = "不能关注自己"
+	FollowError         = "关注失败"
+	UnFollowError       = "取关失败"
+	CantNotUnFollowSelf = "不能取关自己"
+	UnFollowError1      = "不能取关未关注的人"
+	DefaultMessage      = "快来开启和好友的第一次对话吧！！！"
 )
