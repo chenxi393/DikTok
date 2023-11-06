@@ -30,6 +30,30 @@ var (
 		11: "https://img2.wallspic.com/previews/5/4/6/4/7/174645/174645-hong_hu_li-fu_ke_si-bei_ji_hu-xiao_lu-lu_de_dong_wu-500x.jpg",
 		12: "https://img3.wallspic.com/previews/2/3/6/4/7/174632/174632-yi_shu-yi_shu_zhan-xian_dai_yi_shu-you_hua-azure-500x.jpg",
 	}
+	signatrues = map[int]string{
+		0: "夜猫子协会常任理事",
+		1:    "赖床锦标赛冠军得主",
+		2:    "深夜搞颜色积极分子",
+		3:    "贫困大赛形象代言人",
+		4:    "魔仙堡废话冠军",
+		5:    "迪士尼在逃保洁阿姨。",
+		6:    "非官方认证平平无奇说废话小天才",
+		7:    "中央戏精学院教授",
+		8:    "口吐芬芳专业教授",
+		9:    "顶级外卖鉴赏师",
+		10:   "秃头选拔赛形象大使",
+		11:   "互联网冲浪金牌选手",
+		12:   "国家一级退堂鼓选手",
+		13:   "国家一级抬杠运动员",
+		14:   "耳机依赖患者",
+		15:   "宇宙一级潜在鸽王",
+		16:   "退役熬夜选手",
+		17:   "拖延俱乐部顶级VIP",
+		18:   "退役魔法少女",
+		19:   "脆皮鸭文学爱好者",
+		20:   "2023年广东省高考状元老乡",
+		21:   "铠甲勇士赵本山",
+	}
 )
 
 func GenerateAvatar() string {
@@ -38,4 +62,8 @@ func GenerateAvatar() string {
 
 func GenerateImage() string {
 	return backgrounds[rand.Intn(len(backgrounds))]
+}
+
+func GenerateSignatrue() string {
+	return signatrues[rand.Intn(len(signatrues))]
 }

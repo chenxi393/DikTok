@@ -53,6 +53,7 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 		Password:        encryptedPassword,
 		Avatar:          util.GenerateAvatar(),
 		BackgroundImage: util.GenerateImage(),
+		Signature:       util.GenerateSignatrue(),
 	}
 	userID, err := database.CreateUser(user)
 	if err != nil {
