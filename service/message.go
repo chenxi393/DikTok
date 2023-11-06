@@ -37,7 +37,7 @@ func (service *MessageService) MessageAction(loginUserID uint64) error {
 		return err
 	}
 	// 给ChatGPT发送消息
-	if service.ToUserID == constant.ChatGPTID {
+	if service.ToUserID == util.ChatGPTID {
 		return util.SendToChatGPT(loginUserID, service.Content)
 	}
 	// 发送的id是不是朋友

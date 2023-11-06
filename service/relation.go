@@ -5,6 +5,7 @@ import (
 	"douyin/package/cache"
 	"douyin/package/constant"
 	"douyin/package/mq"
+	"douyin/package/util"
 	"douyin/response"
 	"errors"
 	"fmt"
@@ -281,7 +282,7 @@ func (service *RelationService) RelationFriendList() (*response.FriendResponse, 
 			friends = append(friends, ff)
 		}
 	}
-	friends = append(friends, constant.ChatGPTID)
+	friends = append(friends, util.ChatGPTID)
 	// 拿好友的信息
 	friendsInfo, err := database.SelectUserListByIDs(friends)
 	if err != nil {

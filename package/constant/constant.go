@@ -17,11 +17,6 @@ const (
 	SnoyFlakeStartTime = 1698775594477
 	MaxVideoNumber     = 30
 
-	// chatgpt
-	ChatGPTAvatar = "http://s2a5yl4lg.hn-bkt.clouddn.com/R.png"
-	ChatGPTName   = "ChatGPT"
-	ChatGPTID     = 1
-
 	// topic字段 前后端都是写死的目前
 	TopicDefualt = "现在短视频非常的流行热门"
 	TopicSport   = "体育"

@@ -65,7 +65,7 @@
 目前暂时的解决办法是：前端等待几毫秒再去请求评论列表
 
 ### 统计代码行数
-```
+```sh
 wc -l `find ./ -name "*.go";find -name "*.yaml"`
 ```
 
@@ -279,6 +279,7 @@ string只能在handler里面有效  若要传参或返回值
 ```sh
 reset slave;
 change master to master_host="192.168.0.100",master_user="syncuser",master_password="sync123456",master_log_file="binlog.000005",master_log_pos=157;
+# 任何不同步了都可以这样做 重置 手动对其两个库的数据 查看主库同步日志 change 然后start slave
 ```
 2. GORM Scan的两个问题 Scan的要求类型是什么，它是如何匹配相应字段的
    * [GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)

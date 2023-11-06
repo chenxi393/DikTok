@@ -49,8 +49,10 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 	// 对密码进行加密并存储
 	encryptedPassword := util.BcryptHash(service.Password)
 	user := &model.User{
-		Username: service.Username,
-		Password: encryptedPassword,
+		Username:        service.Username,
+		Password:        encryptedPassword,
+		Avatar:          util.GenerateAvatar(),
+		BackgroundImage: util.GenerateImage(),
 	}
 	userID, err := database.CreateUser(user)
 	if err != nil {

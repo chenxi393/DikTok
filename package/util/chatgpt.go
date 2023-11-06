@@ -4,13 +4,19 @@ import (
 	"douyin/config"
 	"douyin/database"
 	"douyin/model"
-	"douyin/package/constant"
 	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
 
 	"go.uber.org/zap"
+)
+
+const (
+	// chatgpt
+	ChatGPTAvatar = "http://s2a5yl4lg.hn-bkt.clouddn.com/2022chatgpt.png"
+	ChatGPTName   = "ChatGPT"
+	ChatGPTID     = 1
 )
 
 type ChatGPTReply struct {
@@ -39,7 +45,7 @@ type ChatGPTReply struct {
 
 func SendToChatGPT(userID uint64, content string) error {
 	// 先将消息写入数据库
-	err := database.CreateMessage(userID, constant.ChatGPTID, content)
+	err := database.CreateMessage(userID, ChatGPTID, content)
 	if err != nil {
 		return err
 	}
@@ -69,7 +75,7 @@ func SendToChatGPT(userID uint64, content string) error {
 			zap.L().Error("大模型未回复")
 			return
 		}
-		err = database.CreateMessage(constant.ChatGPTID, userID, replyJSON.Choices[0].Message.Content)
+		err = database.CreateMessage(ChatGPTID, userID, replyJSON.Choices[0].Message.Content)
 		if err != nil {
 			zap.L().Error(err.Error())
 		}
@@ -80,9 +86,9 @@ func SendToChatGPT(userID uint64, content string) error {
 // 将chatgpt注册为用户
 func RegisterChatGPT() {
 	user := &model.User{
-		ID:       constant.ChatGPTID,
-		Username: constant.ChatGPTName,
-		Avatar:   constant.ChatGPTAvatar,
+		ID:       ChatGPTID,
+		Username: ChatGPTName,
+		Avatar:   ChatGPTAvatar,
 	}
 	_, err := database.CreateUser(user)
 	if err != nil {
