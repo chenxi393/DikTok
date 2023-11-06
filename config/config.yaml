@@ -1,6 +1,7 @@
 mode: "debug" # debug 打印详细的日志 其他例如production 打印简略的日志
-jwtSecret: "DYF的DikTok"
-myIP: "10.117.32.47:9999" # 用于用户临时访问视频和图片  设置为自己的主机IP+端口号
+jwtSecret: 
+gptSecret: 
+myIP: # 用于用户临时访问视频和图片  设置为自己的主机IP+端口号
 
 # 七牛云
 qiniu:

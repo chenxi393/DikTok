@@ -58,6 +58,7 @@ type SystemConfig struct {
 	MQ           RabbitMQ   `mapstructure:"rabbitmq"`
 	Mode         string     `mapstructure:"mode"`
 	JwtSecret    string     `mapstructure:"jwtSecret"`
+	GPTSecret    string     `mapstructure:"gptSecret"`
 	MyIP         string     `mapstructure:"myIP"`
 }
 

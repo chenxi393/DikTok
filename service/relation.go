@@ -281,6 +281,7 @@ func (service *RelationService) RelationFriendList() (*response.FriendResponse, 
 			friends = append(friends, ff)
 		}
 	}
+	friends = append(friends, constant.ChatGPTID)
 	// 拿好友的信息
 	friendsInfo, err := database.SelectUserListByIDs(friends)
 	if err != nil {
