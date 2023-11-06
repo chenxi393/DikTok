@@ -104,5 +104,5 @@ const (
 	UnFollowError       = "取关失败"
 	CantNotUnFollowSelf = "不能取关自己"
 	UnFollowError1      = "不能取关未关注的人"
-	DefaultMessage      = "快来开启和好友的第一次对话吧！！！"
+	DefaultMessage      = "开始对话吧"
 )
