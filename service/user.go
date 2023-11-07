@@ -77,12 +77,12 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
-		err = cache.SetFavoriteSet(userID, []uint64{0})
+		err = cache.SetFavoriteSet(userID, []uint64{})
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
 		// 用0值维护 redis key 的存在
-		err = cache.SetFollowUserIDSet(userID, []uint64{0})
+		err = cache.SetFollowUserIDSet(userID, []uint64{})
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
@@ -141,10 +141,6 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 		} else {
-			if len(favoriteIDs) == 0 {
-				// 缓存空值
-				favoriteIDs = append(favoriteIDs, 0)
-			}
 			err = cache.SetFavoriteSet(user.ID, favoriteIDs)
 			if err != nil {
 				zap.L().Sugar().Error(err)
@@ -155,10 +151,6 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 			return
-		}
-		// 0 关注用户加一个数来维持 redis key 的存在
-		if len(followUserIDSet) == 0 {
-			followUserIDSet = append(followUserIDSet, 0)
 		}
 		err = cache.SetFollowUserIDSet(user.ID, followUserIDSet)
 		if err != nil {
@@ -221,10 +213,6 @@ func (service *UserService) InfoService(loginUserID uint64) (*response.InfoRespo
 				if err != nil {
 					zap.L().Error(constant.DatabaseError, zap.Error(err))
 					return
-				}
-				// 0 关注用户加一个数来维持 redis key 的存在
-				if len(followUserIDSet) == 0 {
-					followUserIDSet = append(followUserIDSet, 0)
 				}
 				err = cache.SetFollowUserIDSet(user.ID, followUserIDSet)
 				if err != nil {

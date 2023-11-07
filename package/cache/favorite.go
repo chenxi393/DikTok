@@ -12,7 +12,8 @@ import (
 
 func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
-	favoriteIDStrings := make([]string, 0, len(favoriteIDSet))
+	favoriteIDStrings := make([]string, 1, len(favoriteIDSet)+1)
+	favoriteIDStrings[0] = "0"
 	for i := range favoriteIDSet {
 		favoriteIDStrings = append(favoriteIDStrings, strconv.FormatUint(favoriteIDSet[i], 10))
 	}

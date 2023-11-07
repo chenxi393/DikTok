@@ -15,7 +15,9 @@ import (
 // 数据库里查 也算用了缓存 也没有顺序问题
 func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
-	followIDStrings := make([]string, 0, len(followIDSet))
+	// 初始化的时候 加一个0 维持缓存存在
+	followIDStrings := make([]string, 1, len(followIDSet)+1)
+	followIDStrings[0] = "0"
 	for i := range followIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followIDSet[i], 10))
 	}
@@ -29,7 +31,8 @@ func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 // 设置粉丝信息
 func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 	key := constant.FollowerIDPrefix + strconv.FormatUint(userID, 10)
-	followIDStrings := make([]string, 0, len(followerIDSet))
+	followIDStrings := make([]string, 1, len(followerIDSet)+1)
+	followIDStrings[0] = "0"
 	for i := range followerIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followerIDSet[i], 10))
 	}

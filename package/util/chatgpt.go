@@ -51,7 +51,7 @@ func SendToChatGPT(userID uint64, content string) error {
 	}
 	go func() {
 		url := "https://api.perplexity.ai/chat/completions"
-		payload := strings.NewReader("{\"model\":\"pplx-70b-chat-alpha\",\"messages\":[{\"role\":\"system\",\"content\":\"全部使用中文回复\"},{\"role\":\"user\",\"content\":\"" + content + "\"}]}")
+		payload := strings.NewReader("{\"model\":\"pplx-70b-chat-alpha\",\"messages\":[{\"role\":\"system\",\"content\":\"必须使用中文回复,不超过300个字\"},{\"role\":\"user\",\"content\":\"" + content + "\"}]}")
 		req, _ := http.NewRequest("POST", url, payload)
 
 		req.Header.Add("accept", "application/json")
