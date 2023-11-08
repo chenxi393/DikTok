@@ -87,7 +87,7 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		// 	}
 		// }
 		// 先更新数据库 再更新缓存
-		coverURL = config.System.Qiniu.OssDomain + u1.String() + "." + "jpg"
+		coverURL = config.System.Qiniu.OssDomain + "/" + u1.String() + "." + "jpg"
 		err = database.UpdateVideoURL(playURL, coverURL, video_id)
 		if err != nil {
 			zap.L().Error(err.Error())

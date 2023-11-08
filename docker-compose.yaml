@@ -41,6 +41,7 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
+      - ./config/mysql/douyin.sql:/docker-entrypoint-initdb.d/douyin.sql 
       - ./config/mysql/master.cnf:/etc/my.cnf
       - mysqlMasterData:/var/lib/mysql/
     networks:
@@ -66,6 +67,7 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./config/mysql/slave.sh:/docker-entrypoint-initdb.d/slave.sh
+      - ./config/mysql/douyin.sql:/docker-entrypoint-initdb.d/douyin.sql 
       - ./config/mysql/slave.cnf:/etc/my.cnf
       - mysqlSlaveData:/var/lib/mysql/
     networks:

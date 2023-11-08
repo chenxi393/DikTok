@@ -271,7 +271,7 @@ string只能在handler里面有效  若要传参或返回值
 1. MySQL 主从同步 1032 error
    * [[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)
    * 解决办法就是 查看 日志 插入重复失败 就删除 删除失败就插入 但是为什么会重复插入啊 明明已经插入了 `找到不同步的点` 让他们同步 ？？ 
-   * 查看binlog 但是这个问题老是出现 出现的原因是什么 应该时GORM的自动迁移导致的 
+   * 查看binlog 但是这个问题老是出现 出现的原因是什么 应该是**GORM的自动迁移导致的**
    * [错误复现](https://cloud.tencent.com/developer/article/1564571)
    * show binlog events in 'binlog.000004';
    * 新的错误 ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository

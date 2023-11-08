@@ -75,13 +75,15 @@ func InitMySQL() {
 		TraceResolverMode: true,
 	}))
 	if err != nil {
-		zap.L().Error("MySQL 读写分离创建失败", zap.Error(err))
+		zap.L().Fatal("MySQL 读写分离创建失败", zap.Error(err))
+		// 主从创建失败 此时不应该写入数据 应该让容器重启的 否则只会写入主库 导致主从不同步
 	}
 	// 连接池什么的不懂 先放着
 	constant.DB = db
 	//migration()
 }
 
+// 彻底弃用自动建表
 // 企业一般不用自动建表 记得自己在主库里建表
 func migration() {
 	err := constant.DB.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
