@@ -4,6 +4,7 @@ import (
 	"douyin/config"
 	"douyin/database"
 	"douyin/package/cache"
+	"douyin/package/llm"
 	"douyin/package/mq"
 	"douyin/package/util"
 	"douyin/router"
@@ -20,7 +21,7 @@ func main() {
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitMQ()
-	util.RegisterChatGPT()
+	llm.RegisterChatGPT()
 	// 客户端文件超过30MB 返回413
 	app := fiber.New(fiber.Config{
 		BodyLimit: 30 * 1024 * 1024,

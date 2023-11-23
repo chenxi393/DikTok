@@ -14,8 +14,11 @@ const (
 	UserID             = "userID"
 	DebugMode          = "debug"
 	EasySecret         = "123456"
+	MP4Suffix          = ".mp4"
 	SnoyFlakeStartTime = 1698775594477
 	MaxVideoNumber     = 30
+	LockTime           = 200 // 200ms 以毫秒为单位
+	RetryTime          = 20
 
 	// topic字段 前后端都是写死的目前
 	TopicDefualt = "现在短视频非常的流行热门"

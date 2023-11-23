@@ -7,13 +7,15 @@ import (
 	"douyin/package/constant"
 	"douyin/package/mq"
 	"douyin/package/util"
-	"errors"
-
 	"douyin/response"
+	"sync/atomic"
+
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 )
 
@@ -105,29 +107,50 @@ func (service *CommentService) DeleteComment(userID uint64) (*response.CommentAc
 }
 
 func (service *CommentService) CommentList(userID uint64) (*response.CommentListResponse, error) {
+	atomic.AddInt32(&Ppp, 1)
+	fmt.Println(Ppp)
 	// 使用布隆过滤器判断视频ID是否存在
 	if !cache.VideoIDBloomFilter.TestString(strconv.FormatUint(service.VideoID, 10)) {
 		zap.L().Sugar().Error(constant.BloomFilterRejected)
 		return nil, fmt.Errorf(constant.BloomFilterRejected)
 	}
-	// TODO加分布式锁？？
-
 	// 先拿到这个视频的所有评论
 	comments, err := cache.GetCommentsByVideoID(service.VideoID)
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		comments, err = database.GetCommentsByVideoIDFromMaster(service.VideoID)
+		// 加分布式锁 这里分布式锁严格测试过了 感觉没什么很大问题
+		key := "lock:" + constant.CommentPrefix + strconv.FormatUint(service.VideoID, 10)
+		value, err := uuid.NewV4()
 		if err != nil {
 			zap.L().Sugar().Error(err)
 			return nil, err
 		}
-		// 设置缓存
-		go func() {
-			err := cache.SetComments(service.VideoID, comments)
-			if err != nil {
-				zap.L().Error(err.Error())
+		uuidValue := value.String()
+		for ok, err := cache.GetLock(key, uuidValue, constant.LockTime, cache.CommentRedisClient); err == nil; {
+			if ok {
+				defer cache.ReleaseLock(key, uuidValue, cache.VideoRedisClient)
+				comments, err = database.GetCommentsByVideoIDFromMaster(service.VideoID)
+				atomic.AddInt32(&CheckDB, 1)
+				if err != nil {
+					zap.L().Sugar().Error(err)
+					return nil, err
+				}
+				err := cache.SetComments(service.VideoID, comments)
+				if err != nil {
+					zap.L().Error(err.Error())
+				}
+				break
 			}
-		}()
+			time.Sleep(constant.RetryTime * time.Millisecond)
+			comments, err = cache.GetCommentsByVideoID(service.VideoID)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			zap.L().Sugar().Error(err)
+			return nil, err
+		}
 	}
 	// TODO 这里应该先去redis里拿评论的作者信息 逻辑太复杂
 	// redis没有的再去数据库评论的作者信息
@@ -161,7 +184,6 @@ func (service *CommentService) CommentList(userID uint64) (*response.CommentList
 			}()
 		}
 	}
-	// TODO 分布式锁解锁
 	followingMap := make(map[uint64]struct{}, len(followingIDs))
 	for _, ff := range followingIDs {
 		followingMap[ff] = struct{}{}
@@ -184,3 +206,6 @@ func (service *CommentService) CommentList(userID uint64) (*response.CommentList
 		CommentList: commentResponse,
 	}, nil
 }
+
+var Ppp int32
+var CheckDB int32

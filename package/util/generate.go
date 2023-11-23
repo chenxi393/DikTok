@@ -1,19 +1,22 @@
 package util
 
-import "math/rand"
+import (
+	"douyin/config"
+	"math/rand"
+)
 
 var (
 	avatars = map[int]string{
-		0: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220612164733_72d8b.jpg",
-		1: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220622180647_d4cb5.jpg",
-		2: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220709150824_97667.jpg",
-		3: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801091937_fc599.jpg",
-		4: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801091938_56fad.jpg",
-		5: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801091938_9f3d5.jpg",
-		6: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801091939_9a475.jpg",
-		7: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801165632_07749.jpg",
-		8: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220801204306_f3f98.jpg",
-		9: "http://s2a5yl4lg.hn-bkt.clouddn.com/20220906115559_aff77.jpg",
+		0: config.System.Qiniu.OssDomain + "/20220612164733_72d8b.jpg",
+		1: config.System.Qiniu.OssDomain + "/20220622180647_d4cb5.jpg",
+		2: config.System.Qiniu.OssDomain + "/20220709150824_97667.jpg",
+		3: config.System.Qiniu.OssDomain + "/20220801091937_fc599.jpg",
+		4: config.System.Qiniu.OssDomain + "/20220801091938_56fad.jpg",
+		5: config.System.Qiniu.OssDomain + "/20220801091938_9f3d5.jpg",
+		6: config.System.Qiniu.OssDomain + "/20220801091939_9a475.jpg",
+		7: config.System.Qiniu.OssDomain + "/20220801165632_07749.jpg",
+		8: config.System.Qiniu.OssDomain + "/20220801204306_f3f98.jpg",
+		9: config.System.Qiniu.OssDomain + "/20220906115559_aff77.jpg",
 	}
 	backgrounds = map[int]string{
 		0:  "https://img2.wallspic.com/previews/0/6/1/6/7/176160/176160-eren_yeager-gong_ji_de_ju_ren-a_mingarlert-yi_shu-hai_bao-500x.jpg",
@@ -31,28 +34,28 @@ var (
 		12: "https://img3.wallspic.com/previews/2/3/6/4/7/174632/174632-yi_shu-yi_shu_zhan-xian_dai_yi_shu-you_hua-azure-500x.jpg",
 	}
 	signatrues = map[int]string{
-		0: "夜猫子协会常任理事",
-		1:    "赖床锦标赛冠军得主",
-		2:    "深夜搞颜色积极分子",
-		3:    "贫困大赛形象代言人",
-		4:    "魔仙堡废话冠军",
-		5:    "迪士尼在逃保洁阿姨。",
-		6:    "非官方认证平平无奇说废话小天才",
-		7:    "中央戏精学院教授",
-		8:    "口吐芬芳专业教授",
-		9:    "顶级外卖鉴赏师",
-		10:   "秃头选拔赛形象大使",
-		11:   "互联网冲浪金牌选手",
-		12:   "国家一级退堂鼓选手",
-		13:   "国家一级抬杠运动员",
-		14:   "耳机依赖患者",
-		15:   "宇宙一级潜在鸽王",
-		16:   "退役熬夜选手",
-		17:   "拖延俱乐部顶级VIP",
-		18:   "退役魔法少女",
-		19:   "脆皮鸭文学爱好者",
-		20:   "2023年广东省高考状元老乡",
-		21:   "铠甲勇士赵本山",
+		0:  "夜猫子协会常任理事",
+		1:  "赖床锦标赛冠军得主",
+		2:  "深夜搞颜色积极分子",
+		3:  "贫困大赛形象代言人",
+		4:  "魔仙堡废话冠军",
+		5:  "迪士尼在逃保洁阿姨。",
+		6:  "非官方认证平平无奇说废话小天才",
+		7:  "中央戏精学院教授",
+		8:  "口吐芬芳专业教授",
+		9:  "顶级外卖鉴赏师",
+		10: "秃头选拔赛形象大使",
+		11: "互联网冲浪金牌选手",
+		12: "国家一级退堂鼓选手",
+		13: "国家一级抬杠运动员",
+		14: "耳机依赖患者",
+		15: "宇宙一级潜在鸽王",
+		16: "退役熬夜选手",
+		17: "拖延俱乐部顶级VIP",
+		18: "退役魔法少女",
+		19: "脆皮鸭文学爱好者",
+		20: "2023年广东省高考状元老乡",
+		21: "铠甲勇士赵本山",
 	}
 )
 

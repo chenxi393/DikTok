@@ -16,7 +16,7 @@
 * Redis ( single )
 * MySQL (master and slave)
 * RabbitMQ
-* FFmpeg
+* FFmpeg (弃用)
 * Go
 
 ## 部署流程
@@ -27,34 +27,34 @@
 
 ### 手动部署
 * 安装上述依赖项，并修改config/config.yaml对应的配置信息
-* 需要手动安装FFMpeg 否则视频封面将是默认封面
 * 需要配置OSS，七牛云的key 上传到本地后异步上传到七牛云（非必须）
 * 完成上述步骤后 `make` 或 `make run` 或 `go run .`启动项目
 
 ### 注意事项
 * 企业中不使用GORM提供的自动建表migration()，一般手动建表（使用config/douyin.sql建表）
 * 若数据库已经存在表的情况下，注释掉database里的init.go的migration()（反之取消注释）
-* 否则MySQL主从复制有可能失败
+* MySQL主从复制在docker容器重启时有可能失败
 * 请不要上传大于5MB的视频 处理速度会非常慢（大视频理应在客户端压缩）
 
 ## 待办
 - [ ] 拆分成微服务，使用RPC调用，考虑先用gRPC，再考虑成熟的微服务框架go-zero
+- [ ] 项目部署的探究 K8s CICD体系
 - [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
 - [ ] 接入视频推荐算法，对用户画像进行刻画
 - [ ] 增加视频总结和关键词提取功能
-- [ ] 消息模块引入大语言模型 每日定时做视频推荐
-- [ ] token的续期 双token？？ 需要客户端支持（延后）
+- [ ] 消息模块引入大语言模型√ 每日定时做视频推荐
+- [ ] token的续期 双token？？
 - [x] 主键自增消耗很快 考虑分布式ID生成 snowflake雪花算法
 - [x] 视频搜索功能 全文索引实现
-- [ ] 用户名 评论 视频描述 消息敏感词过滤
-- [ ] 视频格式和大小 校验（感觉这个应该前端做）
+- [ ] 使用Websocket替换消息模块轮询doing
+- [ ] 视频格式大小校验√ 评论敏感词过滤，视频水印生成？
 - [ ] 限流操作 redis就行 秒级时间戳当作键 或者token令牌桶（或者具体到ip的限流）
-- [ ] 功能测试 性能测试 压力测试
+- [ ] 功能测试√ 性能测试 压力测试
 
 
 ## 下面是开发的杂乱笔记
 
-### FIXME：前端用户评论操作后，立即请求加载评论列表，出现拿到脏数据
+### FIXME 前端用户评论操作后，立即请求加载评论列表，出现拿到脏数据
 原因：
 * 评论操作为消息队列异步执行，写入数据库之前就返回前端成功
 * 主从同步存在延时会导致，读操作在从库拿，写操作在主库
@@ -69,18 +69,21 @@
 wc -l `find ./ -name "*.go";find -name "*.yaml"`
 ```
 
+### FIXME 简单压力测试下遇到的问题
+1. "Error 1040: Too many connections" 数据库会返回这个 设置比较高的连接数 似乎也会这样
+2. 
+
+
 ### 数据库设计
 总体思路
-* 不建议使用NULL 为什么 占用NULL表？？
-全都设定为NOT NULL 给默认值
-* 若有删除功能 添加is_delete (tinyint 1) 作软删除 TODO
-* 不适用外键或者级联 使用逻辑外键 似乎影响数据库的插入速度
-* 使用SQLyog检查 确保没有多余无用的索引
+* 全都设定为NOT NULL 给默认值 为什么
+* 若有删除功能 添加is_delete (tinyint 1) 作软删除（或者deleted_at） TODO
+* 不适用外键或者级联 使用逻辑外键 外键影响数据库的插入速度
+* 使用SQLyog检查 确保没有多余无用的索引 TODO
 
 comment 主键索引
 * 根据video_ID 查找评论 建立video_id普通索引
 * 根据user_id 和 video_id 删除评论  user_id 普通索引
-* 软删除？？
 
 message 主键索引
 * 建立联合索引user_id to_user_id
@@ -90,14 +93,12 @@ follow 主键索引
 * 取消关注时 user_id to_user_id 建立为联合唯一索引
 * 查询粉丝 需要 to_user_id 建立普通索引
 * 查询关注的 需要user_id  复用上面的联合索引
-* 软删除？？
 
 user 主键索引
 * username 唯一索引
 
 favorite 主键索引
 * user_id video_id 联合唯一索引  user_id 在前（查询喜欢的视频）
-* is_deleted 软删除
 
 video 主键索引
 * authorid 普通索引
@@ -165,14 +166,15 @@ video 主键索引
 * feed 视频流 异步将视频数据加入的缓存中？？
 
 数据一致性 [推荐的文章](https://www.cnblogs.com/crazymakercircle/p/14853622.html)
-* 使用GROM的事务进行数据更新，引入lua脚本（redis的原子性），把更新redis当作数据库事务的一部分
-* 查询时，先查redis，没有查数据库并加入缓存（可以异步）
-* 当修改数据库时，为了确保数据一致性，需要`删除`掉redis的脏数据！！！（目前的方案）
-* 更新缓存需要去数据库里拿所有数据不能增量更新 即使这样也有数据不一致的风险 两个请求 先更新数据库的后到redis执行 待验证是否可以增量或者全量更新 TODO
-* 或增量更新前判断键存不存在 引入lua脚本 如果放在GORM事务里应该没有数据数据不一致的风险 因为会等redis执行成功再返回 两个事务的并发情况分析？？ 也就是mysql事务和redis lua原子操作打包成一个整体执行TODO 
+* 读操作：先读缓存，缓存没有，查数据库，（异步）写入缓存（这叫旁路缓存）
+* 写操作：先写数据库，再删缓存，但是需要保证两个操作的完整性
+    * 使用GROM的事务进行数据更新，引入lua脚本（redis的原子性），把更新redis当作数据库事务的一部分
     * 引入消息队列Canal订阅binlog 收到增量更改时删除redis
-    * 先更新MySQL，再删除（修改）redis的key（本项目采用的）
-    * 缓存延时双删
+* 写操作：缓存延时双删（先删缓存 再更新数据库 睡一会 再删除缓存）
+
+如果业务对缓存命中率很高，可以采用[更新数据库]+[更新缓存]的方案
+* 更新缓存有数据不一致的风险 两个请求 先更新数据库的后到redis执行
+    * 更新前加入分布式锁，引入lua脚本，放在GORM事务里，等redis执行成功再返回
 
 ### 消息队列设计  解决写的问题
 为什么要使用消息队列
@@ -220,43 +222,6 @@ video 主键索引
        * 分布式系统中不会ID碰撞
        * 时间回拨会乱序和重复
 
-### RIGHT JOIN LEFT JOIN WHERE
-where和inner join是内连接 只保留公共部分
-外连接会保留不满足条件的
-总之 外连接至少会保留一张表的所有信息
-
-user表
-| id  | name  |
-| --- | ----- |
-| 1   | Alice |
-| 2   | Bob   |
-| 3   | Carol |
-
-video表
-| id  | title   | author_id |
-| --- | ------- | --------- |
-| 1   | Video 1 | 1         |
-| 2   | Video 2 | 2         |
-| 3   | Video 3 | 2         |
-| 4   | Video 4 | 4         |
-
-user right join video on author_id=id
-| id   | name  | title   |
-| ---- | ----- | ------- |
-| 1    | Alice | Video 1 |
-| 2    | Bob   | Video 2 |
-| 2    | Bob   | Video 3 |
-| NULL | NULL  | Video 4 |
-
-user right join video等价于video left join user
-
-where author_id=id 或者 直接join
-| id  | name  | title   |
-| --- | ----- | ------- |
-| 1   | Alice | Video 1 |
-| 2   | Bob   | Video 2 |
-| 2   | Bob   | Video 3 |
-
 ### Fiber
 fiber 要注意一个点 Fiber.ctx的值是可变的(会被重复使用-这也是我们是Zero Allocation)
 例如 result := c.Params("foo")  result可能会被修改 
@@ -268,18 +233,28 @@ string只能在handler里面有效  若要传参或返回值
 [Zero Allocation](https://docs.gofiber.io/#zero-allocation)
 
 ### 遇到的问题 
-1. MySQL 主从同步 1032 error
+1. MySQL 主从同步 出现的问题
+   * 出现问题的根本原因：容器重启 导致同步的进度被刷新 容器重启relay log不一致（官方已知bug） gorm自动重复建表
    * [[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)
-   * 解决办法就是 查看 日志 插入重复失败 就删除 删除失败就插入 但是为什么会重复插入啊 明明已经插入了 `找到不同步的点` 让他们同步 ？？ 
-   * 查看binlog 但是这个问题老是出现 出现的原因是什么 应该是**GORM的自动迁移导致的**
    * [错误复现](https://cloud.tencent.com/developer/article/1564571)
    * show binlog events in 'binlog.000004';
    * 新的错误 ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository
-   * docker重新启动 导致主机名变化 解决方法如下
-```sh
-reset slave;
-change master to master_host="192.168.0.100",master_user="syncuser",master_password="sync123456",master_log_file="binlog.000005",master_log_pos=157;
-# 任何不同步了都可以这样做 重置 手动对其两个库的数据 查看主库同步日志 change 然后start slave
+   * docker重新启动 导致主机名变化
+```sql
+-- 通用的解决办法 找到同步进度（binlog的位置很重要） 手动重置
+select * from performance_schema.replication_applier_status_by_worker;
+
+show master status;
+
+stop SLAVE;
+
+RESET SLAVE;
+
+change master to master_host = '192.168.1.100', master_user = 'syncuser', master_port=3306, master_password='sync123456', master_log_file = 'binlog.000005', master_log_pos=13859;
+
+START SLAVE;
+
+show slave status\G;
 ```
 2. GORM Scan的两个问题 Scan的要求类型是什么，它是如何匹配相应字段的
    * [GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)

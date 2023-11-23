@@ -66,9 +66,12 @@ func InitMySQL() {
 	sqlDB.SetMaxOpenConns(config.System.MysqlMaster.MaxOpenConn) // 设置数据库最大连接数
 	sqlDB.SetMaxIdleConns(config.System.MysqlMaster.MaxIdleConn) // 设置上数据库最大闲置连接数
 	// 查询在从库完成，其他操作如写入update在主库操作
+	// 11.18由于目前docker主从同步老是失效 暂时用主库代替从库
+	// 仅模拟主从同步
+	slaveDNS = slaveDNS+""
 	err = db.Use(dbresolver.Register(dbresolver.Config{
 		//Sources:  []gorm.Dialector{mysql.Open(masterDNS)}, // update使用 这里应该是默认连接主库
-		Replicas: []gorm.Dialector{mysql.Open(slaveDNS)}, // select 使用
+		Replicas: []gorm.Dialector{mysql.Open(masterDNS)}, // select 使用
 		// sources/replicas load balancing policy
 		Policy: dbresolver.RandomPolicy{},
 		// print sources/replicas mode in logger

@@ -1,17 +1,18 @@
-package util
+package llm
 
 import (
+	"douyin/config"
 	"douyin/database"
 	"douyin/model"
 
 	"go.uber.org/zap"
 )
 
-const (
+var (
 	// chatgpt
-	ChatGPTAvatar = "http://s2a5yl4lg.hn-bkt.clouddn.com/2022chatgpt.png"
+	ChatGPTAvatar = config.System.Qiniu.OssDomain + "/2022chatgpt.png"
 	ChatGPTName   = "ChatGPT"
-	ChatGPTID     = 1
+	ChatGPTID     = uint64(1)
 )
 
 func SendToChatGPT(userID uint64, content string) error {

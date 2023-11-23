@@ -1,6 +1,6 @@
 package model
 
-// 这些count是不是可以考虑解耦 要的时候再去表里计算
+// 这些count是不是可以考虑去除 要的时候再去表里计算
 type User struct {
 	ID              uint64 `gorm:"primaryKey" json:"id"`
 	Username        string `gorm:"uniqueIndex;type:varchar(63);not null" json:"username"`

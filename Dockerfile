@@ -11,8 +11,8 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV GO111MODULE=on \
     GOPROXY=https://goproxy.cn,direct
     
-# Install ffmpeg 提取视频第一帧
-RUN apt-get update && apt-get install -y ffmpeg
+# Install ffmpeg 提取视频第一帧 弃用
+# RUN apt-get update && apt-get install -y ffmpeg
 
 WORKDIR /go/projects/douyin
 

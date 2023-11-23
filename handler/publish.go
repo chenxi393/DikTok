@@ -2,10 +2,12 @@ package handler
 
 import (
 	"bytes"
+	"douyin/package/constant"
 	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
 	"io"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -31,9 +33,17 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	// TODO 需要检查文件后缀 还是文件实际的内容是不是mp4
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
+		zap.L().Error(err.Error())
+		res := response.CommonResponse{
+			StatusCode: response.Failed,
+			StatusMsg:  response.FileFormatError,
+		}
+		return c.JSON(res)
+	}
+	// 检查文件后缀是不是mp4 大小在上传的时候会限制30MB
+	if !strings.HasSuffix(fileHeader.Filename, constant.MP4Suffix) {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
