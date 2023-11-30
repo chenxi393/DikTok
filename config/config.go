@@ -21,8 +21,6 @@ type HTTP struct {
 	Host            string `mapstructure:"host"`
 	Port            string `mapstructure:"port"`
 	VideoAddress    string `mapstructure:"videoAddress"`
-	ImageAddress    string `mapstructure:"imageAddress"`
-	DefaultCoverURL string `mapstructure:"defaultCoverURL"`
 }
 
 type Redis struct {
@@ -59,7 +57,6 @@ type SystemConfig struct {
 	Mode         string     `mapstructure:"mode"`
 	JwtSecret    string     `mapstructure:"jwtSecret"`
 	GPTSecret    string     `mapstructure:"gptSecret"`
-	MyIP         string     `mapstructure:"myIP"`
 }
 
 var System SystemConfig

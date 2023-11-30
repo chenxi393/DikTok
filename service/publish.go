@@ -43,6 +43,8 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 	}
 	fileName := u1.String() + "." + "mp4"
 	// 先上传到本地 上传到对象存储之后再删除
+	// 这里已经没有让用户临时访问本地存储了
+	// 感觉应该使用消息队列 来异步上传到OSS FIXME
 	playURL, coverURL, err := util.UploadVideo(buf.Bytes(), fileName)
 	if err != nil {
 		return nil, err
@@ -73,21 +75,13 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 	// 异步上传到对象存储
 	go func() {
 		localVideoPath := config.System.HttpAddress.VideoAddress + "/" + fileName
-		playURL, err := util.UploadToOSS(fileName, localVideoPath)
+		err := util.UploadToOSS(fileName, localVideoPath)
 		if err != nil {
+			//
 			zap.L().Error(err.Error())
 			return
 		}
-		// 这里直接使用七牛云的视频截帧服务 不使用FFmenpg
-		// if coverURL != config.System.HttpAddress.DefaultCoverURL {
-		// 	coverFileName := fileName + ".jpg"
-		// 	coverURL, err = util.UploadToOSS(coverFileName, config.System.HttpAddress.ImageAddress+"/"+coverFileName)
-		// 	if err != nil {
-		// 		zap.L().Error(err.Error())
-		// 	}
-		// }
-		// 先更新数据库 再更新缓存
-		coverURL = config.System.Qiniu.OssDomain + "/" + u1.String() + "." + "jpg"
+		coverURL = u1.String() + "." + "jpg"
 		err = database.UpdateVideoURL(playURL, coverURL, video_id)
 		if err != nil {
 			zap.L().Error(err.Error())
@@ -196,11 +190,13 @@ func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*respon
 		item := response.Video{
 			ID:            videos[i].ID,
 			CommentCount:  videos[i].CommentCount,
-			CoverURL:      videos[i].CoverURL,
+			CoverURL:      config.System.Qiniu.OssDomain + "/" + videos[i].CoverURL,
 			FavoriteCount: videos[i].FavoriteCount,
-			PlayURL:       videos[i].PlayURL,
+			PlayURL:       config.System.Qiniu.OssDomain + "/" + videos[i].PlayURL,
 			Title:         videos[i].Title,
 			Author:        *response.UserInfo(author, isFollowed),
+			PublishTime:   videos[i].PublishTime.Format("2006-01-02 15:04"),
+			Topic:         videos[i].Topic,
 		}
 		if _, ok := favoriteMap[ff.ID]; ok {
 			item.IsFavorite = true

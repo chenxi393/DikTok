@@ -118,6 +118,6 @@ func SelectFeedVideoByTopic(numberVideos int, lastTime int64, topic string) ([]r
 
 func SearchVideoByKeyword(keyword string) ([]model.Video, error) {
 	var videos []model.Video
-	err := constant.DB.Raw("select * from video where match(title,topic) against(?)", keyword).Scan(&videos).Error
+	err := constant.DB.Raw("select * from video where match(title,topic) against(?) order by publish_time desc", keyword).Scan(&videos).Error
 	return videos, err
 }

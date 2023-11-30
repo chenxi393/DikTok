@@ -1,6 +1,9 @@
 package response
 
-import "douyin/model"
+import (
+	"douyin/config"
+	"douyin/model"
+)
 
 type UserRegisterOrLogin struct {
 	// 状态码，0-成功，其他值-失败
@@ -50,8 +53,8 @@ type User struct {
 
 func UserInfo(user *model.User, isFollowed bool) *User {
 	return &User{
-		Avatar:          user.Avatar,
-		BackgroundImage: user.BackgroundImage,
+		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
+		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,

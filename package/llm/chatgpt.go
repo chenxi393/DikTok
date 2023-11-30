@@ -45,6 +45,6 @@ func RegisterChatGPT() {
 	}
 	_, err := database.CreateUser(user)
 	if err != nil {
-		zap.Error(err)
+		zap.L().Info(err.Error())
 	}
 }

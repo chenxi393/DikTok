@@ -1,6 +1,7 @@
 package service
 
 import (
+	"douyin/config"
 	"douyin/database"
 	"douyin/model"
 	"douyin/package/cache"
@@ -149,12 +150,14 @@ func (service *FavoriteService) FavoriteList(userID uint64) ([]response.Video, e
 			vv := response.Video{
 				Author:        *response.UserInfo(usersMap[video.AuthorID], isFollowing),
 				CommentCount:  video.CommentCount,
-				CoverURL:      video.CoverURL,
+				CoverURL:      config.System.Qiniu.OssDomain + "/" + video.CoverURL,
 				FavoriteCount: video.FavoriteCount,
 				ID:            video.ID,
 				IsFavorite:    false,
-				PlayURL:       video.PlayURL,
+				PlayURL:       config.System.Qiniu.OssDomain + "/" + video.PlayURL,
 				Title:         video.Title,
+				PublishTime:   video.PublishTime.Format("2006-01-02 15:04"),
+				Topic:         video.Topic,
 			}
 			if _, ok := favoriteMap[video.ID]; ok {
 				vv.IsFavorite = true

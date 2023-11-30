@@ -1,6 +1,9 @@
 package response
 
-import "time"
+import (
+	"douyin/config"
+	"time"
+)
 
 type FeedResponse struct {
 	// 本次返回的视频中，发布最早的时间，作为下次请求时的latest_time
@@ -62,10 +65,10 @@ func VideoDataInfo(data []VideoData) []Video {
 	items := make([]Video, 0, len(data))
 	for _, item := range data {
 		v := Video{
-			Author:        item.User,
+			Author:        *addUserDomain(&item.User),
 			ID:            item.VideoID,
-			PlayURL:       item.PlayURL,
-			CoverURL:      item.CoverURL,
+			PlayURL:       config.System.Qiniu.OssDomain + "/" + item.PlayURL,
+			CoverURL:      config.System.Qiniu.OssDomain + "/" + item.CoverURL,
 			FavoriteCount: item.VideoFavoriteCount,
 			CommentCount:  item.CommentCount,
 			Title:         item.Title,
@@ -75,4 +78,20 @@ func VideoDataInfo(data []VideoData) []Video {
 		items = append(items, v)
 	}
 	return items
+}
+
+func addUserDomain(user *User) *User {
+	return &User{
+		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
+		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
+		FavoriteCount:   user.FavoriteCount,
+		FollowCount:     user.FollowCount,
+		FollowerCount:   user.FollowerCount,
+		ID:              user.ID,
+		IsFollow:        user.IsFollow,
+		Name:            user.Name,
+		Signature:       user.Signature,
+		TotalFavorited:  user.TotalFavorited,
+		WorkCount:       user.WorkCount,
+	}
 }

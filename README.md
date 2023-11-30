@@ -1,55 +1,54 @@
 ## 项目结构
 * config                配置信息
 * database              操作MySQl数据库
-* handler               路由的函数
-* main.go               程序的入口
+* handler               路由处理函数
 * model                 数据库模型
-* package               依赖的服务包括redis rabbitmq
+* package               依赖的服务
 * response              返回的数据类型
 * router                路由
 * service               具体的执行函数
+* main.go               程序的入口
 * Dockerfile            web服务的镜像文件
 * docker-compose.yaml   docker容器编排
 * Makefile              一键部署服务
 
 ## 依赖项
 * Redis ( single )
-* MySQL (master and slave)
+* MySQL ( master and slave )
 * RabbitMQ
 * FFmpeg (弃用)
 * Go
 
 ## 部署流程
 ### 自动部署
-需要将config.yaml的myIP 替换为自己的ip
-
 根目录下输入 `make up` 一键部署服务
 
 ### 手动部署
 * 安装上述依赖项，并修改config/config.yaml对应的配置信息
-* 需要配置OSS，七牛云的key 上传到本地后异步上传到七牛云（非必须）
+* 需要配置OSS，七牛云的key
 * 完成上述步骤后 `make` 或 `make run` 或 `go run .`启动项目
 
 ### 注意事项
 * 企业中不使用GORM提供的自动建表migration()，一般手动建表（使用config/douyin.sql建表）
 * 若数据库已经存在表的情况下，注释掉database里的init.go的migration()（反之取消注释）
 * MySQL主从复制在docker容器重启时有可能失败
-* 请不要上传大于5MB的视频 处理速度会非常慢（大视频理应在客户端压缩）
+* 请不要上传大于30MB的视频 会返回413（大视频应在客户端压缩）
 
 ## 待办
-- [ ] 拆分成微服务，使用RPC调用，考虑先用gRPC，再考虑成熟的微服务框架go-zero
-- [ ] 项目部署的探究 K8s CICD体系
+- [ ] 拆分成微服务，使用RPC调用，考虑用gRPC，再考虑成熟的微服务框架go-zero
+- [ ] 项目部署运维的探究 K8s CICD体系
 - [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
-- [ ] 接入视频推荐算法，对用户画像进行刻画
-- [ ] 增加视频总结和关键词提取功能
+- [ ] 接入视频推荐算法（Gorse），对用户画像进行刻画
+- [ ] 增加视频总结和关键词提取功能（大模型）
 - [ ] 消息模块引入大语言模型√ 每日定时做视频推荐
 - [ ] token的续期 双token？？
 - [x] 主键自增消耗很快 考虑分布式ID生成 snowflake雪花算法
-- [x] 视频搜索功能 全文索引实现
-- [ ] 使用Websocket替换消息模块轮询doing
-- [ ] 视频格式大小校验√ 评论敏感词过滤，视频水印生成？
+- [x] 视频搜索功能 全文索引实现（可考虑ES）
+- [ ] 完善Websocket替换消息模块轮询
+- [ ] 视频格式大小校验√ 评论敏感词过滤，视频水印生成（FFmpeg）
 - [ ] 限流操作 redis就行 秒级时间戳当作键 或者token令牌桶（或者具体到ip的限流）
 - [ ] 功能测试√ 性能测试 压力测试
+- [ ] redis一主两从哨兵模式 MySQL双主互从+Keepalived（redis和MySQL集群引入）
 
 
 ## 下面是开发的杂乱笔记
@@ -62,17 +61,12 @@
 若读请求在消息队列写入数据库之前，必然拿到脏数据（如何解决？？？）
 若读请求在写入数据库之后，若去从库拿数据，有概率拿到脏数据（指定主库读可以解决）
 
-目前暂时的解决办法是：前端等待几毫秒再去请求评论列表
+目前暂时的解决办法是：前端等待几毫秒毫秒再去请求评论列表
 
 ### 统计代码行数
 ```sh
 wc -l `find ./ -name "*.go";find -name "*.yaml"`
 ```
-
-### FIXME 简单压力测试下遇到的问题
-1. "Error 1040: Too many connections" 数据库会返回这个 设置比较高的连接数 似乎也会这样
-2. 
-
 
 ### 数据库设计
 总体思路
@@ -88,6 +82,7 @@ comment 主键索引
 message 主键索引
 * 建立联合索引user_id to_user_id
 * create_time 建立普通索引
+* 可以考虑MongoDB 来存message
 
 follow 主键索引
 * 取消关注时 user_id to_user_id 建立为联合唯一索引
@@ -110,6 +105,8 @@ video 主键索引
 * 对于不同的模块划分不同的redis数据库 降低不同业务数据的影响
 * 热点数据过期时间长 冷数据过期时间短
 * 可以通过日志分级 去测量一下缓存命中率 99.9%是好的
+* 读多写少考虑旁路缓存策略，延时双删，或canal（TODO）
+* 读多写多场景（例如点赞），直接在Redis完成自增操作（并持久化），定期同步到数据库TODO
 
 缓存雪崩----大量缓存同时过期 大量请求之间访问数据库
 * 设置缓存的时候给缓存过期时间加上一个随机数 降低缓存同时过期的概率
@@ -120,17 +117,14 @@ video 主键索引
 * 使用两个布隆过滤器存储userID videoID
 * 在用户注册 发布视频 把id加入布隆过滤器
 * 限制ip的访问速率 bucket桶算法？？
-* 回种空值？？
+* 回种空值？？（也就是存储空值）
 
 缓存击穿----大量请求查询`一个过期的key`
 * 使用redis的SetNX 实现`分布式锁`
-* 请求缓存数据加锁 缓存不存在 继续更新锁的有效时间
-* 保证同一时间只有一个协程在进行SQL查询
+* 设置锁过期时间，值为uuid
+* 缓存不存在 尝试加锁
 * 执行SQL查询更新缓存后释放锁
 * 后续的请求就可以走缓存了
-
-为什么分布式锁有效 
-* 因为redis是单线程 参考一下别人的实现TODO
 
 具体模块设计
 1. comment
@@ -165,12 +159,19 @@ video 主键索引
 * 在登录成功的时候 就把用户相关的数据加入缓存
 * feed 视频流 异步将视频数据加入的缓存中？？
 
+点赞等读多写多场景
+* 可以先写本地缓存，或者先写redis然后定期同步到MySQL
+* 还可以秒级聚合所有请求 同步到数据库
+* 旁路缓存的策略不太适合读多写多的场景
+
 数据一致性 [推荐的文章](https://www.cnblogs.com/crazymakercircle/p/14853622.html)
 * 读操作：先读缓存，缓存没有，查数据库，（异步）写入缓存（这叫旁路缓存）
-* 写操作：先写数据库，再删缓存，但是需要保证两个操作的完整性
+* 写操作：先写数据库，再删缓存，但是需要保证两个操作的完整性（GORM保证）
     * 使用GROM的事务进行数据更新，引入lua脚本（redis的原子性），把更新redis当作数据库事务的一部分
     * 引入消息队列Canal订阅binlog 收到增量更改时删除redis
 * 写操作：缓存延时双删（先删缓存 再更新数据库 睡一会 再删除缓存）
+
+⭐无论是MQ重试还是延迟双删或是Canal等方法，在极端条件下都有会不一致的情况，只能尽量降低不一致性的可能（可以通过队列保证请求时序性）
 
 如果业务对缓存命中率很高，可以采用[更新数据库]+[更新缓存]的方案
 * 更新缓存有数据不一致的风险 两个请求 先更新数据库的后到redis执行
@@ -208,11 +209,8 @@ video 主键索引
        * 做数据的热备？？？
        * 业务量比较大，单机无法满足需求，使用多机器的存储，提高单机的IO性能（单机多库感觉没有意义）
    * [参考配置的文章](https://zhuanlan.zhihu.com/p/650314645)
-2. 注意这里视频和封面（ffmeng截取第一帧 只在docker内部署了）的存储
-   * 全都写在本地 且是当前目录下 这不合适 而且封面截取 需要ffmeng
-   * 使用对象存储（七牛云每月有免费额度） 对象存储需要自己的域名 CDN是默认开启的
-3. 只要服务端收到了请求了就只能返回200
-4. 生成唯一ID的三种算法
+2. 只要服务端收到了请求了就只能返回200
+3. 生成唯一ID的三种算法
    * 主键自增
        * 有序 存在数量泄漏风险 但是可以优化主键自增法
    * UUID生成（基于MAC地址和时间和随机数）
@@ -234,34 +232,23 @@ string只能在handler里面有效  若要传参或返回值
 
 ### 遇到的问题 
 1. MySQL 主从同步 出现的问题
-   * 出现问题的根本原因：容器重启 导致同步的进度被刷新 容器重启relay log不一致（官方已知bug） gorm自动重复建表
+   * 出现问题的根本原因：容器重启 导致同步的进度被刷新 容器重启relay log不一致（官方已知bug）
    * [[MySQL] SQL_ERROR 1032解决办法](https://www.cnblogs.com/langdashu/p/5920436.html)
    * [错误复现](https://cloud.tencent.com/developer/article/1564571)
    * show binlog events in 'binlog.000004';
    * 新的错误 ERROR 1872 (HY000): Slave failed to initialize relay log info structure from the repository
    * docker重新启动 导致主机名变化
-```sql
--- 通用的解决办法 找到同步进度（binlog的位置很重要） 手动重置
-select * from performance_schema.replication_applier_status_by_worker;
-
-show master status;
-
-stop SLAVE;
-
-RESET SLAVE;
-
-change master to master_host = '192.168.1.100', master_user = 'syncuser', master_port=3306, master_password='sync123456', master_log_file = 'binlog.000005', master_log_pos=13859;
-
-START SLAVE;
-
-show slave status\G;
-```
+   * 通用的解决办法 找到同步进度（binlog的位置很重要） 手动重置
 2. GORM Scan的两个问题 Scan的要求类型是什么，它是如何匹配相应字段的
    * [GORM Scan源码](https://blog.csdn.net/xz_studying/article/details/107095153)
 
 ### 不同阶段的测试集合
-其他测试 压力测试 接入redis 测耗时 接入消息队列 测耗时
-#### 测试1
+功能测试 性能测试 压力测试
+
+简单压力测试下遇到的问题
+1. "Error 1040: Too many connections" 数据库会返回这个 设置比较高的连接数 似乎也会这样
+
+#### 功能测试和简单的延迟测试
 条件：docker-compose 部署 开启mysql主从复制 没有redis 没有消息队列
 
 APIfox返回的时间
@@ -311,8 +298,6 @@ fiber返回的时间  这是在docker内
 ```
 
 ### 项目规划
-规划之初设定的被清晰定义的、可实现的且可测量的项目成功标准
-
 目标一 完成数据库设计 done
 1. 做好数据库的字段设计
 2. 设计好索引结构，外键逻辑
@@ -324,14 +309,14 @@ fiber返回的时间  这是在docker内
 3. 完成社交模块功能开发
 
 目标三 完成 Redis 缓存设计 done
-1. 完善缓存基本设计
+1. 完善缓存基本设计（读多写少 读多写多场景）
 2. 解决三大经典缓存问题
 3. 结合场景对缓存进行预热处理
 
 目标四 完成消息队列部分 done
 1. 完成消息队列选型和需要接入的接口分析
 2. 完成消息队列代码接入
-3. 完成消息队列相关代码的性能测试（整个图）
+3. 完成消息队列相关代码的对比性能测试
 
 目标五 完成全面的测试
 1. 完成代码部分的集成测试
@@ -350,7 +335,7 @@ fiber返回的时间  这是在docker内
 目标八 进行功能扩展和其他部分完善
 1. 完成基本的推荐算法以及测试
 2. 添加部分常见功能接口（如修改个人信息等）
-3. 仿照真的抖音，多做关注和朋友动态两个页面
+3. 仿照真的抖音，给自己提需求
 
 ### 搜索功能的实现探究
 * MySQL的[全文索引](https://blog.csdn.net/mrzhouxiaofei/article/details/79940958)

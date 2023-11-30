@@ -19,7 +19,7 @@ const (
 	MaxVideoNumber     = 30
 	LockTime           = 200 // 200ms 以毫秒为单位
 	RetryTime          = 20
-
+	DefaultCover       = "default_cover.png"
 	// topic字段 前后端都是写死的目前
 	TopicDefualt = "现在短视频非常的流行热门"
 	TopicSport   = "体育"
