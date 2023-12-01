@@ -37,7 +37,6 @@ CREATE TABLE `comment` (
   `content` varchar(255) NOT NULL,
   `created_time` datetime(3) NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_comment_user_id` (`user_id`),
   KEY `idx_comment_video_id` (`video_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

@@ -59,8 +59,9 @@ func InitMySQL() {
 		},
 	})
 	if err != nil {
-		zap.L().Fatal("MySQL 连接失败", zap.Error(err))
+		zap.L().Fatal("MySQL主库连接: 失败", zap.Error(err))
 	}
+	zap.L().Info("MySQL主库连接: 成功")
 	sqlDB, _ := db.DB()
 	sqlDB.SetMaxOpenConns(config.System.MysqlMaster.MaxOpenConn) // 设置数据库最大连接数
 	sqlDB.SetMaxIdleConns(config.System.MysqlMaster.MaxIdleConn) // 设置上数据库最大闲置连接数
@@ -77,6 +78,7 @@ func InitMySQL() {
 		zap.L().Fatal("MySQL 读写分离创建失败", zap.Error(err))
 		// 主从创建失败 此时不应该写入数据 应该让容器重启的 否则只会写入主库 导致主从不同步
 	}
+	zap.L().Info("MySQL从库连接: 成功")
 	// 连接池什么的不懂 先放着
 	constant.DB = db
 	//migration()

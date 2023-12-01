@@ -6,9 +6,6 @@ import (
 
 // 一些常量
 const (
-	TokenTimeOut    = 12 * time.Hour
-	TokenMaxRefresh = 3 * time.Hour
-
 	DoAction           = "1"
 	UndoAction         = "2"
 	UserID             = "userID"
@@ -17,9 +14,8 @@ const (
 	MP4Suffix          = ".mp4"
 	SnoyFlakeStartTime = 1698775594477
 	MaxVideoNumber     = 30
-	LockTime           = 200 // 200ms 以毫秒为单位
-	RetryTime          = 20
 	DefaultCover       = "default_cover.png"
+
 	// topic字段 前后端都是写死的目前
 	TopicDefualt = "现在短视频非常的流行热门"
 	TopicSport   = "体育"
@@ -64,11 +60,19 @@ const (
 	CommentPrefix = "comment:"
 )
 
-// 一些redis过期时间
+// 过期时间
 const (
+	// redis过期时间
 	MaxLoginTime    = 5
 	MaxloginInernal = 5 * time.Minute
 	Expiration      = 400 * time.Second
+
+	// 分布式锁
+	LockTime  = 200 // 200ms 以毫秒为单位
+	RetryTime = 20
+
+	// token过期时间
+	TokenTimeOut = 12 * time.Hour
 )
 
 // 消息

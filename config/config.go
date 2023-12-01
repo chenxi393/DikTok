@@ -18,9 +18,9 @@ type MySQL struct {
 }
 
 type HTTP struct {
-	Host            string `mapstructure:"host"`
-	Port            string `mapstructure:"port"`
-	VideoAddress    string `mapstructure:"videoAddress"`
+	Host         string `mapstructure:"host"`
+	Port         string `mapstructure:"port"`
+	VideoAddress string `mapstructure:"videoAddress"`
 }
 
 type Redis struct {
@@ -76,10 +76,15 @@ func Init() {
 		log.Fatal("fatal error unmarshal config: ", err.Error())
 	}
 
-	// 监视配置文件的变化
+	// 监视配置文件的变化 有变化就更改
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Println("配置文件被修改")
+		log.Println("配置文件被修改 重新载入全局变量")
+		err = viper.Unmarshal(&System)
+		if err != nil {
+			log.Println("fatal error unmarshal config: ", err.Error())
+		}
+		log.Println(System.Qiniu.OssDomain)
 	})
 	log.Println("viper读取配置文件成功")
 }

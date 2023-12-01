@@ -97,30 +97,25 @@ func GetUserInfo(userID uint64) (*model.User, error) {
 	userInfoCountCmd := pipeline.HGetAll(infoCountKey) // 注意这里键不存在又不会返回nil err
 	_, err := pipeline.Exec()
 	if err != nil {
-		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 	// 提取返回的结果
 	userInfo, err := userInfoCmd.Result()
 	if err != nil {
-		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 	userInfoCount, err := userInfoCountCmd.Result()
 	if err != nil {
-		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 	if len(userInfoCount) == 0 {
 		err = errors.New("")
-		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 	// 解析不变的字段
 	userInfoFixed := UserInfo{}
 	err = json.Unmarshal([]byte(userInfo), &userInfoFixed)
 	if err != nil {
-		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 

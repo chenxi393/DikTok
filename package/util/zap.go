@@ -17,5 +17,5 @@ func InitZap() {
 
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger) //返回值似乎是一个取消函数
-	logger.Info("zap initialization succeed")
+	logger.Info("zap初始化: 成功")
 }

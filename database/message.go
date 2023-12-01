@@ -21,7 +21,7 @@ func MessageList(userID, toUserID uint64, msgTime int64) ([]model.Message, error
 	// 即客户端发送消息时会显示两次重复的
 	newMsgTime := time.UnixMilli(msgTime)
 	msgs := make([]model.Message, 0)
-	// TODO 这里用 union 避免or 不走索引的情况
+	// 这里用 union 避免or 不走索引的情况 or两侧必须都走索引 括号也没用
 	err := constant.DB.Raw("? UNION ? ORDER BY create_time ASC",
 		constant.DB.Model(&model.Message{}).Where("from_user_id = ? AND to_user_id = ? AND create_time > ?",
 			userID, toUserID, newMsgTime),
@@ -36,7 +36,7 @@ func MessageList(userID, toUserID uint64, msgTime int64) ([]model.Message, error
 // 用来呈现好友列表的第一条消息
 func GetMessageNewest(userID, toUserID uint64) (model.Message, error) {
 	msg := model.Message{}
-	// TODO 这里用 union 避免or 不走索引的情况
+	// 这里用 union 避免or 不走索引的情况 or两侧必须都走索引 括号也没用
 	err := constant.DB.Raw("? UNION ? ORDER BY create_time DESC LIMIT 1",
 		constant.DB.Model(&model.Message{}).Where("from_user_id = ? AND to_user_id = ?", userID, toUserID),
 		constant.DB.Model(&model.Message{}).Where("from_user_id = ? AND to_user_id = ?", toUserID, userID)).Scan(&msg).Error

@@ -66,13 +66,13 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	// 将用户ID加入到布隆过滤器里  对抗缓存穿透
-	cache.UserIDBloomFilter.AddString(strconv.FormatUint(userID, 10))
 	// 1. 缓存用户的个人信息
 	// 2. 缓存关注和粉丝列表  这个刚关注肯定没有
 	// 3. 缓存发布视频和喜欢的视频
 	// 注册和登录之后是一样的
 	go func() {
+		// 将用户ID加入到布隆过滤器里  对抗缓存穿透
+		cache.UserIDBloomFilter.AddString(strconv.FormatUint(userID, 10))
 		err = cache.SetUserInfo(user)
 		if err != nil {
 			zap.L().Sugar().Error(err)

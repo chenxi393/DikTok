@@ -21,9 +21,9 @@ func InitMQ() {
 		config.System.MQ.Host,
 		config.System.MQ.Port))
 	if err != nil {
-		zap.L().Fatal("连接rabbitMQ 失败", zap.Error(err))
+		zap.L().Fatal("RabbitMQ连接: 失败", zap.Error(err))
 	}
-	zap.L().Info("连接rabbitMQ成功")
+	zap.L().Info("RabbitMQ连接: 成功")
 	// Let's start by opening a channel to our RabbitMQ instance
 	// over the connection we have already established
 	produceChannel, err = connRabbitMQ.Channel()
