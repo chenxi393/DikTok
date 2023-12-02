@@ -1,16 +1,22 @@
+## DikTok V1
+V1版本为基本完善的单体服务
+main分支为微服务版本
+
 ## 项目结构
-* config                配置信息
-* database              操作MySQl数据库
-* handler               路由处理函数
-* model                 数据库模型
-* package               依赖的服务
-* response              返回的数据类型
-* router                路由
-* service               具体的执行函数
-* main.go               程序的入口
-* Dockerfile            web服务的镜像文件
-* docker-compose.yaml   docker容器编排
-* Makefile              一键部署服务
+|                     |                   |
+| ------------------- | ----------------- |
+| config              | 配置信息          |
+| database            | 操作MySQl数据库   |
+| handler             | 路由处理函数      |
+| model               | 数据库模型        |
+| package             | 依赖的服务        |
+| response            | 返回的数据类型    |
+| router              | 路由              |
+| service             | 具体的执行函数    |
+| main.go             | 程序的入口        |
+| Dockerfile          | web服务的镜像文件 |
+| docker-compose.yaml | docker容器编排    |
+| Makefile            | 一键部署服务      |
 
 ## 依赖项
 * Redis ( single )
