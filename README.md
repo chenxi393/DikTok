@@ -35,7 +35,7 @@
 * 请不要上传大于30MB的视频 会返回413（大视频应在客户端压缩）
 
 ## 待办
-- [ ] 拆分成微服务，使用RPC调用，考虑用gRPC，再考虑成熟的微服务框架go-zero
+- [ ] 拆分成微服务，考虑gRPC+ETCD，再考虑成熟的微服务框架go-zero
 - [ ] 项目部署运维的探究 K8s CICD体系
 - [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
 - [ ] 接入视频推荐算法（Gorse），对用户画像进行刻画
@@ -266,6 +266,59 @@ string只能在handler里面有效  若要传参或返回值
 也可以配置为不可变（Immutable） 但是有性能开销
 [Zero Allocation](https://docs.gofiber.io/#zero-allocation)
 
+### 搜索功能的实现探究
+* MySQL的[全文索引](https://blog.csdn.net/mrzhouxiaofei/article/details/79940958)
+* ElasticSearch
+* 都是基于倒排索引
+
+### websocket
+HTTP 长轮询（数据更新之后才回复）VS短轮询（有轮询间隔） 
+
+长轮询
+* 客户端发起一个请求，服务器收到客户端发来的请求后，服务器端不会直接进行响应，而是先将这个请求挂起，然后判断请求的数据是否有更新。如果有更新，则进行响应，如果一直没有数据，则等待一定的时间后才返回。
+
+websocket 应用层协议
+ws默认端口80  wss端口为443（TLS）
+
+优点
+* 开销小：连接建立后，交换数据头部小
+* 实时性：全双工协议，服务器可以主动发给客户端
+* 长连接：有状态的协议，连接建立后可以省略部分状态信息
+* 二进制支持：定义了二进制帧，HTTP应该是文本吧
+* 可扩展
+
+websocket 生命周期
+* 客户端HTTP请求GET/ws
+* 服务端发出握手升级HTTP为Websocket
+* 互相通信
+* 一方关闭连接则连接关闭
+
+#### 流程
+客户端请求：
+```http
+GET ws://echo.websocket.org/ HTTP/1.1
+Host: echo.websocket.org
+Origin: file://
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Key: Zx8rNEkBE4xnwifpuh8DHQ==
+Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
+```
+
+服务端响应：
+```http
+HTTP/1.1 101 Web Socket Protocol Handshake
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Accept: 52Rg3vW4JQ1yWpkvFlsTsiezlqw=
+```
+1开头的状态吗 表示未完成的连接
+
+可以利用HTTP服务器根据具体流程实现websockt服务器
+
+WebSocket 数据帧的格式：
+
 ### 遇到的问题 
 1. MySQL 主从同步 出现的问题
    * 出现问题的根本原因：容器重启 导致同步的进度被刷新 容器重启relay log不一致（官方已知bug）
@@ -372,56 +425,3 @@ fiber返回的时间  这是在docker内
 1. 完成基本的推荐算法以及测试
 2. 添加部分常见功能接口（如修改个人信息等）
 3. 仿照真的抖音，给自己提需求
-
-### 搜索功能的实现探究
-* MySQL的[全文索引](https://blog.csdn.net/mrzhouxiaofei/article/details/79940958)
-* ElasticSearch
-* 都是基于倒排索引
-
-### websocket
-HTTP 长轮询（数据更新之后才回复）VS短轮询（有轮询间隔） 
-
-长轮询
-* 客户端发起一个请求，服务器收到客户端发来的请求后，服务器端不会直接进行响应，而是先将这个请求挂起，然后判断请求的数据是否有更新。如果有更新，则进行响应，如果一直没有数据，则等待一定的时间后才返回。
-
-websocket 应用层协议
-ws默认端口80  wss端口为443（TLS）
-
-优点
-* 开销小：连接建立后，交换数据头部小
-* 实时性：全双工协议，服务器可以主动发给客户端
-* 长连接：有状态的协议，连接建立后可以省略部分状态信息
-* 二进制支持：定义了二进制帧，HTTP应该是文本吧
-* 可扩展
-
-websocket 生命周期
-* 客户端HTTP请求GET/ws
-* 服务端发出握手升级HTTP为Websocket
-* 互相通信
-* 一方关闭连接则连接关闭
-
-#### 流程
-客户端请求：
-```http
-GET ws://echo.websocket.org/ HTTP/1.1
-Host: echo.websocket.org
-Origin: file://
-Connection: Upgrade
-Upgrade: websocket
-Sec-WebSocket-Version: 13
-Sec-WebSocket-Key: Zx8rNEkBE4xnwifpuh8DHQ==
-Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits
-```
-
-服务端响应：
-```http
-HTTP/1.1 101 Web Socket Protocol Handshake
-Connection: Upgrade
-Upgrade: websocket
-Sec-WebSocket-Accept: 52Rg3vW4JQ1yWpkvFlsTsiezlqw=
-```
-1开头的状态吗 表示未完成的连接
-
-可以利用HTTP服务器根据具体流程实现websockt服务器
-
-WebSocket 数据帧的格式：
