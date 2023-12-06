@@ -148,11 +148,11 @@ func (service *RelationService) RelationFollowList(userID uint64) (*response.Rel
 	}
 	loginUserFollowingMap[userID] = struct{}{}
 	useersResponse := make([]response.User, 0, len(users))
-	for i, user := range users {
-		_, ok := loginUserFollowingMap[user.ID]
-		uu := response.UserInfo(&users[i], ok)
-		useersResponse = append(useersResponse, *uu)
-	}
+	// for i, user := range users {
+	// 	_, ok := loginUserFollowingMap[user.ID]
+	// 	//uu := response.UserInfo(&users[i], ok)
+	// 	//useersResponse = append(useersResponse, *uu)
+	// }
 	res := &response.RelationListResponse{
 		StatusCode: response.Success,
 		StatusMsg:  response.FollowListSuccess,
@@ -215,11 +215,11 @@ func (service *RelationService) RelationFollowerList(userID uint64) (*response.R
 	// 自己也在自己的关注列表里
 	followingMap[userID] = struct{}{}
 	useersResponse := make([]response.User, 0, len(users))
-	for i, user := range users {
-		_, ok := followingMap[user.ID]
-		uu := response.UserInfo(&users[i], ok)
-		useersResponse = append(useersResponse, *uu)
-	}
+	// for i, user := range users {
+	// 	_, ok := followingMap[user.ID]
+	// 	uu := response.UserInfo(&users[i], ok)
+	// 	useersResponse = append(useersResponse, *uu)
+	// }
 	res := &response.RelationListResponse{
 		StatusCode: response.Success,
 		StatusMsg:  response.FollowerListSuccess,
@@ -284,30 +284,30 @@ func (service *RelationService) RelationFriendList() (*response.FriendResponse, 
 	}
 	friends = append(friends, llm.ChatGPTID)
 	// 拿好友的信息
-	friendsInfo, err := database.SelectUserListByIDs(friends)
+	_, err = database.SelectUserListByIDs(friends)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
 	usersResponse := make([]response.FriendUser, 0, len(friends))
-	for i := range friendsInfo {
-		// FIXME这里循环查库了 记得规避
-		msg, err := database.GetMessageNewest(service.UserID, friendsInfo[i].ID)
-		msgt := 0
-		if err != nil || msg.Content == "" {
-			msg.Content = constant.DefaultMessage
-		} else {
-			if msg.FromUserID == service.UserID {
-				msgt = 1
-			}
-		}
-		uu := response.FriendUser{
-			User:    *response.UserInfo(&friendsInfo[i], true),
-			Message: msg.Content, // 最近的一条消息 客户端测试了是有的
-			MsgType: msgt,
-		}
-		usersResponse = append(usersResponse, uu)
-	}
+	// for i := range friendsInfo {
+	// 	// FIXME这里循环查库了 记得规避
+	// 	msg, err := database.GetMessageNewest(service.UserID, friendsInfo[i].ID)
+	// 	msgt := 0
+	// 	if err != nil || msg.Content == "" {
+	// 		msg.Content = constant.DefaultMessage
+	// 	} else {
+	// 		if msg.FromUserID == service.UserID {
+	// 			msgt = 1
+	// 		}
+	// 	}
+	// 	// uu := response.FriendUser{
+	// 	// 	User:    *response.UserInfo(&friendsInfo[i], true),
+	// 	// 	Message: msg.Content, // 最近的一条消息 客户端测试了是有的
+	// 	// 	MsgType: msgt,
+	// 	// }
+	// 	usersResponse = append(usersResponse, uu)
+	// }
 	res := &response.FriendResponse{
 		StatusCode: response.Success,
 		StatusMsg:  response.FriendListSuccess,

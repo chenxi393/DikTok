@@ -113,3 +113,13 @@ const (
 	UnFollowError1      = "不能取关未关注的人"
 	DefaultMessage      = "开始对话吧"
 )
+
+// grpc 常量
+const (
+	UserService     = "douyin/user"
+	VideoService    = "douyin/video"
+	RalationService = "douyin/relation"
+	CommentService  = "douyin/comment"
+	MessageService  = "douyin/message"
+	FavoriteService = "douyin/favorite"
+)

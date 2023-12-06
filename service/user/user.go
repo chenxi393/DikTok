@@ -1,7 +1,9 @@
-package service
+package main
 
 import (
+	"context"
 	"douyin/database"
+	pbuser "douyin/grpc/user"
 	"douyin/model"
 	"douyin/package/cache"
 	"douyin/package/constant"
@@ -15,30 +17,23 @@ import (
 )
 
 type UserService struct {
-	// 密码，最长32个字符
-	Password string `query:"password"`
-	// 注册用户名，最长32个字符
-	Username string `query:"username"`
-	// 用户鉴权token
-	Token string `query:"token"`
-	// 用户id 注意上面token会带一个userID
-	UserID uint64 `query:"user_id"`
+	pbuser.UnimplementedUserServer
 }
 
-func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, error) {
+func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest) (*pbuser.RegisterResponse, error) {
 	// 判断用户名是否合法
-	if len(service.Username) <= 0 || len(service.Username) > 32 {
+	if len(req.Username) <= 0 || len(req.Username) > 32 {
 		return nil, errors.New(constant.BadParaRequest)
 	}
-	if len(service.Password) < 6 || len(service.Password) > 32 {
+	if len(req.Password) < 6 || len(req.Password) > 32 {
 		return nil, errors.New(constant.SecretFormatError)
 	}
 	// TODO 复杂度判断 可以使用正则 记得去除常数
-	if service.Password == constant.EasySecret {
+	if req.Password == constant.EasySecret {
 		return nil, errors.New(constant.SecretFormatEasy)
 	}
 	//先判断用户存不存在 有唯一索引 其实可以不判断
-	_, err := database.SelectUserByName(service.Username)
+	_, err := database.SelectUserByName(req.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, err
@@ -47,9 +42,9 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 		return nil, errors.New(constant.UserDepulicate)
 	}
 	// 对密码进行加密并存储
-	encryptedPassword := util.BcryptHash(service.Password)
+	encryptedPassword := util.BcryptHash(req.Password)
 	user := &model.User{
-		Username:        service.Username,
+		Username:        req.Username,
 		Password:        encryptedPassword,
 		Avatar:          util.GenerateAvatar(),
 		BackgroundImage: util.GenerateImage(),
@@ -58,12 +53,6 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 	userID, err := database.CreateUser(user)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
-		return nil, err
-	}
-	// 签发token
-	token, err := util.SignToken(userID)
-	if err != nil {
-		zap.L().Error(err.Error())
 		return nil, err
 	}
 	// 1. 缓存用户的个人信息
@@ -87,17 +76,16 @@ func (service *UserService) RegisterService() (*response.UserRegisterOrLogin, er
 			zap.L().Sugar().Error(err)
 		}
 	}()
-	return &response.UserRegisterOrLogin{
+	return &pbuser.RegisterResponse{
 		StatusCode: response.Success,
 		StatusMsg:  response.RegisterSuccess,
-		Token:      &token,
-		UserID:     &userID,
+		UserId:     userID,
 	}, nil
 }
 
-func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error) {
+func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbuser.LoginResponse, error) {
 	// 使用redis 限制用户一定时间的登录次数
-	loginKey := constant.LoginCounterPrefix + service.Username
+	loginKey := constant.LoginCounterPrefix + req.Username
 	logintimes, err := cache.UserRedisClient.Get(loginKey).Result()
 	var logintimesInt int
 	if err != nil {
@@ -112,7 +100,7 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 	// 无论登录成功还是失败 这里redis记录的数据都+1
 	go cache.UserRedisClient.Set(loginKey, logintimesInt+1, constant.MaxloginInernal)
 	//先判断用户存不存在
-	user, err := database.SelectUserByName(service.Username)
+	user, err := database.SelectUserByName(req.Username)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, errors.New(constant.UserNoExist)
@@ -120,14 +108,8 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 	if user.ID == 0 {
 		return nil, errors.New(constant.UserNoExist)
 	}
-	if !util.BcryptCheck(service.Password, user.Password) {
+	if !util.BcryptCheck(req.Password, user.Password) {
 		return nil, errors.New(constant.SecretError)
-	}
-	// 签发token
-	token, err := util.SignToken(user.ID)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
 	}
 	// redis预热 用户要查看个人信息 发布的视频 喜欢的视频
 	go func() {
@@ -157,27 +139,26 @@ func (service *UserService) LoginService() (*response.UserRegisterOrLogin, error
 			zap.L().Sugar().Error(err)
 		}
 	}()
-	return &response.UserRegisterOrLogin{
+	return &pbuser.LoginResponse{
 		StatusCode: response.Success,
 		StatusMsg:  response.LoginSucess,
-		Token:      &token,
-		UserID:     &user.ID,
+		UserId:     user.ID,
 	}, nil
 }
 
-func (service *UserService) InfoService(loginUserID uint64) (*response.InfoResponse, error) {
+func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuser.InfoResponse, error) {
 	// 使用布隆过滤器判断用户ID是否存在
-	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(req.UserID, 10)) {
 		err := errors.New(constant.BloomFilterRejected)
 		zap.L().Sugar().Error(err)
 		return nil, err
 	}
 	// 去redis里查询用户信息 这是热点数据 redis缓存确实快了很多
-	user, err := cache.GetUserInfo(service.UserID)
+	user, err := cache.GetUserInfo(req.UserID)
 	// 缓存未命中再去查数据库
 	if err != nil {
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		user, err = database.SelectUserByID(service.UserID)
+		user, err = database.SelectUserByID(req.UserID)
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 			return nil, err
@@ -193,23 +174,23 @@ func (service *UserService) InfoService(loginUserID uint64) (*response.InfoRespo
 	// 判断是否是关注用户
 	var isFollow bool
 	// 用户未登录
-	if loginUserID == 0 {
+	if req.LoginUserID == 0 {
 		isFollow = false
-	} else if loginUserID == service.UserID { // 自己查自己 当然是关注了的
+	} else if req.LoginUserID == req.UserID { // 自己查自己 当然是关注了的
 		isFollow = true
 	} else {
-		isFollow, err = cache.IsFollow(loginUserID, service.UserID)
+		isFollow, err = cache.IsFollow(req.LoginUserID, req.UserID)
 		// 缓存未命中 查询数据库
 		if err != nil {
 			zap.L().Warn(constant.CacheMiss, zap.Error(err))
-			isFollow, err = database.IsFollowed(loginUserID, service.UserID)
+			isFollow, err = database.IsFollowed(req.LoginUserID, req.UserID)
 			if err != nil {
 				zap.L().Error(constant.DatabaseError, zap.Error(err))
 				return nil, err
 			}
 			go func() {
 				// 关注列表
-				followUserIDSet, err := database.SelectFollowingByUserID(loginUserID)
+				followUserIDSet, err := database.SelectFollowingByUserID(req.LoginUserID)
 				if err != nil {
 					zap.L().Error(constant.DatabaseError, zap.Error(err))
 					return
@@ -221,7 +202,7 @@ func (service *UserService) InfoService(loginUserID uint64) (*response.InfoRespo
 			}()
 		}
 	}
-	return &response.InfoResponse{
+	return &pbuser.InfoResponse{
 		StatusCode: response.Success,
 		User:       response.UserInfo(user, isFollow),
 	}, nil

@@ -1,0 +1,58 @@
+syntax = "proto3";
+// 指定生成的Go代码在你项目中的路径 以及pb的包名
+option go_package = "grpc/user;pbuser";
+
+service User {
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Login (LoginRequest) returns (LoginResponse) {}
+    rpc Info (InfoRequest) returns (InfoResponse) {}
+}
+
+message RegisterRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message RegisterResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
+    uint64 user_id = 3;
+    string token = 4;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
+    uint64 user_id = 3;
+    string token = 4;
+}
+
+message InfoRequest {
+    uint64 loginUserID = 1;
+    uint64 userID = 2;
+}
+
+message InfoResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
+    UserInfo user = 3;
+}
+
+message UserInfo {
+    uint64 id = 1; // 用户id
+    string name = 2; // 用户名称
+    string avatar = 3; //用户头像
+    string background_image = 4; //用户个人页顶部大图
+    string signature = 5; //个人简介
+    bool is_follow = 6; // true-已关注，false-未关注
+    int64 follow_count = 7; // 关注总数
+    int64 follower_count = 8; // 粉丝总数
+    int64 total_favorited = 9; //获赞数量
+    int64 work_count = 10; //作品数量
+    int64 favorite_count = 11; //点赞数量
+  }

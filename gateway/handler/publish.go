@@ -3,9 +3,9 @@ package handler
 import (
 	"bytes"
 	"douyin/package/constant"
-	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
+	"douyin/gateway/auth"
 	"io"
 	"strings"
 
@@ -24,7 +24,7 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	userClaim, err := util.ParseToken(publishService.Token)
+	userClaim, err := auth.ParseToken(publishService.Token)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -99,7 +99,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	if listService.Token == "" {
 		userID = 0
 	} else {
-		claims, err := util.ParseToken(listService.Token)
+		claims, err := auth.ParseToken(listService.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,

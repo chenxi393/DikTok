@@ -1,16 +1,18 @@
 ## 项目结构
-* config                配置信息
-* database              操作MySQl数据库
-* handler               路由处理函数
-* model                 数据库模型
-* package               依赖的服务
-* response              返回的数据类型
-* router                路由
-* service               具体的执行函数
-* main.go               程序的入口
-* Dockerfile            web服务的镜像文件
-* docker-compose.yaml   docker容器编排
-* Makefile              一键部署服务
+|              |                   |
+| ------------ | ----------------- |
+| config       | 配置信息          |
+| database     | 操作MySQl数据库   |
+| gateway      | 网关（包括鉴权）  |
+| grpc         | rpc代码           |
+| idl          | protobuf接口定义  |
+| model        | 数据库模型        |
+| package      | 依赖的服务        |
+| response     | 返回的数据类型    |
+| service      | 拆分的微服务      |
+| compose.yaml | docker容器编排    |
+| Dockerfile   | web服务的镜像文件 |
+| Makefile     | 一键部署服务      |
 
 ## 依赖项
 * Redis ( single )
@@ -35,15 +37,15 @@
 * 请不要上传大于30MB的视频 会返回413（大视频应在客户端压缩）
 
 ## 待办
-- [ ] 拆分成微服务，考虑gRPC+ETCD，再考虑成熟的微服务框架go-zero
+- [x] 拆分成微服务，考虑gRPC+ETCD，再考虑成熟的微服务框架go-zero
+- [x] 主键自增消耗很快 考虑分布式ID生成 snowflake雪花算法
+- [x] 视频搜索功能 全文索引实现（可考虑ES）
 - [ ] 项目部署运维的探究 K8s CICD体系
 - [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
 - [ ] 接入视频推荐算法（Gorse），对用户画像进行刻画
 - [ ] 增加视频总结和关键词提取功能（大模型）
 - [ ] 消息模块引入大语言模型√ 每日定时做视频推荐
 - [ ] token的续期 双token？？
-- [x] 主键自增消耗很快 考虑分布式ID生成 snowflake雪花算法
-- [x] 视频搜索功能 全文索引实现（可考虑ES）
 - [ ] 完善Websocket替换消息模块轮询
 - [ ] 视频格式大小校验√ 评论敏感词过滤，视频水印生成（FFmpeg）
 - [ ] 限流操作 redis就行 秒级时间戳当作键 或者token令牌桶（或者具体到ip的限流）

@@ -2,6 +2,7 @@ package response
 
 import (
 	"douyin/config"
+	pbuser "douyin/grpc/user"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type FeedResponse struct {
 
 type Video struct {
 	// 视频作者信息
-	Author User `json:"author"`
+	Author pbuser.UserInfo `json:"author"`
 	// 视频的评论总数
 	CommentCount int64 `json:"comment_count"`
 	// 视频封面地址
@@ -80,16 +81,16 @@ func VideoDataInfo(data []VideoData) []Video {
 	return items
 }
 
-func addUserDomain(user *User) *User {
-	return &User{
+func addUserDomain(user *User) *pbuser.UserInfo {
+	return &pbuser.UserInfo{
 		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
 		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,
-		ID:              user.ID,
+		Id:              user.ID,
 		IsFollow:        user.IsFollow,
-		Name:            user.Name,
+		Name:            user.Username,
 		Signature:       user.Signature,
 		TotalFavorited:  user.TotalFavorited,
 		WorkCount:       user.WorkCount,

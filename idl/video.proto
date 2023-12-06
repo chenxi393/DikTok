@@ -1,0 +1,34 @@
+syntax = "proto3";
+// 指定生成的Go代码在你项目中的路径 以及pb的包名
+option go_package = "grpc/video;pbvideo";
+
+service videoService {
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Login (LoginRequest) returns (LoginResponse) {}
+    rpc Info (InfoRequest) returns (InfoResponse) {}
+}
+
+message RegisterRequest {
+    string name = 1;
+}
+
+message RegisterResponse {
+    string reply = 1;
+}
+
+message LoginRequest {
+    string name = 1;
+}
+
+message LoginResponse {
+    string reply = 1;
+}
+
+message InfoRequest {
+    string name = 1;
+}
+
+message InfoResponse {
+    string reply = 1;
+}
+

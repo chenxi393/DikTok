@@ -98,7 +98,7 @@ func (service *FeedService) GetFeed(userID uint64) (*response.FeedResponse, erro
 	// 判断是否点赞和是否关注
 	followingMap[userID] = struct{}{}
 	for i, rr := range videoData {
-		if _, ok := followingMap[rr.Author.ID]; ok {
+		if _, ok := followingMap[rr.Author.Id]; ok {
 			videoData[i].Author.IsFollow = true
 		}
 		if _, ok := likingMap[rr.ID]; ok {

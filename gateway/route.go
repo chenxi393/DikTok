@@ -1,16 +1,32 @@
-package router
+package main
 
 import (
-	"douyin/handler"
-	"douyin/package/util"
+	"douyin/config"
+	"douyin/gateway/auth"
+	"douyin/gateway/handler"
 	"douyin/package/ws"
+
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"go.uber.org/zap"
 )
 
-func InitRouter(app *fiber.App) {
-	// 允许所有跨域请求
+func startFiber() {
+	// 客户端文件超过30MB 返回413
+	app := fiber.New(fiber.Config{
+		BodyLimit: 30 * 1024 * 1024,
+	})
+	// 使用中间件打印日志
+	app.Use(logger.New())
+	initRouter(app)
+	zap.L().Fatal("fiber启动失败: ", zap.Error(app.Listen(
+		config.System.HttpAddress.Host+":"+config.System.HttpAddress.Port)))
+}
+
+func initRouter(app *fiber.App) {
+	// 允许跨域请求
 	app.Use(cors.New())
 	app.Static("/video", "./douyinVideo",
 		fiber.Static{ByteRange: true}) // 好像可以分块传输 但是客户端没啥用。
@@ -38,22 +54,22 @@ func InitRouter(app *fiber.App) {
 		}
 		favorite := api.Group("/favorite")
 		{
-			favorite.Post("/action/", util.Authentication, handler.FavoriteVideoAction)
+			favorite.Post("/action/", auth.Authentication, handler.FavoriteVideoAction)
 			favorite.Get("/list/", handler.FavoriteList)
 		}
-		comment := api.Group("/comment")
-		{
-			comment.Post("/action/", util.Authentication, handler.CommentAction)
-			comment.Get("/list/", handler.CommentList)
-		}
+		// comment := api.Group("/comment")
+		// {
+		// 	comment.Post("/action/", auth.Authentication, handler.CommentAction)
+		// 	comment.Get("/list/", handler.CommentList)
+		// }
 		relation := api.Group("/relation")
 		{
-			relation.Post("/action/", util.Authentication, handler.RelationAction)
+			relation.Post("/action/", auth.Authentication, handler.RelationAction)
 			relation.Get("/follow/list/", handler.FollowList)
 			relation.Get("/follower/list/", handler.FollowerList)
-			relation.Get("/friend/list/", util.Authentication, handler.FriendList)
+			relation.Get("/friend/list/", auth.Authentication, handler.FriendList)
 		}
-		messgae := api.Group("/message", util.Authentication)
+		messgae := api.Group("/message", auth.Authentication)
 		{
 			messgae.Post("/action/", handler.MessageAction)
 			messgae.Get("/chat/", handler.MessageChat)

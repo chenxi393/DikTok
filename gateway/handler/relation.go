@@ -2,9 +2,9 @@ package handler
 
 import (
 	"douyin/package/constant"
-	"douyin/package/util"
 	"douyin/response"
 	"douyin/service"
+	"douyin/gateway/auth"
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -61,7 +61,7 @@ func FollowList(c *fiber.Ctx) error {
 	if service.Token == "" {
 		userID = 0
 	} else {
-		claims, err := util.ParseToken(service.Token)
+		claims, err := auth.ParseToken(service.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -101,7 +101,7 @@ func FollowerList(c *fiber.Ctx) error {
 	if service.Token == "" {
 		userID = 0
 	} else {
-		claims, err := util.ParseToken(service.Token)
+		claims, err := auth.ParseToken(service.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,

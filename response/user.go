@@ -2,6 +2,7 @@ package response
 
 import (
 	"douyin/config"
+	pbuser "douyin/grpc/user"
 	"douyin/model"
 )
 
@@ -10,8 +11,6 @@ type UserRegisterOrLogin struct {
 	StatusCode int `json:"status_code"`
 	// 返回状态描述
 	StatusMsg string `json:"status_msg"`
-	// 用户鉴权token
-	Token *string `json:"token"`
 	// 用户id
 	UserID *uint64 `json:"user_id"`
 }
@@ -42,7 +41,7 @@ type User struct {
 	// true-已关注，false-未关注
 	IsFollow bool `json:"is_follow"`
 	// 用户名称
-	Name string `json:"name" gorm:"column:username"` //done
+	Username string `json:"name" gorm:"column:username"` //done
 	// 个人简介
 	Signature string `json:"signature"`
 	// 获赞数量
@@ -51,14 +50,14 @@ type User struct {
 	WorkCount int64 `json:"work_count"`
 }
 
-func UserInfo(user *model.User, isFollowed bool) *User {
-	return &User{
+func UserInfo(user *model.User, isFollowed bool) *pbuser.UserInfo {
+	return &pbuser.UserInfo{
 		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
 		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,
-		ID:              user.ID,
+		Id:              user.ID,
 		IsFollow:        isFollowed,
 		Name:            user.Username,
 		Signature:       user.Signature,

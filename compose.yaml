@@ -40,6 +40,7 @@ services:
       R_W_DATABASE: '*'
       TZ: Asia/Shanghai
     volumes:
+     # 可能需要注意的是 docker-entrypoint-initdb.d 再每次重启运行 都会启动一次
       - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
       - ./config/mysql/douyin.sql:/docker-entrypoint-initdb.d/douyin.sql 
       - ./config/mysql/master.cnf:/etc/my.cnf
