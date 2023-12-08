@@ -1,15 +1,22 @@
 package cache
 
 import (
+	"douyin/config"
 	"douyin/model"
 	"douyin/package/constant"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
+	"github.com/bits-and-blooms/bloom/v3"
+	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
+
+var VideoRedisClient *redis.Client
+var VideoIDBloomFilter *bloom.BloomFilter
 
 // VideoInfo 视频固定的信息
 type VideoInfo struct {
@@ -19,6 +26,33 @@ type VideoInfo struct {
 	PlayURL     string
 	CoverURL    string
 	Title       string
+}
+
+func InitVideoRedis() {
+	// videoRedis 连接
+	VideoRedisClient = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", config.System.VideoRedis.Host, config.System.VideoRedis.Port),
+		Password: config.System.VideoRedis.Password,
+		DB:       config.System.VideoRedis.Database,
+		PoolSize: config.System.VideoRedis.PoolSize, //每个CPU最大连接数
+	})
+	_, err := VideoRedisClient.Ping().Result()
+	if err != nil {
+		zap.L().Fatal("video_redis连接失败", zap.Error(err))
+	}
+	initVideoBloomFilter()
+}
+
+// 初始化布隆过滤器
+// 布隆过滤器的预估元素数量 和误报率 决定了底层bitmap的大小 和 无偏哈希函数的个数
+func initVideoBloomFilter() {
+	VideoIDBloomFilter = bloom.NewWithEstimates(100000, 0.01)
+	videoIDList := make([]uint64, 0)
+	constant.DB.Model(&model.Video{}).Select("id").Find(&videoIDList)
+	for _, v := range videoIDList {
+		VideoIDBloomFilter.AddString(strconv.FormatUint(v, 10))
+	}
+	zap.L().Info("初始化布隆过滤器: 成功")
 }
 
 func SetVideoInfo(video *model.Video) error {

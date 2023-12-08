@@ -1,0 +1,45 @@
+syntax = "proto3";
+package comment;
+import "idl/user.proto";
+// 指定生成的Go代码在你项目中的路径 以及pb的包名
+option go_package = "douyin/grpc/comment;pbcomment";
+
+service Comment {
+    rpc Add (AddRequest) returns (CommentResponse) {}
+    rpc Delete (DeleteRequest) returns (CommentResponse) {}
+    rpc List (ListRequest) returns (ListResponse) {}
+}
+
+message AddRequest {
+    uint64 UserID = 1;
+    uint64 VideoID = 2;
+    string Content = 3;
+}
+
+message DeleteRequest {
+    uint64 CommentID = 1;
+}
+
+message CommentResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+    CommentData comment = 3;
+}
+
+message ListRequest {
+    uint64 UserID = 1;
+    uint64 VideoID = 2;
+}
+
+message ListResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+    repeated CommentData comment_list = 3;
+}
+  
+message CommentData {
+    uint32 id = 1;
+    user.UserInfo user = 2;
+    string content = 3;
+    string create_date = 4;
+}

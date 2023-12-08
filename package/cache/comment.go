@@ -1,9 +1,11 @@
 package cache
 
 import (
+	"douyin/config"
 	"douyin/model"
 	"douyin/package/constant"
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -11,6 +13,22 @@ import (
 	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
+
+var CommentRedisClient *redis.Client
+
+func InitCommentRedis() {
+	CommentRedisClient = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", config.System.CommentRedis.Host, config.System.CommentRedis.Port),
+		Password: config.System.CommentRedis.Password,
+		DB:       config.System.CommentRedis.Database,
+		PoolSize: config.System.CommentRedis.PoolSize, //每个CPU最大连接数
+	})
+	_, err := VideoRedisClient.Ping().Result()
+	if err != nil {
+		zap.L().Fatal("comment_redis连接失败", zap.Error(err))
+	}
+	zap.L().Info("redis连接: 成功")
+}
 
 // 评论增加 会影响视频的评论数 和评论表 需要lua脚本保证原子性 （目前采取删缓存）
 // 评论列表zset吧 按照评论时间排序（可以考虑时间加赞数加权排序）

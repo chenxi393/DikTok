@@ -84,8 +84,7 @@ func InitMySQL() {
 	//migration()
 }
 
-// 彻底弃用自动建表
-// 企业一般不用自动建表 记得自己在主库里建表
+// 弃用自动建表
 // func migration() {
 // 	err := constant.DB.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 // 		&model.User{},

@@ -2,6 +2,7 @@ package util
 
 import (
 	"douyin/config"
+	"douyin/package/constant"
 
 	"go.uber.org/zap"
 )
@@ -9,7 +10,7 @@ import (
 func InitZap() {
 	// 先打印到控制台吧
 	var logger *zap.Logger
-	if config.System.Mode == "debug" {
+	if config.System.Mode == constant.DebugMode {
 		logger, _ = zap.NewDevelopment()
 	} else {
 		logger, _ = zap.NewProduction()

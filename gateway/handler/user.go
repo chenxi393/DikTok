@@ -26,8 +26,8 @@ type userRequest struct {
 }
 
 func UserRegister(c *fiber.Ctx) error {
-	var user userRequest
-	err := c.QueryParser(&user)
+	var req userRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -38,8 +38,8 @@ func UserRegister(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	res, err := UserClient.Register(context.Background(), &pbuser.RegisterRequest{
-		Username: user.Username,
-		Password: user.Password,
+		Username: req.Username,
+		Password: req.Password,
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -67,8 +67,8 @@ func UserRegister(c *fiber.Ctx) error {
 }
 
 func UserLogin(c *fiber.Ctx) error {
-	var user userRequest
-	err := c.QueryParser(&user)
+	var req userRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -79,8 +79,8 @@ func UserLogin(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	res, err := UserClient.Login(context.Background(), &pbuser.LoginRequest{
-		Username: user.Username,
-		Password: user.Password,
+		Username: req.Username,
+		Password: req.Password,
 	})
 	if err != nil {
 		res := response.UserRegisterOrLogin{
@@ -107,8 +107,8 @@ func UserLogin(c *fiber.Ctx) error {
 }
 
 func UserInfo(c *fiber.Ctx) error {
-	var user userRequest
-	err := c.QueryParser(&user)
+	var req userRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -119,10 +119,10 @@ func UserInfo(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var loginUserID uint64
-	if user.Token == "" {
+	if req.Token == "" {
 		loginUserID = 0
 	} else {
-		claims, err := auth.ParseToken(user.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -134,7 +134,7 @@ func UserInfo(c *fiber.Ctx) error {
 		loginUserID = claims.UserID
 	}
 	res, err := UserClient.Info(context.Background(), &pbuser.InfoRequest{
-		UserID:      user.UserID,
+		UserID:      req.UserID,
 		LoginUserID: loginUserID,
 	})
 	if err != nil {

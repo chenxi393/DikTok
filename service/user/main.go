@@ -21,10 +21,8 @@ import (
 )
 
 const (
-	// etcd 端口
-	MyEtcdURL = "http://localhost:2379"
-
-	addr = "127.0.0.1:6668"
+	// 用户模块运行在 8010-8019
+	addr = "127.0.0.1:8010"
 )
 
 func main() {
@@ -33,7 +31,8 @@ func main() {
 	// TODO 日志也应该考虑合并
 	util.InitZap()
 	database.InitMySQL()
-	cache.InitRedis()
+	cache.InitUserRedis()
+	// 记得拆分MQ
 	mq.InitMQ()
 	llm.RegisterChatGPT()
 	lis, err := net.Listen("tcp", addr)
@@ -59,7 +58,7 @@ func main() {
 
 func registerEndPointToEtcd(ctx context.Context, addr string) {
 	// 创建 etcd 客户端
-	etcdClient, _ := eclient.NewFromURL(MyEtcdURL)
+	etcdClient, _ := eclient.NewFromURL(constant.MyEtcdURL)
 	// 创建 etcd 服务端节点管理模块 etcdManager
 	etcdManager, _ := endpoints.NewManager(etcdClient, constant.UserService)
 

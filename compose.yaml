@@ -15,7 +15,7 @@ services:
     #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
     #tty: true    #分配一个伪终端 与-t类似    docker run -dit
     networks:
-      - shardingSphere
+      - mysql
       - backend
     restart: on-failure:15
     environment:
@@ -46,7 +46,7 @@ services:
       - ./config/mysql/master.cnf:/etc/my.cnf
       - mysqlMasterData:/var/lib/mysql/
     networks:
-      shardingSphere:
+      mysql:
         ipv4_address: 192.168.0.100
 
   mysql-slave:
@@ -73,7 +73,7 @@ services:
       - ./config/mysql/slave.cnf:/etc/my.cnf
       - mysqlSlaveData:/var/lib/mysql/
     networks:
-      shardingSphere:
+      mysql:
         ipv4_address: 192.168.0.101
     depends_on:
       - mysql-master
@@ -86,7 +86,7 @@ services:
     networks:
       - backend
     volumes:
-      - redisData:/data
+      - redis:/data
 
   dev-rabbitmq:
     image: rabbitmq:3-management
@@ -102,7 +102,7 @@ services:
       - backend
 
 networks:
-  shardingSphere:
+  mysql:
     ipam:
       driver: default
       config:
@@ -112,9 +112,10 @@ networks:
 # volume 持久化数据
 volumes:
   rabbitmq:
+  # 有机会改一下名mysql_master
   mysqlMasterData:
   mysqlSlaveData:
-  redisData:
+  redis:
 
 
 #    env_file:

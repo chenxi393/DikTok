@@ -1,0 +1,38 @@
+syntax = "proto3";
+package favorite;
+import "idl/video.proto";
+
+// 指定生成的Go代码在你项目中的路径 以及pb的包名
+option go_package = "douyin/grpc/favorite;pbfavorite";
+
+service Favorite {
+    rpc Like (LikeRequest) returns (LikeResponse) {}
+    rpc Unlike (LikeRequest) returns (LikeResponse) {}
+    rpc List (ListRequest) returns (ListResponse) {}
+}
+
+message LikeRequest {
+    uint64 UserID = 1;
+    uint64 VideoID = 2;
+}
+
+message LikeResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
+}
+
+message SearchRequest {
+    string Keyword = 1;
+    uint64 UserID = 2;
+}
+
+message ListRequest {
+    uint64 UserID = 1;
+    uint64 LoginUserID = 2;
+}
+
+message ListResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+    repeated video.VideoData video_list = 3;
+}

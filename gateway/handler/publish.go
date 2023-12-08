@@ -2,10 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"context"
+	"douyin/gateway/auth"
+	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
 	"douyin/response"
-	"douyin/service"
-	"douyin/gateway/auth"
 	"io"
 	"strings"
 
@@ -13,9 +14,24 @@ import (
 	"go.uber.org/zap"
 )
 
+type publishRequest struct {
+	// 用户鉴权token
+	Token string `form:"token"`
+	// 视频标题
+	Title string `form:"title"`
+	// 新增 topic
+	Topic string `form:"topic"`
+}
+
+type listRequest struct {
+	// 用户鉴权token
+	Token  string `form:"token"`
+	UserID uint64 `form:"user_id"`
+}
+
 func PublishAction(c *fiber.Ctx) error {
-	var publishService service.PublisService
-	err := c.BodyParser(&publishService)
+	var req publishRequest
+	err := c.BodyParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -24,7 +40,7 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	userClaim, err := auth.ParseToken(publishService.Token)
+	userClaim, err := auth.ParseToken(req.Token)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -72,7 +88,11 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	res, err := publishService.PublishAction(userClaim.UserID, buf)
+	res, err := VideoClient.Pubulish(context.Background(), &pbvideo.PublishRequest{
+		Title:  req.Title,
+		Topic:  req.Topic,
+		UserID: userClaim.UserID,
+	})
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -85,8 +105,8 @@ func PublishAction(c *fiber.Ctx) error {
 }
 
 func ListPublishedVideo(c *fiber.Ctx) error {
-	var listService service.PublishListService
-	err := c.QueryParser(&listService)
+	var req listRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
@@ -96,10 +116,10 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if listService.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(listService.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -110,7 +130,10 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := listService.GetPublishVideos(userID)
+	resp, err := VideoClient.List(context.Background(), &pbvideo.ListRequest{
+		UserID:      req.UserID,
+		LoginUserID: userID,
+	})
 	if err != nil {
 		res := response.UserRegisterOrLogin{
 			StatusCode: response.Failed,

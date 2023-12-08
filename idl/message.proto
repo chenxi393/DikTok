@@ -1,0 +1,42 @@
+syntax = "proto3";
+package message;
+
+// 指定生成的Go代码在你项目中的路径 以及pb的包名
+option go_package = "douyin/grpc/message;pbmessage";
+
+service Message {
+    rpc Send (SendRequest) returns (SendResponse) {}
+    rpc List (ListRequest) returns (ListResponse) {}
+}
+
+message SendRequest {
+    uint64 UserID = 1;
+    uint64 ToUerID = 2;
+    string Content = 3;
+}
+
+message SendResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
+}
+
+message ListRequest {
+    uint64 UserID = 1;
+    uint64 ToUerID = 2;
+    int64 pre_msg_time = 3;
+}
+
+message ListResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+    repeated MessageData message_list = 3;
+}
+
+message MessageData {
+    uint64 id = 1;
+    string content = 2;
+    int64 create_time = 3;
+    uint64 from_user_id = 4;
+    uint64 to_user_id = 5;
+  }
+  

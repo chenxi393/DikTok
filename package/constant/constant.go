@@ -122,4 +122,5 @@ const (
 	CommentService  = "douyin/comment"
 	MessageService  = "douyin/message"
 	FavoriteService = "douyin/favorite"
+	MyEtcdURL       = "http://localhost:2379"
 )

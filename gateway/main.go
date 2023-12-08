@@ -3,7 +3,12 @@ package main
 import (
 	"douyin/config"
 	"douyin/gateway/handler"
+	pbcomment "douyin/grpc/comment"
+	pbfavorite "douyin/grpc/favorite"
+	pbmessage "douyin/grpc/message"
+	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
+	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
 	"douyin/package/util"
 	"fmt"
@@ -15,13 +20,6 @@ import (
 	"google.golang.org/grpc/balancer/roundrobin"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
-)
-
-const (
-	// 当前服务的服务名
-	MyService = "douyin/gateway"
-	// etcd 端口
-	MyEtcdURL = "http://localhost:2379"
 )
 
 func main() {
@@ -37,7 +35,7 @@ func main() {
 
 func connectService() {
 	// 创建 etcd 客户端
-	etcdClient, err := eclient.NewFromURL(MyEtcdURL)
+	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
@@ -50,20 +48,36 @@ func connectService() {
 	}
 	// 拼接服务名称，需要固定义 etcd:/// 作为前缀
 	userTarget := fmt.Sprintf("etcd:///%s", constant.UserService)
-	// videoTarget := fmt.Sprintf("etcd:///%s", constant.VideoService)
-	// relationTarget := fmt.Sprintf("etcd:///%s", constant.RalationService)
-	// commentTarget := fmt.Sprintf("etcd:///%s", constant.CommentService)
-	// messageTarget := fmt.Sprintf("etcd:///%s", constant.MessageService)
-	// favoriteTarget := fmt.Sprintf("etcd:///%s", constant.FavoriteService)
+	videoTarget := fmt.Sprintf("etcd:///%s", constant.VideoService)
+	relationTarget := fmt.Sprintf("etcd:///%s", constant.RalationService)
+	favoriteTarget := fmt.Sprintf("etcd:///%s", constant.FavoriteService)
+	commentTarget := fmt.Sprintf("etcd:///%s", constant.CommentService)
+	messageTarget := fmt.Sprintf("etcd:///%s", constant.MessageService)
 
 	// 开启用户服务的连接 并且defer关闭函数
 	userConn := setupServiceConn(userTarget, etcdResolverBuilder)
 	handler.UserClient = pbuser.NewUserClient(userConn)
 	// FIXME 这里不能用close
-	//defer userConn.Close()
+	// defer userConn.Close()
 
-	// videoConn := setupServiceConn(videoTarget, etcdResolverBuilder)
-	// UserClient = pbuser.NewUserServiceClient(userConn)
+	videoConn := setupServiceConn(videoTarget, etcdResolverBuilder)
+	handler.VideoClient = pbvideo.NewVideoClient(videoConn)
+	// defer userConn.Close()
+
+	relationConn := setupServiceConn(relationTarget, etcdResolverBuilder)
+	handler.RelationClient = pbrelation.NewRelationClient(relationConn)
+	// defer userConn.Close()
+
+	favoriteConn := setupServiceConn(favoriteTarget, etcdResolverBuilder)
+	handler.FavoriteClient = pbfavorite.NewFavoriteClient(favoriteConn)
+	// defer userConn.Close()
+
+	messageConn := setupServiceConn(messageTarget, etcdResolverBuilder)
+	handler.MessageClinet = pbmessage.NewMessageClient(messageConn)
+	// defer userConn.Close()
+
+	commentConn := setupServiceConn(commentTarget, etcdResolverBuilder)
+	handler.CommentClient = pbcomment.NewCommentClient(commentConn)
 	// defer userConn.Close()
 }
 

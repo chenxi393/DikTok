@@ -1,19 +1,36 @@
 package handler
 
 import (
+	"context"
 	"douyin/gateway/auth"
+	pbfavorite "douyin/grpc/favorite"
 	"douyin/package/constant"
 	"douyin/response"
-	"douyin/service"
-	"fmt"
+	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
 
+var (
+	FavoriteClient pbfavorite.FavoriteClient
+)
+
+type likeRequest struct {
+	// 1-点赞，2-取消点赞
+	ActionType string `query:"action_type"`
+	// 视频id
+	VideoID uint64 `query:"video_id"`
+}
+
+type likeListRequest struct {
+	Token  string `query:"token"`
+	UserID uint64 `query:"user_id"`
+}
+
 func FavoriteVideoAction(c *fiber.Ctx) error {
-	var service service.FavoriteService
-	err := c.QueryParser(&service)
+	var req likeRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
@@ -24,13 +41,19 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
-	var resp *response.CommonResponse
-	if service.ActionType == constant.DoAction {
-		resp, err = service.Favorite(userID)
-	} else if service.ActionType == constant.UndoAction {
-		resp, err = service.UnFavorite(userID)
+	var resp *pbfavorite.LikeResponse
+	if req.ActionType == constant.DoAction {
+		resp, err = FavoriteClient.Like(context.Background(), &pbfavorite.LikeRequest{
+			UserID:  userID,
+			VideoID: req.VideoID,
+		})
+	} else if req.ActionType == constant.UndoAction {
+		resp, err = FavoriteClient.Unlike(context.Background(), &pbfavorite.LikeRequest{
+			UserID:  userID,
+			VideoID: req.VideoID,
+		})
 	} else {
-		err = fmt.Errorf(constant.BadParaRequest)
+		err = errors.New(response.BadParaRequest)
 	}
 	if err != nil {
 		res := response.CommonResponse{
@@ -45,8 +68,8 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 }
 
 func FavoriteList(c *fiber.Ctx) error {
-	var service service.FavoriteService
-	err := c.QueryParser(&service)
+	var req likeListRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
@@ -58,10 +81,10 @@ func FavoriteList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if service.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(service.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -72,21 +95,19 @@ func FavoriteList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := service.FavoriteList(userID)
+	resp, err := FavoriteClient.List(context.Background(), &pbfavorite.ListRequest{
+		UserID:      req.UserID,
+		LoginUserID: userID,
+	})
 	if err != nil {
 		res := response.VideoListResponse{
 			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
+			StatusMsg:  err.Error(),
 			VideoList:  nil,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res := response.VideoListResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.FavoriteListSuccess,
-		VideoList:  resp,
-	}
 	c.Status(fiber.StatusOK)
-	return c.JSON(res)
+	return c.JSON(resp)
 }

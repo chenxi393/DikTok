@@ -1,19 +1,42 @@
 package handler
 
 import (
+	"context"
+	"douyin/gateway/auth"
+	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
 	"douyin/response"
-	"douyin/service"
-	"douyin/gateway/auth"
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
 
+var (
+	RelationClient pbrelation.RelationClient
+)
+
+type followRequest struct {
+	// 1-关注，2-取消关注
+	ActionType string `query:"action_type"`
+	// 对方用户id
+	ToUserID uint64 `query:"to_user_id"`
+}
+
+type followListRequest struct {
+	Token string `query:"token"`
+	// 用户id List使用 查看这个用户的关注列表，粉丝列表，好友列表
+	UserID uint64 `query:"user_id"`
+}
+
+type friendListRequest struct {
+	// 用户id List使用 查看这个用户的关注列表，粉丝列表，好友列表
+	UserID uint64 `query:"user_id"`
+}
+
 func RelationAction(c *fiber.Ctx) error {
-	var service service.RelationService
-	err := c.QueryParser(&service)
+	var req followRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.CommonResponse{
 			StatusCode: response.Failed,
@@ -23,15 +46,22 @@ func RelationAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
-	if service.ActionType == "1" {
-		err = service.FollowAction(userID)
-	} else if service.ActionType == "2" {
-		err = service.UnFollowAction(userID)
+	var res *pbrelation.FollowResponse
+	if req.ActionType == constant.DoAction {
+		res, err = RelationClient.Follow(context.Background(), &pbrelation.FollowRequest{
+			UserID:   userID,
+			ToUserID: req.ToUserID,
+		})
+	} else if req.ActionType == constant.UndoAction {
+		res, err = RelationClient.Unfollow(context.Background(), &pbrelation.FollowRequest{
+			UserID:   userID,
+			ToUserID: req.ToUserID,
+		})
 	} else {
 		err = errors.New(constant.BadParaRequest)
 	}
 	if err != nil {
-		res := response.CommonResponse{
+		res := &response.CommonResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  err.Error(),
 		}
@@ -39,16 +69,12 @@ func RelationAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	c.Status(fiber.StatusOK)
-	res := response.CommonResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.ActionSuccess,
-	}
 	return c.JSON(res)
 }
 
 func FollowList(c *fiber.Ctx) error {
-	var service service.RelationService
-	err := c.QueryParser(&service)
+	var req followListRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.RelationListResponse{
 			StatusCode: response.Failed,
@@ -58,10 +84,10 @@ func FollowList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if service.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(service.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -72,7 +98,10 @@ func FollowList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := service.RelationFollowList(userID)
+	resp, err := RelationClient.FollowList(context.Background(), &pbrelation.ListRequest{
+		LoginUserID: userID,
+		UserID:      req.UserID,
+	})
 	if err != nil {
 		res := response.RelationListResponse{
 			StatusCode: response.Failed,
@@ -86,8 +115,8 @@ func FollowList(c *fiber.Ctx) error {
 }
 
 func FollowerList(c *fiber.Ctx) error {
-	var service service.RelationService
-	err := c.QueryParser(&service)
+	var req followListRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.RelationListResponse{
@@ -98,10 +127,10 @@ func FollowerList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if service.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(service.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -112,7 +141,10 @@ func FollowerList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := service.RelationFollowerList(userID)
+	resp, err := RelationClient.FollowerList(context.Background(), &pbrelation.ListRequest{
+		LoginUserID: userID,
+		UserID:      req.UserID,
+	})
 	if err != nil {
 		res := response.RelationListResponse{
 			StatusCode: response.Failed,
@@ -126,8 +158,8 @@ func FollowerList(c *fiber.Ctx) error {
 }
 
 func FriendList(c *fiber.Ctx) error {
-	var service service.RelationService
-	err := c.QueryParser(&service)
+	var req friendListRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.RelationListResponse{
@@ -138,7 +170,7 @@ func FriendList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
-	if userID != service.UserID {
+	if userID != req.UserID {
 		res := response.RelationListResponse{
 			StatusCode: response.Failed,
 			StatusMsg:  response.FriendListError,
@@ -146,7 +178,10 @@ func FriendList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	resp, err := service.RelationFriendList()
+	resp, err := RelationClient.FriendList(context.Background(), &pbrelation.ListRequest{
+		LoginUserID: userID,
+		UserID:      req.UserID,
+	})
 	if err != nil {
 		res := response.RelationListResponse{
 			StatusCode: response.Failed,

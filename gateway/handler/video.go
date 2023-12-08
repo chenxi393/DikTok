@@ -1,17 +1,36 @@
 package handler
 
 import (
-	"douyin/response"
-	"douyin/service"
+	"context"
 	"douyin/gateway/auth"
+	pbvideo "douyin/grpc/video"
+	"douyin/response"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
 
+var (
+	VideoClient pbvideo.VideoClient
+)
+
+type feedRequest struct {
+	LatestTime int64 `query:"latest_time"`
+	// 用户登录状态下设置
+	Token string `query:"token"`
+	// 新增topic
+	Topic string `query:"topic"`
+}
+
+type searchRequest struct {
+	Keyword string `query:"keyword"`
+	// 用户登录状态下设置
+	Token string `query:"token"`
+}
+
 func Feed(c *fiber.Ctx) error {
-	var feedService service.FeedService
-	err := c.QueryParser(&feedService)
+	var req feedRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.FeedResponse{
@@ -22,10 +41,10 @@ func Feed(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if feedService.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(feedService.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: response.Failed,
@@ -36,7 +55,11 @@ func Feed(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	res, err := feedService.GetFeed(userID)
+	res, err := VideoClient.Feed(context.Background(), &pbvideo.FeedRequest{
+		LatestTime: req.LatestTime,
+		Topic:      req.Topic,
+		UserID:     userID,
+	})
 	if err != nil {
 		res := response.FeedResponse{
 			StatusCode: response.Failed,
@@ -51,8 +74,8 @@ func Feed(c *fiber.Ctx) error {
 
 // 23.11.03 新增视频搜索功能
 func SearchVideo(c *fiber.Ctx) error {
-	var service service.SearchService
-	err := c.QueryParser(&service)
+	var req searchRequest
+	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
@@ -63,10 +86,10 @@ func SearchVideo(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	var userID uint64
-	if service.Token == "" {
+	if req.Token == "" {
 		userID = 0
 	} else {
-		claims, err := auth.ParseToken(service.Token)
+		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.VideoListResponse{
 				StatusCode: response.Failed,
@@ -77,7 +100,10 @@ func SearchVideo(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	res, err := service.SearchVideo(userID)
+	res, err := VideoClient.Search(context.Background(), &pbvideo.SearchRequest{
+		Keyword: req.Keyword,
+		UserID:  userID,
+	})
 	if err != nil {
 		res := response.VideoListResponse{
 			StatusCode: response.Failed,

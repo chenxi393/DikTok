@@ -1,34 +1,65 @@
 syntax = "proto3";
+package video;
+import "idl/user.proto";
+
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
-option go_package = "grpc/video;pbvideo";
+option go_package = "douyin/grpc/video;pbvideo";
 
-service videoService {
-    rpc Register (RegisterRequest) returns (RegisterResponse) {}
-    rpc Login (LoginRequest) returns (LoginResponse) {}
-    rpc Info (InfoRequest) returns (InfoResponse) {}
+service Video {
+    rpc Feed (FeedRequest) returns (FeedResponse) {}
+    rpc Pubulish (PublishRequest) returns (PublishResponse) {}
+    rpc List (ListRequest) returns (VideoListResponse) {}
+    rpc Search (SearchRequest) returns (VideoListResponse) {}
 }
 
-message RegisterRequest {
-    string name = 1;
+message VideoData {
+    uint32 id = 1;
+    user.UserInfo author = 2;
+    string play_url = 3;
+    string cover_url = 4;
+    uint32 favorite_count = 5;
+    uint32 comment_count = 6;
+    bool is_favorite = 7;
+    string title = 8;
 }
 
-message RegisterResponse {
-    string reply = 1;
+message FeedRequest {
+    int64 LatestTime = 1;
+    string Topic = 2;
+    uint64 UserID = 3;
 }
 
-message LoginRequest {
-    string name = 1;
+message FeedResponse {
+    int64 next_time = 1;
+    int32 status_msg = 2;
+    string status_code = 3;
+    repeated VideoData video_list = 4;
 }
 
-message LoginResponse {
-    string reply = 1;
+message SearchRequest {
+    string Keyword = 1;
+    uint64 UserID = 2;
 }
 
-message InfoRequest {
-    string name = 1;
+message VideoListResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+    repeated VideoData video_list = 3;
 }
 
-message InfoResponse {
-    string reply = 1;
+message PublishRequest {
+    string Title = 1;
+    string Topic = 2;
+    uint64 UserID = 3;
+    bytes data = 4; // 视频数据
 }
 
+message PublishResponse {
+    int32 status_msg = 1;
+    string status_code = 2;
+}
+
+message ListRequest {
+    uint64 UserID = 1;
+    uint64 LoginUserID = 2;
+}
