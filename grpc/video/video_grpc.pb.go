@@ -23,9 +23,10 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type VideoClient interface {
 	Feed(ctx context.Context, in *FeedRequest, opts ...grpc.CallOption) (*FeedResponse, error)
-	Pubulish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error)
+	Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*VideoListResponse, error)
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*VideoListResponse, error)
+	GetVideosByUserID(ctx context.Context, in *GetVideosRequest, opts ...grpc.CallOption) (*GetVideosResponse, error)
 }
 
 type videoClient struct {
@@ -45,9 +46,9 @@ func (c *videoClient) Feed(ctx context.Context, in *FeedRequest, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *videoClient) Pubulish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error) {
+func (c *videoClient) Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error) {
 	out := new(PublishResponse)
-	err := c.cc.Invoke(ctx, "/video.Video/Pubulish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/video.Video/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +73,24 @@ func (c *videoClient) Search(ctx context.Context, in *SearchRequest, opts ...grp
 	return out, nil
 }
 
+func (c *videoClient) GetVideosByUserID(ctx context.Context, in *GetVideosRequest, opts ...grpc.CallOption) (*GetVideosResponse, error) {
+	out := new(GetVideosResponse)
+	err := c.cc.Invoke(ctx, "/video.Video/GetVideosByUserID", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VideoServer is the server API for Video service.
 // All implementations must embed UnimplementedVideoServer
 // for forward compatibility
 type VideoServer interface {
 	Feed(context.Context, *FeedRequest) (*FeedResponse, error)
-	Pubulish(context.Context, *PublishRequest) (*PublishResponse, error)
+	Publish(context.Context, *PublishRequest) (*PublishResponse, error)
 	List(context.Context, *ListRequest) (*VideoListResponse, error)
 	Search(context.Context, *SearchRequest) (*VideoListResponse, error)
+	GetVideosByUserID(context.Context, *GetVideosRequest) (*GetVideosResponse, error)
 	mustEmbedUnimplementedVideoServer()
 }
 
@@ -90,14 +101,17 @@ type UnimplementedVideoServer struct {
 func (UnimplementedVideoServer) Feed(context.Context, *FeedRequest) (*FeedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Feed not implemented")
 }
-func (UnimplementedVideoServer) Pubulish(context.Context, *PublishRequest) (*PublishResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pubulish not implemented")
+func (UnimplementedVideoServer) Publish(context.Context, *PublishRequest) (*PublishResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
 func (UnimplementedVideoServer) List(context.Context, *ListRequest) (*VideoListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedVideoServer) Search(context.Context, *SearchRequest) (*VideoListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedVideoServer) GetVideosByUserID(context.Context, *GetVideosRequest) (*GetVideosResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVideosByUserID not implemented")
 }
 func (UnimplementedVideoServer) mustEmbedUnimplementedVideoServer() {}
 
@@ -130,20 +144,20 @@ func _Video_Feed_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Video_Pubulish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Video_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PublishRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VideoServer).Pubulish(ctx, in)
+		return srv.(VideoServer).Publish(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/video.Video/Pubulish",
+		FullMethod: "/video.Video/Publish",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VideoServer).Pubulish(ctx, req.(*PublishRequest))
+		return srv.(VideoServer).Publish(ctx, req.(*PublishRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -184,6 +198,24 @@ func _Video_Search_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Video_GetVideosByUserID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetVideosRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VideoServer).GetVideosByUserID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/video.Video/GetVideosByUserID",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VideoServer).GetVideosByUserID(ctx, req.(*GetVideosRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Video_ServiceDesc is the grpc.ServiceDesc for Video service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -196,8 +228,8 @@ var Video_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Video_Feed_Handler,
 		},
 		{
-			MethodName: "Pubulish",
-			Handler:    _Video_Pubulish_Handler,
+			MethodName: "Publish",
+			Handler:    _Video_Publish_Handler,
 		},
 		{
 			MethodName: "List",
@@ -206,6 +238,10 @@ var Video_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Search",
 			Handler:    _Video_Search_Handler,
+		},
+		{
+			MethodName: "GetVideosByUserID",
+			Handler:    _Video_GetVideosByUserID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

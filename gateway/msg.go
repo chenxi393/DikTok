@@ -38,8 +38,8 @@ func handleWebSocket() func(*websocket.Conn) {
 			if len(ms) == 1 && ms[0] == "get" {
 				// 返回聊天记录
 				res, err := handler.MessageClinet.List(context.Background(), &pbmessage.ListRequest{
-					UserID:  userID,
-					ToUerID: toUserID,
+					UserID:   userID,
+					ToUserID: toUserID,
 				})
 				if err != nil {
 					zap.L().Error(err.Error())

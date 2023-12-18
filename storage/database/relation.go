@@ -2,8 +2,8 @@ package database
 
 import (
 	"douyin/model"
-	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/storage/cache"
 
 	"gorm.io/gorm"
 )
@@ -53,13 +53,13 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 
 func SelectFollowingByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := constant.DB.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }
 
 func SelectFollowerByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := constant.DB.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }
 

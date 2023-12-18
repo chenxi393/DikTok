@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
-	"douyin/response"
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,7 +39,7 @@ func RelationAction(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -61,8 +61,10 @@ func RelationAction(c *fiber.Ctx) error {
 		err = errors.New(constant.BadParaRequest)
 	}
 	if err != nil {
+		// 这里由于rpc会传递具体的错误信息
+		// 可以考虑不用
 		res := &response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -77,7 +79,7 @@ func FollowList(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -90,8 +92,8 @@ func FollowList(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -104,7 +106,7 @@ func FollowList(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -120,8 +122,8 @@ func FollowerList(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -133,8 +135,8 @@ func FollowerList(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -147,7 +149,7 @@ func FollowerList(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -163,8 +165,8 @@ func FriendList(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -172,8 +174,8 @@ func FriendList(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(uint64)
 	if userID != req.UserID {
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.FriendListError,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FriendListError,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -184,7 +186,7 @@ func FriendList(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.RelationListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)

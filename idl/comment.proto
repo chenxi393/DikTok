@@ -18,11 +18,13 @@ message AddRequest {
 
 message DeleteRequest {
     uint64 CommentID = 1;
+    uint64 VideoID = 2;
+    uint64 UserID = 3;
 }
 
 message CommentResponse {
-    int32 status_msg = 1;
-    string status_code = 2;
+    int32 status_code = 1;
+    string status_msg = 2;
     CommentData comment = 3;
 }
 
@@ -32,13 +34,13 @@ message ListRequest {
 }
 
 message ListResponse {
-    int32 status_msg = 1;
-    string status_code = 2;
+    int32 status_code = 1;
+    string status_msg = 2;
     repeated CommentData comment_list = 3;
 }
   
 message CommentData {
-    uint32 id = 1;
+    uint64 id = 1;
     user.UserInfo user = 2;
     string content = 3;
     string create_date = 4;

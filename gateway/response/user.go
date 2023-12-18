@@ -1,11 +1,5 @@
 package response
 
-import (
-	"douyin/config"
-	pbuser "douyin/grpc/user"
-	"douyin/model"
-)
-
 type UserRegisterOrLogin struct {
 	// 状态码，0-成功，其他值-失败
 	StatusCode int `json:"status_code"`
@@ -48,20 +42,4 @@ type User struct {
 	TotalFavorited int64 `json:"total_favorited"`
 	// 作品数
 	WorkCount int64 `json:"work_count"`
-}
-
-func UserInfo(user *model.User, isFollowed bool) *pbuser.UserInfo {
-	return &pbuser.UserInfo{
-		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
-		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
-		FavoriteCount:   user.FavoriteCount,
-		FollowCount:     user.FollowCount,
-		FollowerCount:   user.FollowerCount,
-		Id:              user.ID,
-		IsFollow:        isFollowed,
-		Name:            user.Username,
-		Signature:       user.Signature,
-		TotalFavorited:  user.TotalFavorited,
-		WorkCount:       user.WorkCount,
-	}
 }

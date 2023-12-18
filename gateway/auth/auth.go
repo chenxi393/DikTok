@@ -2,8 +2,8 @@ package auth
 
 import (
 	"douyin/config"
+	"douyin/gateway/response"
 	"douyin/package/constant"
-	"douyin/response"
 	"fmt"
 	"time"
 
@@ -58,16 +58,16 @@ func Authentication(c *fiber.Ctx) error {
 	if token == "" {
 		zap.L().Info("token为空")
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.WrongToken,
 		}
 		return c.JSON(res)
 	}
 	claims, err := ParseToken(token)
 	if err != nil {
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.WrongToken,
 		}
 		return c.JSON(res)
 	}

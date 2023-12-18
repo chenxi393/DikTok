@@ -2,9 +2,9 @@ package handler
 
 import (
 	"context"
+	"douyin/gateway/response"
 	pbmessage "douyin/grpc/message"
 	"douyin/package/constant"
-	"douyin/response"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -33,7 +33,7 @@ func MessageAction(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -41,21 +41,21 @@ func MessageAction(c *fiber.Ctx) error {
 	}
 	if req.ActionType != constant.DoAction {
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := MessageClinet.Send(context.Background(), &pbmessage.SendRequest{
-		UserID:  userID,
-		ToUerID: req.ToUserID,
-		Content: req.Content,
+		UserID:   userID,
+		ToUserID: req.ToUserID,
+		Content:  req.Content,
 	})
 	if err != nil {
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -71,7 +71,7 @@ func MessageChat(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.MessageResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -80,12 +80,12 @@ func MessageChat(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := MessageClinet.List(context.Background(), &pbmessage.ListRequest{
 		UserID:     userID,
-		ToUerID:    req.ToUserID,
+		ToUserID:   req.ToUserID,
 		PreMsgTime: req.Pre_msg_time,
 	})
 	if err != nil {
 		res := response.MessageResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)

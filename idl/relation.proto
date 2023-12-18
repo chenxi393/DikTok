@@ -1,15 +1,17 @@
 syntax = "proto3";
 package relation;
-
+import "idl/user.proto";
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
 option go_package = "douyin/grpc/relation;pbrelation";
 
 service Relation {
     rpc Follow (FollowRequest) returns (FollowResponse) {}
     rpc Unfollow (FollowRequest) returns (FollowResponse) {}
-    rpc FollowList (ListRequest) returns (InfoResponse) {}
-    rpc FollowerList (ListRequest) returns (InfoResponse) {}
-    rpc FriendList (ListRequest) returns (InfoResponse) {}
+    rpc FollowList (ListRequest) returns (ListResponse) {}
+    rpc FollowerList (ListRequest) returns (ListResponse) {}
+    rpc FriendList (ListRequest) returns (FriendsResponse) {}
+    rpc IsFollow(ListRequest)returns(IsFollowResponse){}
+    rpc IsFriend(ListRequest)returns(IsFriendResponse){}
 }
 
 message FollowRequest {
@@ -27,13 +29,27 @@ message ListRequest {
     uint64 userID = 2;
 }
 
-message InfoResponse {
+message ListResponse {
     int32 status_code = 1;
     string status_msg = 2;
-    repeated UserInfo user = 3;
+    repeated user.UserInfo user_list = 3;
 }
 
-message UserInfo {
+message IsFollowResponse{
+    bool result = 1;
+}
+
+message IsFriendResponse{
+    bool result = 1;
+}
+
+message FriendsResponse{
+    int32 status_code = 1;
+    string status_msg = 2;
+    repeated FriendInfo user_list = 3;
+}
+
+message FriendInfo {
     uint64 id = 1; // 用户id
     string name = 2; // 用户名称
     string avatar = 3; //用户头像
@@ -45,4 +61,6 @@ message UserInfo {
     int64 total_favorited = 9; //获赞数量
     int64 work_count = 10; //作品数量
     int64 favorite_count = 11; //点赞数量
-  }
+    string message = 12;
+    int32  msgType = 13;
+}

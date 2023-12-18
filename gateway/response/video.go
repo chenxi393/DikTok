@@ -1,8 +1,6 @@
 package response
 
 import (
-	"douyin/config"
-	pbuser "douyin/grpc/user"
 	"time"
 )
 
@@ -19,7 +17,7 @@ type FeedResponse struct {
 
 type Video struct {
 	// 视频作者信息
-	Author pbuser.UserInfo `json:"author"`
+	Author User `json:"author"`
 	// 视频的评论总数
 	CommentCount int64 `json:"comment_count"`
 	// 视频封面地址
@@ -60,39 +58,4 @@ type VideoListResponse struct {
 	StatusMsg string `json:"status_msg"`
 	// 用户发布的视频列表
 	VideoList []Video `json:"video_list"`
-}
-
-func VideoDataInfo(data []VideoData) []Video {
-	items := make([]Video, 0, len(data))
-	for _, item := range data {
-		v := Video{
-			Author:        *addUserDomain(&item.User),
-			ID:            item.VideoID,
-			PlayURL:       config.System.Qiniu.OssDomain + "/" + item.PlayURL,
-			CoverURL:      config.System.Qiniu.OssDomain + "/" + item.CoverURL,
-			FavoriteCount: item.VideoFavoriteCount,
-			CommentCount:  item.CommentCount,
-			Title:         item.Title,
-			PublishTime:   item.PublishTime.Format("2006-01-02 15:04"),
-			Topic:         item.Topic,
-		}
-		items = append(items, v)
-	}
-	return items
-}
-
-func addUserDomain(user *User) *pbuser.UserInfo {
-	return &pbuser.UserInfo{
-		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
-		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
-		FavoriteCount:   user.FavoriteCount,
-		FollowCount:     user.FollowCount,
-		FollowerCount:   user.FollowerCount,
-		Id:              user.ID,
-		IsFollow:        user.IsFollow,
-		Name:            user.Username,
-		Signature:       user.Signature,
-		TotalFavorited:  user.TotalFavorited,
-		WorkCount:       user.WorkCount,
-	}
 }

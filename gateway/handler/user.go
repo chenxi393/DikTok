@@ -4,7 +4,8 @@ import (
 	"context"
 	"douyin/gateway/auth"
 	pbuser "douyin/grpc/user"
-	"douyin/response"
+	"douyin/package/constant"
+	"douyin/gateway/response"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -31,8 +32,8 @@ func UserRegister(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -42,9 +43,8 @@ func UserRegister(c *fiber.Ctx) error {
 		Password: req.Password,
 	})
 	if err != nil {
-		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -55,7 +55,7 @@ func UserRegister(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -72,8 +72,8 @@ func UserLogin(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -84,18 +84,18 @@ func UserLogin(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
 	// 签发token
-	token, err := auth.SignToken(res.UserId)
+	token, err := auth.SignToken(uint64(res.UserId))
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -112,8 +112,8 @@ func UserInfo(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -125,8 +125,8 @@ func UserInfo(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -139,7 +139,7 @@ func UserInfo(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)

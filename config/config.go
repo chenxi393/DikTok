@@ -46,17 +46,19 @@ type QiNiuCloud struct {
 }
 
 type SystemConfig struct {
-	Qiniu        QiNiuCloud `mapstructure:"qiniu"`
-	HttpAddress  HTTP       `mapstructure:"httpAddress"`
-	MysqlMaster  MySQL      `mapstructure:"mysqlMaster"`
-	MysqlSlave   MySQL      `mapstructure:"mysqlSlave"`
-	UserRedis    Redis      `mapstructure:"userRedis"`
-	VideoRedis   Redis      `mapstructure:"videoRedis"`
-	CommentRedis Redis      `mapstructure:"commentRedis"`
-	MQ           RabbitMQ   `mapstructure:"rabbitmq"`
-	Mode         string     `mapstructure:"mode"`
-	JwtSecret    string     `mapstructure:"jwtSecret"`
-	GPTSecret    string     `mapstructure:"gptSecret"`
+	Qiniu         QiNiuCloud `mapstructure:"qiniu"`
+	HttpAddress   HTTP       `mapstructure:"httpAddress"`
+	MysqlMaster   MySQL      `mapstructure:"mysqlMaster"`
+	MysqlSlave    MySQL      `mapstructure:"mysqlSlave"`
+	UserRedis     Redis      `mapstructure:"userRedis"`
+	VideoRedis    Redis      `mapstructure:"videoRedis"`
+	RelationRedis Redis      `mapstructure:"relationRedis"`
+	FavoriteRedis Redis      `mapstructure:"favoriteRedis"`
+	CommentRedis  Redis      `mapstructure:"commentRedis"`
+	MQ            RabbitMQ   `mapstructure:"rabbitmq"`
+	Mode          string     `mapstructure:"mode"`
+	JwtSecret     string     `mapstructure:"jwtSecret"`
+	GPTSecret     string     `mapstructure:"gptSecret"`
 }
 
 var System SystemConfig

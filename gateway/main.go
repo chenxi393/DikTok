@@ -10,16 +10,13 @@ import (
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
+	"douyin/package/rpc"
 	"douyin/package/util"
 	"fmt"
 
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer/roundrobin"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/resolver"
 )
 
 func main() {
@@ -27,14 +24,8 @@ func main() {
 	config.Init()
 	// TODO 日志也应该考虑合并
 	util.InitZap()
-	// 先与服务建立连接
-	connectService()
-	// 再初始化http框架 并listen
-	startFiber()
-}
 
-func connectService() {
-	// 创建 etcd 客户端
+	// 创建 etcd 客户端 先与服务建立连接
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
 	if err != nil {
 		zap.L().Fatal(err.Error())
@@ -55,44 +46,30 @@ func connectService() {
 	messageTarget := fmt.Sprintf("etcd:///%s", constant.MessageService)
 
 	// 开启用户服务的连接 并且defer关闭函数
-	userConn := setupServiceConn(userTarget, etcdResolverBuilder)
+	userConn := rpc.SetupServiceConn(userTarget, etcdResolverBuilder)
 	handler.UserClient = pbuser.NewUserClient(userConn)
-	// FIXME 这里不能用close
-	// defer userConn.Close()
+	defer userConn.Close()
 
-	videoConn := setupServiceConn(videoTarget, etcdResolverBuilder)
+	videoConn := rpc.SetupServiceConn(videoTarget, etcdResolverBuilder)
 	handler.VideoClient = pbvideo.NewVideoClient(videoConn)
-	// defer userConn.Close()
+	defer userConn.Close()
 
-	relationConn := setupServiceConn(relationTarget, etcdResolverBuilder)
+	relationConn := rpc.SetupServiceConn(relationTarget, etcdResolverBuilder)
 	handler.RelationClient = pbrelation.NewRelationClient(relationConn)
-	// defer userConn.Close()
+	defer userConn.Close()
 
-	favoriteConn := setupServiceConn(favoriteTarget, etcdResolverBuilder)
+	favoriteConn := rpc.SetupServiceConn(favoriteTarget, etcdResolverBuilder)
 	handler.FavoriteClient = pbfavorite.NewFavoriteClient(favoriteConn)
-	// defer userConn.Close()
+	defer userConn.Close()
 
-	messageConn := setupServiceConn(messageTarget, etcdResolverBuilder)
+	messageConn := rpc.SetupServiceConn(messageTarget, etcdResolverBuilder)
 	handler.MessageClinet = pbmessage.NewMessageClient(messageConn)
-	// defer userConn.Close()
+	defer userConn.Close()
 
-	commentConn := setupServiceConn(commentTarget, etcdResolverBuilder)
+	commentConn := rpc.SetupServiceConn(commentTarget, etcdResolverBuilder)
 	handler.CommentClient = pbcomment.NewCommentClient(commentConn)
-	// defer userConn.Close()
-}
+	defer userConn.Close()
 
-func setupServiceConn(serviceName string, resolver resolver.Builder) *grpc.ClientConn {
-	// 开启用户服务的连接
-	conn, err := grpc.Dial(
-		// 服务名称
-		serviceName,
-		// 注入 etcd resolverD
-		grpc.WithResolvers(resolver),
-		// 声明使用的负载均衡策略为 roundrobin
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		zap.L().Sugar().Fatalf("did not connect %s : %v\n", serviceName, err)
-	}
-	return conn
+	// 初始化http框架 并listen
+	startFiber()
 }

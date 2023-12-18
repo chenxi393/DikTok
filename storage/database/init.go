@@ -46,7 +46,6 @@ func InitMySQL() {
 		config.System.MysqlSlave.Database,
 		"?charset=utf8mb4&parseTime=True&loc=Local"}, "",
 	)
-
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:                       masterDNS,
 		DefaultStringSize:         256,   // string 类型字段的默认长度
@@ -75,8 +74,8 @@ func InitMySQL() {
 		TraceResolverMode: true,
 	}))
 	if err != nil {
-		zap.L().Fatal("MySQL 读写分离创建失败", zap.Error(err))
 		// 主从创建失败 此时不应该写入数据 应该让容器重启的 否则只会写入主库 导致主从不同步
+		zap.L().Fatal("MySQL 读写分离创建失败", zap.Error(err))
 	}
 	zap.L().Info("MySQL从库连接: 成功")
 	// 连接池什么的不懂 先放着

@@ -2,7 +2,7 @@ package mq
 
 import (
 	"context"
-	"douyin/database"
+	"douyin/storage/database"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,7 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
-func initFavorite() {
+// FIXME 这些MQ的消费者 应该对应的微服务
+func InitFavorite() {
+	initMQ()
 	err := produceChannel.ExchangeDeclare(
 		"favorite", // name
 		"fanout",   // type

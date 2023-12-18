@@ -3,8 +3,9 @@ package handler
 import (
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
-	"douyin/response"
+	"douyin/package/constant"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -34,8 +35,8 @@ func Feed(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.FeedResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -47,8 +48,8 @@ func Feed(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -62,12 +63,13 @@ func Feed(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.FeedResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
+	// JSON 序列化的时候0 值会被忽略 FIXME
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
 }
@@ -79,8 +81,8 @@ func SearchVideo(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -92,8 +94,8 @@ func SearchVideo(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.VideoListResponse{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -106,7 +108,7 @@ func SearchVideo(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.VideoListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)

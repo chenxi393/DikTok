@@ -11,7 +11,7 @@ qiniu:
 
 httpAddress:
   host: 0.0.0.0 #需要更换为主机的ip
-  port: 9999 #更换为运行的端口
+  port: 8000 #更换为运行的端口
   videoAddress: "./douyinVideo"
 
 mysqlMaster:
@@ -46,11 +46,25 @@ videoRedis:
   db: 1
   poolSize: 100
 
-commentRedis:
+relationRedis:
   host: redis # docker：redis:6379 本机：127.0.0.1:6379
   port: 6379
   password:
   db: 2
+  poolSize: 100
+
+favoriteRedis:
+  host: redis # docker：redis:6379 本机：127.0.0.1:6379
+  port: 6379
+  password:
+  db: 3
+  poolSize: 100
+
+commentRedis:
+  host: redis # docker：redis:6379 本机：127.0.0.1:6379
+  port: 6379
+  password:
+  db: 4
   poolSize: 100
 
 rabbitmq:

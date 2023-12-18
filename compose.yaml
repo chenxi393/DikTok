@@ -1,25 +1,138 @@
-# Creating network "douyin_default" with the default driver
-# 首次会自动创建一个默认网络 供所有服务连接
 version: '3.8'
 services:
-  web: 
+  gateway: 
     build: . # 会在指定目录寻找Dockerfile 构建镜像
-    container_name: go_server
+    container_name: gateway
     ports:
-      - "9999:9999"
+      - "8000:8000"
+    command: [/app/gateway]
+    depends_on:
+    # 应该来一些健康检查的 TODO
+      - video
+      - mysql-slave
+    #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
+    #tty: true    #分配一个伪终端 与-t类似    docker run -dit
+    networks:
+      - backend
+    restart: on-failure:10
+    environment:
+    # 这个环境变量似乎不起作用
+      - TZ=Asia/Shanghai
+
+  video: 
+    build: . 
+    container_name: video
+    command: [/app/video]
+    depends_on:
+      - mysql-master
+      - mysql-slave
+      - redis
+    networks:
+      - mysql
+      - backend
+    restart: on-failure:10
+    environment:
+      - TZ=Asia/Shanghai
+
+  user: 
+    build: .
+    container_name: user
+    command: [/app/user]
+    depends_on:
+      - mysql-master
+      - mysql-slave
+      - redis
+    networks:
+      - mysql
+      - backend
+    restart: on-failure:10
+    environment:
+    # 这个环境变量似乎不起作用
+      - TZ=Asia/Shanghai
+
+  relation: 
+    build: .
+    container_name: relation
+    command: [/app/relation]
     depends_on:
       - mysql-master
       - mysql-slave
       - redis
       - dev-rabbitmq
-    #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
-    #tty: true    #分配一个伪终端 与-t类似    docker run -dit
     networks:
       - mysql
       - backend
-    restart: on-failure:15
+    restart: on-failure:10
     environment:
+    # 这个环境变量似乎不起作用
       - TZ=Asia/Shanghai
+
+  message: 
+    build: .
+    container_name: message
+    command: [/app/message]
+    depends_on:
+      - mysql-master
+      - mysql-slave
+    networks:
+      - mysql
+      - backend
+    restart: on-failure:10
+    environment:
+    # 这个环境变量似乎不起作用
+      - TZ=Asia/Shanghai
+
+  favorite: 
+    build: .
+    container_name: favorite
+    command: [/app/favorite]
+    depends_on:
+      - mysql-master
+      - mysql-slave
+      - redis
+      - dev-rabbitmq
+    networks:
+      - mysql
+      - backend
+    restart: on-failure:10
+    environment:
+    # 这个环境变量似乎不起作用
+      - TZ=Asia/Shanghai
+  
+  comment: 
+    build: .
+    container_name: comment
+    command: [/app/comment]
+    depends_on:
+      - mysql-master
+      - mysql-slave
+      - redis
+      - dev-rabbitmq
+    networks:
+      - mysql
+      - backend
+    restart: on-failure:10
+    environment:
+    # 这个环境变量似乎不起作用
+      - TZ=Asia/Shanghai
+
+  etcd:
+    image: "quay.io/coreos/etcd:v3.5.5"
+    container_name: etcd
+    restart: on-failure
+    privileged: true
+    environment:
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - "ALLOW_NONE_AUTHENTICATION=yes"
+      - ETCD_API=3
+      - ETCD_CERT_FILE="/path/to/server.crt"
+      - ETCD_KEY_FILE="/path/to/server.key"
+      - ETCD_AUTH="simple"
+      - ETCD_AUTH_USER="douyin"
+      - ETCD_AUTH_PASSWORD="douyin"
+    networks:
+      - backend
 
   mysql-master:
     container_name: mysql-master 
@@ -80,7 +193,7 @@ services:
   
   redis:
     image: redis:latest
-    container_name: redis_douyin
+    container_name: redis
     ports:
       - 6379:6379
     networks:

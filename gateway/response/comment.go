@@ -1,5 +1,10 @@
 package response
 
+type CommonResponse struct {
+	StatusCode int    `json:"status_code"`
+	StatusMsg  string `json:"status_msg"`
+}
+
 type CommentActionResponse struct {
 	// 评论成功返回评论内容，不需要重新拉取整个列表
 	Comment *Comment `json:"comment"`
@@ -28,14 +33,3 @@ type Comment struct {
 	// 评论用户信息
 	User User `json:"user"`
 }
-
-// func BuildComment(comment *model.Comment, user *model.User, isFollow bool) *Comment {
-// 	return &Comment{
-// 		Content:    comment.Content,
-// 		// 这个评论的时间客户端哈好像可以到毫秒2006-01-02 15:04:05.999
-// 		// 但是感觉每必要 日期就够了
-// 		CreateDate: comment.CreatedTime.Format("2006-01-02 15:04"),
-// 		ID:         comment.ID,
-// 		User:       *UserInfo(user, isFollow),
-// 	}
-// }

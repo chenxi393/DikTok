@@ -4,6 +4,7 @@ import (
 	"douyin/config"
 	"douyin/gateway/auth"
 	"douyin/gateway/handler"
+	"douyin/gateway/util"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
@@ -15,7 +16,8 @@ import (
 func startFiber() {
 	// 客户端文件超过30MB 返回413
 	app := fiber.New(fiber.Config{
-		BodyLimit: 30 * 1024 * 1024,
+		BodyLimit:   30 * 1024 * 1024,
+		JSONEncoder: util.GrpcMarshal,
 	})
 	// 使用中间件打印日志
 	app.Use(logger.New())

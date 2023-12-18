@@ -2,8 +2,8 @@ package database
 
 import (
 	"douyin/model"
-	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/storage/cache"
 	"errors"
 
 	"gorm.io/gorm"
@@ -70,6 +70,6 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 
 func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := constant.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Find(&res).Error
+	err := constant.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }

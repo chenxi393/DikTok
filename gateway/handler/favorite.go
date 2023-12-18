@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbfavorite "douyin/grpc/favorite"
 	"douyin/package/constant"
-	"douyin/response"
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -34,8 +34,8 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
@@ -53,11 +53,11 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 			VideoID: req.VideoID,
 		})
 	} else {
-		err = errors.New(response.BadParaRequest)
+		err = errors.New(constant.BadParaRequest)
 	}
 	if err != nil {
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -73,8 +73,8 @@ func FavoriteList(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 			VideoList:  nil,
 		}
 		c.Status(fiber.StatusOK)
@@ -87,8 +87,8 @@ func FavoriteList(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -101,7 +101,7 @@ func FavoriteList(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.VideoListResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 			VideoList:  nil,
 		}

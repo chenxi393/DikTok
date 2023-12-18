@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"douyin/database"
+	"douyin/config"
+	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/model"
-	"douyin/package/cache"
 	"douyin/package/constant"
 	"douyin/package/util"
-	"douyin/response"
+	"douyin/storage/cache"
+	"douyin/storage/database"
 	"errors"
 	"strconv"
 
@@ -66,19 +67,20 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
-		err = cache.SetFavoriteSet(userID, []uint64{})
-		if err != nil {
-			zap.L().Sugar().Error(err)
-		}
-		// 用0值维护 redis key 的存在
-		err = cache.SetFollowUserIDSet(userID, []uint64{})
-		if err != nil {
-			zap.L().Sugar().Error(err)
-		}
+		// FIXME 这里预热应该
+		// err = cache.SetFavoriteSet(userID, []uint64{})
+		// if err != nil {
+		// 	zap.L().Sugar().Error(err)
+		// }
+		// // 用0值维护 redis key 的存在
+		// err = cache.SetFollowUserIDSet(userID, []uint64{})
+		// if err != nil {
+		// 	zap.L().Sugar().Error(err)
+		// }
 	}()
 	return &pbuser.RegisterResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.RegisterSuccess,
+		StatusCode: constant.Success,
+		StatusMsg:  constant.RegisterSuccess,
 		UserId:     userID,
 	}, nil
 }
@@ -118,30 +120,31 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
-		// 喜欢的视频列表
-		favoriteIDs, err := database.SelectFavoriteVideoByUserID(user.ID)
-		if err != nil {
-			zap.L().Error(constant.DatabaseError, zap.Error(err))
-		} else {
-			err = cache.SetFavoriteSet(user.ID, favoriteIDs)
-			if err != nil {
-				zap.L().Sugar().Error(err)
-			}
-		}
+		// FIXME 这一部分缓存预热 必须掉接口 跨服务调用
+		// // 喜欢的视频列表
+		// favoriteIDs, err := database.SelectFavoriteVideoByUserID(user.ID)
+		// if err != nil {
+		// 	zap.L().Error(constant.DatabaseError, zap.Error(err))
+		// } else {
+		// 	err = cache.SetFavoriteSet(user.ID, favoriteIDs)
+		// 	if err != nil {
+		// 		zap.L().Sugar().Error(err)
+		// 	}
+		// }
 		// 关注列表
-		followUserIDSet, err := database.SelectFollowingByUserID(user.ID)
-		if err != nil {
-			zap.L().Error(constant.DatabaseError, zap.Error(err))
-			return
-		}
-		err = cache.SetFollowUserIDSet(user.ID, followUserIDSet)
-		if err != nil {
-			zap.L().Sugar().Error(err)
-		}
+		// followUserIDSet, err := database.SelectFollowingByUserID(user.ID)
+		// if err != nil {
+		// 	zap.L().Error(constant.DatabaseError, zap.Error(err))
+		// 	return
+		// }
+		// err = cache.SetFollowUserIDSet(user.ID, followUserIDSet)
+		// if err != nil {
+		// 	zap.L().Sugar().Error(err)
+		// }
 	}()
 	return &pbuser.LoginResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.LoginSucess,
+		StatusCode: constant.Success,
+		StatusMsg:  constant.LoginSuccess,
 		UserId:     user.ID,
 	}, nil
 }
@@ -179,31 +182,35 @@ func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuse
 	} else if req.LoginUserID == req.UserID { // 自己查自己 当然是关注了的
 		isFollow = true
 	} else {
-		isFollow, err = cache.IsFollow(req.LoginUserID, req.UserID)
-		// 缓存未命中 查询数据库
+		isFollowRes, err := relationClient.IsFollow(ctx, &pbrelation.ListRequest{
+			UserID:      req.UserID,
+			LoginUserID: req.LoginUserID,
+		})
 		if err != nil {
-			zap.L().Warn(constant.CacheMiss, zap.Error(err))
-			isFollow, err = database.IsFollowed(req.LoginUserID, req.UserID)
-			if err != nil {
-				zap.L().Error(constant.DatabaseError, zap.Error(err))
-				return nil, err
-			}
-			go func() {
-				// 关注列表
-				followUserIDSet, err := database.SelectFollowingByUserID(req.LoginUserID)
-				if err != nil {
-					zap.L().Error(constant.DatabaseError, zap.Error(err))
-					return
-				}
-				err = cache.SetFollowUserIDSet(user.ID, followUserIDSet)
-				if err != nil {
-					zap.L().Sugar().Error(err)
-				}
-			}()
+			zap.L().Error(err.Error())
+			return nil, err
 		}
+		isFollow = isFollowRes.Result
 	}
 	return &pbuser.InfoResponse{
-		StatusCode: response.Success,
-		User:       response.UserInfo(user, isFollow),
+		StatusCode: constant.Success,
+		StatusMsg:  constant.InfoSuccess,
+		User:       userResponse(user, isFollow),
 	}, nil
+}
+
+func userResponse(user *model.User, isFollowed bool) *pbuser.UserInfo {
+	return &pbuser.UserInfo{
+		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
+		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
+		FavoriteCount:   user.FavoriteCount,
+		FollowCount:     user.FollowCount,
+		FollowerCount:   user.FollowerCount,
+		Id:              user.ID,
+		IsFollow:        isFollowed,
+		Name:            user.Username,
+		Signature:       user.Signature,
+		TotalFavorited:  user.TotalFavorited,
+		WorkCount:       user.WorkCount,
+	}
 }

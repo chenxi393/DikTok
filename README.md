@@ -1,15 +1,18 @@
+## DikTok main
+主分支为微服务版本，正在开发中
+
+若需要运行请使用分支v1
 ## 项目结构
 |              |                   |
 | ------------ | ----------------- |
 | config       | 配置信息          |
-| database     | 操作MySQl数据库   |
 | gateway      | 网关（包括鉴权）  |
 | grpc         | rpc代码           |
 | idl          | protobuf接口定义  |
 | model        | 数据库模型        |
-| package      | 依赖的服务        |
-| response     | 返回的数据类型    |
+| package      | 服务的依赖包      |
 | service      | 拆分的微服务      |
+| storage      | 数据库 缓存 MQ    |
 | compose.yaml | docker容器编排    |
 | Dockerfile   | web服务的镜像文件 |
 | Makefile     | 一键部署服务      |
@@ -28,17 +31,17 @@
 ### 手动部署
 * 安装上述依赖项，并修改config/config.yaml对应的配置信息
 * 需要配置OSS，七牛云的key
-* 完成上述步骤后 `make` 或 `make run` 或 `go run .`启动项目
+* 分别运行网关和6个微服务（可以使用Makefile）
 
 ### 注意事项
-* 企业中不使用GORM提供的自动建表migration()，一般手动建表（使用config/douyin.sql建表）
+* 不推荐使用GORM自动建表migration()，一般手动建表（使用config/douyin.sql建表）
 * 若数据库已经存在表的情况下，注释掉database里的init.go的migration()（反之取消注释）
 * MySQL主从复制在docker容器重启时有可能失败
 * 请不要上传大于30MB的视频 会返回413（大视频应在客户端压缩）
 
 ## 待办
 - [x] 拆分成微服务，考虑gRPC+ETCD，再考虑成熟的微服务框架go-zero
-- [x] 主键自增消耗很快 考虑分布式ID生成 snowflake雪花算法
+- [x] 分布式ID生成 snowflake雪花算法
 - [x] 视频搜索功能 全文索引实现（可考虑ES）
 - [ ] 项目部署运维的探究 K8s CICD体系
 - [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
@@ -52,13 +55,36 @@
 - [ ] 功能测试√ 性能测试 压力测试
 - [ ] redis一主两从哨兵模式 MySQL双主互从+Keepalived（redis和MySQL集群引入）
 
-
 ## 下面是开发的杂乱笔记
+根据那四篇文章改造自己的抖音系统 推拉模型 feed流
+
+可以用redis set实现抽奖功能 
+spop 可以用来抽 一等 二等（会删除）
+srandmenber 可以一次抽取（不会删除）
 
 ### 微服务拆分
 `protoc --go_out=.. --go-grpc_out=.. ./idl/video.proto`
-生成pb文件时 注意
+生成pb文件
 
+注意Grpc 生成go结构体时，由于proto3 去除了require字段
+导致JSON tag 默认 omitempty
+解决办法
+* 不使用encode/json 使用别的json库（目前没有找到替代的）
+* 或者使用sed替换 grpc生成的代码 `sed -i "" -e "s/,omitempty//g" ./api/proto/*.go`
+* 在网关层面 不直接使用proto生成的结构体返回（感觉这样更好）
+```go
+w.Header().Set("Content-Type", "application/json; charset=utf-8")
+    m := protojson.Marshaler{EmitDefaults: true}
+    m.Marshal(w, resp) // You should check for errors here
+```
+
+bytedance/sonic 未支持此特性 考虑提个PR？？？
+
+
+TODO
+目前微服务拆分了，但是缓存redis，数据库，消息队列还存在耦合，需要再拆分
+目前的想法 服务之间的依赖关系全都走rpc或者消息队列
+数据库的字段也经历减少耦合
 ### FIXME 前端用户评论操作后，立即请求加载评论列表，出现拿到脏数据
 原因：
 * 评论操作为消息队列异步执行，写入数据库之前就返回前端成功
@@ -80,7 +106,7 @@ wc -l `find ./ -name "*.go";find -name "*.yaml"`
 * 若有删除功能 添加is_delete (tinyint 1) 作软删除（或者deleted_at） TODO
 * 不适用外键或者级联 使用逻辑外键 外键影响数据库的插入速度
 * 确保没有多余无用的索引（可以考虑使用工具检查）
-* 索引只能使用1个，所以要合理的使用组合索引，而不是单列索引。
+* 要合理的使用组合索引，而不是单列索引。
 
 comment 主键索引
 * 根据video_ID 查找评论 建立video_id普通索引
@@ -89,7 +115,7 @@ message 主键索引
 * 联合索引user_id to_user_id
 * （可以考虑MongoDB 来存message）
 
-follow 主键索引
+follow 主键索引  TODO 这里可以考虑联合唯一主键 因为id自增没啥用
 * user_id to_user_id 联合唯一索引
 * 查询粉丝 需要 to_user_id 建立普通索引
 * （查询关注的 需要user_id  复用上面的联合索引）
@@ -97,12 +123,12 @@ follow 主键索引
 user 主键索引
 * username 唯一索引
 
-favorite 主键索引
+favorite 主键索引 TODO 这里可以考虑联合唯一主键 因为id自增没啥用
 * user_id video_id 联合唯一索引  user_id 在前（查询喜欢的视频）
 
 video 主键索引
 * authorid 普通索引
-* publish_time 普通索引 < 小于好像用不到索引（-1 然后<=）
+* publish_time 普通索引 普通索引< >是正常走索引的
 
 ### Redis缓存设计
 整体思路：
@@ -122,6 +148,7 @@ video 主键索引
 * 在用户注册 发布视频 把id加入布隆过滤器
 * 限制ip的访问速率 令牌桶算法TODO
 * 存储空值（不如布隆过滤器）
+    * 注意是缓存查不到数据库也查不到再去 存空值
 
 缓存击穿----大量请求查询`一个过期的key`（或者说少量的key）
 * 使用redis的SetNX 实现`分布式锁`
@@ -129,6 +156,7 @@ video 主键索引
 * 缓存不存在 尝试加锁
 * 执行SQL查询更新缓存后释放锁
 * 后续的请求就可以走缓存了
+* 分布式锁 还需要续期TODO
 
 具体模块设计
 1. comment
@@ -168,7 +196,10 @@ video 主键索引
 
 如果业务对缓存命中率很高，可以采用[更新数据库]+[更新缓存]的方案
 * 更新缓存有数据不一致的风险 两个请求 先更新数据库的后到redis执行
-    * 更新前加入分布式锁，引入lua脚本，放在GORM事务里，等redis执行成功再返回
+* 更新前加入分布式锁，引入lua脚本，放在GORM事务里，等redis执行成功再返回
+
+实际上双写不一致使用一个队列，或者加分布式锁 都可以
+只需要保证它的执行的先后即可
 
 ### 点赞系统的设计（读多写多） 参考B站实现（也可以看看得物的文章）
 [得物的点赞方案](https://xie.infoq.cn/article/f6840380238de0761abe39e08)
@@ -319,11 +350,19 @@ Connection: Upgrade
 Upgrade: websocket
 Sec-WebSocket-Accept: 52Rg3vW4JQ1yWpkvFlsTsiezlqw=
 ```
-1开头的状态吗 表示未完成的连接
+101 表示未完成的连接
 
 可以利用HTTP服务器根据具体流程实现websockt服务器
 
-WebSocket 数据帧的格式：
+websocket特点（主要对比HTTP）
+* 与HTTP一样默认端口80/443 握手阶段采用HTTP
+* 数据格式轻量，开销小
+* 可以二进制也可以发送文本
+* 没有同源现在
+* 协议标识ws/wss
+
+TODO 目前怎么推送消息还没有完成，至少客户端不用HTTP轮询了
+而是改用websocket轮询
 
 ### 遇到的问题 
 1. MySQL 主从同步 出现的问题

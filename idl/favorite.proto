@@ -9,6 +9,7 @@ service Favorite {
     rpc Like (LikeRequest) returns (LikeResponse) {}
     rpc Unlike (LikeRequest) returns (LikeResponse) {}
     rpc List (ListRequest) returns (ListResponse) {}
+    rpc IsFavorite(LikeRequest)returns(IsFavoriteResponse){}
 }
 
 message LikeRequest {
@@ -32,7 +33,11 @@ message ListRequest {
 }
 
 message ListResponse {
-    int32 status_msg = 1;
-    string status_code = 2;
+    int32 status_code = 1;
+    string status_msg = 2;
     repeated video.VideoData video_list = 3;
+}
+
+message IsFavoriteResponse{
+    bool isFavorite = 1;
 }

@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"douyin/config"
-	pbrelation "douyin/grpc/relation"
-	pbuser "douyin/grpc/user"
+	pbfavorite "douyin/grpc/favorite"
+	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
-	"douyin/package/llm"
 	"douyin/package/rpc"
 	"douyin/package/util"
 	"douyin/storage/cache"
 	"douyin/storage/database"
+	"douyin/storage/mq"
 	"fmt"
 	"log"
 	"net"
@@ -23,9 +23,9 @@ import (
 
 var (
 	// 需要RPC调用的客户端
-	relationClient pbrelation.RelationClient
-	// 用户模块运行在 8020-8029
-	addr = "user:8020"
+	videoClient pbvideo.VideoClient
+	// favorite模块运行在 8050-8059
+	addr = "favorite:8050"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	util.InitZap()
 	database.InitMySQL()
 	cache.InitRedis()
-	llm.RegisterChatGPT()
+	mq.InitFavorite()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
@@ -47,18 +47,17 @@ func main() {
 		zap.L().Fatal(err.Error())
 	}
 	// 开启用户服务的连接 并且defer关闭函数
-	relationTarget := fmt.Sprintf("etcd:///%s", constant.RalationService)
-	relationConn := rpc.SetupServiceConn(relationTarget, etcdResolverBuilder)
-	defer relationConn.Close()
-	relationClient = pbrelation.NewRelationClient(relationConn)
+	videoTarget := fmt.Sprintf("etcd:///%s", constant.VideoService)
+	videoConn := rpc.SetupServiceConn(videoTarget, etcdResolverBuilder)
+	defer videoConn.Close()
+	videoClient = pbvideo.NewVideoClient(videoConn)
 
-	// 注册自己的服务
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pbuser.RegisterUserServer(s, &UserService{})
+	pbfavorite.RegisterFavoriteServer(s, &FavoriteService{})
 
 	// TODO 这一块context 目前还没没有理解是干嘛的
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,8 +65,7 @@ func main() {
 
 	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, addr, constant.UserService)
-
+	go rpc.RegisterEndPointToEtcd(ctx, addr, constant.FavoriteService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

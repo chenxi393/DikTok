@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
-	"douyin/response"
 	"io"
 	"strings"
 
@@ -25,8 +25,8 @@ type publishRequest struct {
 
 type listRequest struct {
 	// 用户鉴权token
-	Token  string `form:"token"`
-	UserID uint64 `form:"user_id"`
+	Token  string `query:"token"`
+	UserID uint64 `query:"user_id"`
 }
 
 func PublishAction(c *fiber.Ctx) error {
@@ -35,8 +35,8 @@ func PublishAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		return c.JSON(res)
 	}
@@ -44,8 +44,8 @@ func PublishAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.WrongToken,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.WrongToken,
 		}
 		return c.JSON(res)
 	}
@@ -53,8 +53,8 @@ func PublishAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.FileFormatError,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FileFormatError,
 		}
 		return c.JSON(res)
 	}
@@ -62,8 +62,8 @@ func PublishAction(c *fiber.Ctx) error {
 	if !strings.HasSuffix(fileHeader.Filename, constant.MP4Suffix) {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.FileFormatError,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FileFormatError,
 		}
 		return c.JSON(res)
 	}
@@ -72,8 +72,8 @@ func PublishAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.FileFormatError,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FileFormatError,
 		}
 		return c.JSON(res)
 	}
@@ -83,20 +83,21 @@ func PublishAction(c *fiber.Ctx) error {
 	if _, err := io.Copy(buf, file); err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.FileFormatError,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FileFormatError,
 		}
 		return c.JSON(res)
 	}
-	res, err := VideoClient.Pubulish(context.Background(), &pbvideo.PublishRequest{
+	res, err := VideoClient.Publish(context.Background(), &pbvideo.PublishRequest{
 		Title:  req.Title,
 		Topic:  req.Topic,
 		UserID: userClaim.UserID,
+		Data:   buf.Bytes(),
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommonResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		return c.JSON(res)
@@ -110,8 +111,8 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.VideoListResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 		}
 		return c.JSON(res)
 	}
@@ -122,8 +123,8 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
-				StatusCode: response.Failed,
-				StatusMsg:  response.WrongToken,
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
 			}
 			c.Status(fiber.StatusOK)
 			return c.JSON(res)
@@ -136,7 +137,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.UserRegisterOrLogin{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		return c.JSON(res)

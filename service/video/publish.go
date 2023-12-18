@@ -1,14 +1,15 @@
-package service
+package main
 
 import (
-	"bytes"
+	"context"
 	"douyin/config"
-	"douyin/database"
+	"douyin/storage/database"
+	pbuser "douyin/grpc/user"
+	pbvideo "douyin/grpc/video"
 	"douyin/model"
-	"douyin/package/cache"
+	"douyin/storage/cache"
 	"douyin/package/constant"
 	"douyin/package/util"
-	"douyin/response"
 	"os"
 	"strconv"
 	"time"
@@ -18,23 +19,8 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
-type PublisService struct {
-	// 用户鉴权token
-	Token string `form:"token"`
-	// 视频标题
-	Title string `form:"title"`
-	// 新增 topic
-	Topic string `form:"topic"`
-}
-
-type PublishListService struct {
-	// 用户鉴权token
-	Token string `query:"token"`
-	// 用户id
-	UserID uint64 `query:"user_id"`
-}
-
-func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*response.CommonResponse, error) {
+// userID =0 表示未登录
+func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest) (*pbvideo.PublishResponse, error) {
 	// 生成唯一文件名
 	u1, err := uuid.NewV4()
 	if err != nil {
@@ -45,26 +31,26 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 	// 先上传到本地 上传到对象存储之后再删除
 	// 这里已经没有让用户临时访问本地存储了
 	// 感觉应该使用消息队列 来异步上传到OSS FIXME
-	playURL, coverURL, err := util.UploadVideo(buf.Bytes(), fileName)
+	playURL, coverURL, err := util.UploadVideo(req.Data, fileName)
 	if err != nil {
 		return nil, err
 	}
-	switch service.Topic {
+	switch req.Topic {
 	case constant.TopicSport:
 	case constant.TopicGame:
 	case constant.TopicMusic:
 	default:
-		service.Topic = constant.TopicDefualt + service.Topic
+		req.Topic = constant.TopicDefualt + req.Topic
 	}
 	video_id, err := database.CreateVideo(&model.Video{
 		PublishTime:   time.Now(),
-		AuthorID:      userID,
+		AuthorID:      req.UserID,
 		PlayURL:       playURL,
 		CoverURL:      coverURL,
 		FavoriteCount: 0,
 		CommentCount:  0,
-		Title:         service.Title,
-		Topic:         service.Topic,
+		Title:         req.Title,
+		Topic:         req.Topic,
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -77,7 +63,6 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 		localVideoPath := config.System.HttpAddress.VideoAddress + "/" + fileName
 		err := util.UploadToOSS(fileName, localVideoPath)
 		if err != nil {
-			//
 			zap.L().Error(err.Error())
 			return
 		}
@@ -101,111 +86,30 @@ func (service *PublisService) PublishAction(userID uint64, buf *bytes.Buffer) (*
 			zap.L().Error(err.Error())
 		}
 	}()
-	return &response.CommonResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.UploadVideoSuccess,
+	return &pbvideo.PublishResponse{
+		StatusCode: constant.Success,
+		StatusMsg:  constant.UploadVideoSuccess,
 	}, nil
 }
 
-func (service *PublishListService) GetPublishVideos(loginUserID uint64) (*response.VideoListResponse, error) {
+func (s *VideoService) List(ctx context.Context, req *pbvideo.ListRequest) (*pbvideo.VideoListResponse, error) {
 	// 第一步查找 所有的 service.user_id 的视频记录
 	// 然后 对这些视频判断 loginUserID 有没有点赞
 	// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
 	// TODO 加分布式锁 redis
-	// TODO 这里其实应当先去redis拿列表 再去数据库拿数据
-	videos, err := database.SelectVideosByUserID(service.UserID)
+	// TODO 这里其实应当先去redis拿列表 再去数据库拿数据D
+	videos, err := database.SelectVideosByUserID(req.UserID)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	// 不都是一个作者嘛 拿一次信息不就好了
-	author, err := cache.GetUserInfo(service.UserID)
-	if err != nil {
-		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		author, err = database.SelectUserByID(service.UserID)
-		if err != nil {
-			zap.L().Error(err.Error())
-			return nil, err
-		}
-		go func() {
-			err := cache.SetUserInfo(author)
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-		}()
-	}
-	var isFollowed bool
-	if loginUserID == 0 {
-		isFollowed = false
-	}
-	if service.UserID == loginUserID {
-		isFollowed = true
-	} else {
-		isFollowed, err = cache.IsFollow(loginUserID, service.UserID)
-		if err != nil {
-			zap.L().Warn(constant.CacheMiss)
-			isFollowed, err = database.IsFollowed(loginUserID, service.UserID)
-			if err != nil {
-				zap.L().Error(err.Error())
-				return nil, err
-			}
-			go func() {
-				following, err := database.SelectFollowingByUserID(loginUserID)
-				if err != nil {
-					zap.L().Error(err.Error())
-					return
-				}
-				err = cache.SetFollowUserIDSet(loginUserID, following)
-				if err != nil {
-					zap.L().Error(err.Error())
-				}
-			}()
-		}
-	}
-	var favorite []uint64
-	if loginUserID != 0 {
-		favorite, err = cache.GetFavoriteSet(loginUserID)
-		if err != nil {
-			zap.L().Warn(constant.CacheMiss)
-			favorite, err = database.SelectFavoriteVideoByUserID(loginUserID)
-			if err != nil {
-				zap.L().Error(err.Error())
-				return nil, err
-			}
-			go func() {
-				err := cache.SetFavoriteSet(loginUserID, favorite)
-				if err != nil {
-					zap.L().Error(err.Error())
-				}
-			}()
-		}
-	}
-	favoriteMap := make(map[uint64]struct{}, len(favorite))
-	for _, ff := range favorite {
-		favoriteMap[ff] = struct{}{}
-	}
-	// 构造返回参数
-	reps := make([]response.Video, 0, len(videos))
-	for i, ff := range videos {
-		item := response.Video{
-			ID:            videos[i].ID,
-			CommentCount:  videos[i].CommentCount,
-			CoverURL:      config.System.Qiniu.OssDomain + "/" + videos[i].CoverURL,
-			FavoriteCount: videos[i].FavoriteCount,
-			PlayURL:       config.System.Qiniu.OssDomain + "/" + videos[i].PlayURL,
-			Title:         videos[i].Title,
-			Author:        *response.UserInfo(author, isFollowed),
-			PublishTime:   videos[i].PublishTime.Format("2006-01-02 15:04"),
-			Topic:         videos[i].Topic,
-		}
-		if _, ok := favoriteMap[ff.ID]; ok {
-			item.IsFavorite = true
-		}
-		reps = append(reps, item)
-	}
-	return &response.VideoListResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.PubulishListSuccess,
-		VideoList:  reps,
+	// 作者都是一个 rpc拿作者信息 作者信息包括关注信息
+	userMap := make(map[uint64]*pbuser.UserInfo)
+	userMap[req.UserID] = &pbuser.UserInfo{}
+	videoInfos := getVideoInfo(ctx, videos, userMap, req.LoginUserID)
+	return &pbvideo.VideoListResponse{
+		StatusCode: constant.Success,
+		StatusMsg:  constant.PubulishListSuccess,
+		VideoList:  videoInfos,
 	}, nil
 }

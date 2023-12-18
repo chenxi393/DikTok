@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbcomment "douyin/grpc/comment"
 	"douyin/package/constant"
-	"douyin/response"
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
@@ -21,7 +21,7 @@ type commentRequest struct {
 	// 要删除的评论id，在action_type=2的时候使用
 	CommentID uint64 `query:"comment_id,omitempty"`
 	// 用户填写的评论内容，在action_type=1的时候使用
-	CommentText *string `query:"comment_text,omitempty"`
+	CommentText string `query:"comment_text,omitempty"`
 	// 视频id
 	VideoID uint64 `query:"video_id"`
 }
@@ -38,8 +38,8 @@ func CommentAction(c *fiber.Ctx) error {
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.CommentActionResponse{
-			StatusCode: response.Failed,
-			StatusMsg:  response.BadParaRequest,
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
 			Comment:    nil,
 		}
 		c.Status(fiber.StatusOK)
@@ -47,22 +47,24 @@ func CommentAction(c *fiber.Ctx) error {
 	}
 	userID := c.Locals(constant.UserID).(uint64)
 	var resp *pbcomment.CommentResponse
-	if req.ActionType == constant.DoAction && req.CommentText != nil {
+	if req.ActionType == constant.DoAction && req.CommentText != "" {
 		resp, err = CommentClient.Add(context.Background(), &pbcomment.AddRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
-			Content: *req.CommentText,
+			Content: req.CommentText,
 		})
 	} else if req.ActionType == constant.UndoAction && req.CommentID != 0 {
 		resp, err = CommentClient.Delete(context.Background(), &pbcomment.DeleteRequest{
+			VideoID:   req.VideoID,
 			CommentID: req.CommentID,
+			UserID:    userID,
 		})
 	} else {
-		err = errors.New(response.BadParaRequest)
+		err = errors.New(constant.BadParaRequest)
 	}
 	if err != nil {
 		res := response.CommentActionResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 		}
 		c.Status(fiber.StatusOK)
@@ -77,8 +79,8 @@ func CommentList(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		res := response.CommentListResponse{
-			StatusCode:  response.Failed,
-			StatusMsg:   response.BadParaRequest,
+			StatusCode:  constant.Failed,
+			StatusMsg:   constant.BadParaRequest,
 			CommentList: nil,
 		}
 		c.Status(fiber.StatusOK)
@@ -91,8 +93,8 @@ func CommentList(c *fiber.Ctx) error {
 		claims, err := auth.ParseToken(req.Token)
 		if err != nil {
 			res := response.CommentListResponse{
-				StatusCode:  response.Failed,
-				StatusMsg:   response.WrongToken,
+				StatusCode:  constant.Failed,
+				StatusMsg:   constant.WrongToken,
 				CommentList: nil,
 			}
 			c.Status(fiber.StatusOK)
@@ -106,7 +108,7 @@ func CommentList(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		res := response.CommentActionResponse{
-			StatusCode: response.Failed,
+			StatusCode: constant.Failed,
 			StatusMsg:  err.Error(),
 			Comment:    nil,
 		}

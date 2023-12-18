@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type MessageClient interface {
 	Send(ctx context.Context, in *SendRequest, opts ...grpc.CallOption) (*SendResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	GetFirstMessage(ctx context.Context, in *GetFirstRequest, opts ...grpc.CallOption) (*GetFirstResponse, error)
 }
 
 type messageClient struct {
@@ -52,12 +53,22 @@ func (c *messageClient) List(ctx context.Context, in *ListRequest, opts ...grpc.
 	return out, nil
 }
 
+func (c *messageClient) GetFirstMessage(ctx context.Context, in *GetFirstRequest, opts ...grpc.CallOption) (*GetFirstResponse, error) {
+	out := new(GetFirstResponse)
+	err := c.cc.Invoke(ctx, "/message.Message/GetFirstMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServer is the server API for Message service.
 // All implementations must embed UnimplementedMessageServer
 // for forward compatibility
 type MessageServer interface {
 	Send(context.Context, *SendRequest) (*SendResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
+	GetFirstMessage(context.Context, *GetFirstRequest) (*GetFirstResponse, error)
 	mustEmbedUnimplementedMessageServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedMessageServer) Send(context.Context, *SendRequest) (*SendResp
 }
 func (UnimplementedMessageServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedMessageServer) GetFirstMessage(context.Context, *GetFirstRequest) (*GetFirstResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFirstMessage not implemented")
 }
 func (UnimplementedMessageServer) mustEmbedUnimplementedMessageServer() {}
 
@@ -120,6 +134,24 @@ func _Message_List_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Message_GetFirstMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFirstRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServer).GetFirstMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/message.Message/GetFirstMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServer).GetFirstMessage(ctx, req.(*GetFirstRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Message_ServiceDesc is the grpc.ServiceDesc for Message service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var Message_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _Message_List_Handler,
+		},
+		{
+			MethodName: "GetFirstMessage",
+			Handler:    _Message_GetFirstMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

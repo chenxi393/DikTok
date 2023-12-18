@@ -2,15 +2,16 @@ package mq
 
 import (
 	"context"
-	"douyin/database"
 	"douyin/model"
+	"douyin/storage/database"
 	"encoding/json"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
-func initComment() {
+func InitComment() {
+	initMQ()
 	err := produceChannel.ExchangeDeclare(
 		"comment", // name
 		"fanout",  // type

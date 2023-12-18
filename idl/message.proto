@@ -7,11 +7,12 @@ option go_package = "douyin/grpc/message;pbmessage";
 service Message {
     rpc Send (SendRequest) returns (SendResponse) {}
     rpc List (ListRequest) returns (ListResponse) {}
+    rpc GetFirstMessage (GetFirstRequest) returns (GetFirstResponse) {}
 }
 
 message SendRequest {
     uint64 UserID = 1;
-    uint64 ToUerID = 2;
+    uint64 ToUserID = 2;
     string Content = 3;
 }
 
@@ -22,21 +23,30 @@ message SendResponse {
 
 message ListRequest {
     uint64 UserID = 1;
-    uint64 ToUerID = 2;
+    uint64 ToUserID = 2;
     int64 pre_msg_time = 3;
 }
 
 message ListResponse {
-    int32 status_msg = 1;
-    string status_code = 2;
+    int32 status_code = 1;
+    string status_msg = 2;
     repeated MessageData message_list = 3;
 }
 
 message MessageData {
-    uint64 id = 1;
+    int64 id = 1;
     string content = 2;
     int64 create_time = 3;
     uint64 from_user_id = 4;
     uint64 to_user_id = 5;
-  }
-  
+}
+
+message GetFirstRequest{
+    uint64 UserID = 1;
+    uint64 ToUserID = 2;
+}
+
+message GetFirstResponse{
+    string message = 1;
+    int32 msgType = 2;
+}

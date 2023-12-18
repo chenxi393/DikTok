@@ -31,7 +31,6 @@ func SelectUserByID(userID uint64) (*model.User, error) {
 	return &user, nil
 }
 
-
 func SelectWorkCount(userID uint64) (int64, error) {
 	var cnt int64
 	err := constant.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error

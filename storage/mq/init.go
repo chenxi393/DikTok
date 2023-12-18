@@ -12,7 +12,7 @@ import (
 var connRabbitMQ *amqp.Connection
 var produceChannel *amqp.Channel
 
-func InitMQ() {
+func initMQ() {
 	var err error
 	// Create a new RabbitMQ connection.
 	connRabbitMQ, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/",
@@ -60,7 +60,4 @@ func InitMQ() {
 			}
 		}
 	}()
-	initRelation()
-	initComment()
-	initFavorite()
 }

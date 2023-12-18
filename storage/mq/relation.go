@@ -2,15 +2,17 @@ package mq
 
 import (
 	"context"
-	"douyin/database"
+	"douyin/storage/database"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
-	"go.uber.org/zap"
 	"strconv"
 	"strings"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 )
 
-func initRelation() {
+func InitRelation() {
+	initMQ()
 	err := produceChannel.ExchangeDeclare(
 		"relation", // name
 		"fanout",   // type

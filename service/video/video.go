@@ -1,115 +1,152 @@
-package service
+package main
 
 import (
-	"douyin/database"
-	"douyin/package/cache"
+	"context"
+	"douyin/config"
+	pbfavorite "douyin/grpc/favorite"
+	pbuser "douyin/grpc/user"
+	pbvideo "douyin/grpc/video"
+	"douyin/model"
 	"douyin/package/constant"
-	"douyin/response"
+	"douyin/storage/database"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
 )
 
-type FeedService struct {
-	// 可选参数，限制返回视频的最新投稿时间戳，精确到秒，不填表示当前时间
-	LatestTime int64 `query:"latest_time"`
-	// 用户登录状态下设置
-	Token string `query:"token"`
-	// 新增topic
-	Topic string `query:"topic"`
+type VideoService struct {
+	pbvideo.UnimplementedVideoServer
 }
 
 // userID =0 表示未登录
-func (service *FeedService) GetFeed(userID uint64) (*response.FeedResponse, error) {
+func (s *VideoService) Feed(ctx context.Context, req *pbvideo.FeedRequest) (*pbvideo.FeedResponse, error) {
 	// TODO: 已登录可以有一个用户画像 做一个视频推荐功能
 	// 直接去数据库里查出30个数据  LatestTime 限制返回视频的最晚时间
-	var videos []response.VideoData
+	var videos []*model.Video
 	var err error
-	if service.Topic == "" {
-		videos, err = database.SelectFeedVideoList(constant.MaxVideoNumber, service.LatestTime)
+	if req.Topic == "" {
+		videos, err = database.SelectFeedVideoList(constant.MaxVideoNumber, req.LatestTime)
 	} else {
-		videos, err = database.SelectFeedVideoByTopic(constant.MaxVideoNumber, service.LatestTime, service.Topic)
+		videos, err = database.SelectFeedVideoByTopic(constant.MaxVideoNumber, req.LatestTime, req.Topic)
 	}
-	// FIXME 这里视频数有可能为0
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	videoData := response.VideoDataInfo(videos)
 	nextTime := time.Now()
-	if len(videoData) != 0 {
-		nextTime = videos[len(videoData)-1].PublishTime
+	// 这里视频数有可能为0
+	if len(videos) != 0 {
+		nextTime = videos[len(videos)-1].PublishTime
 	} else {
 		//当视频数为0 的时候返回友好提示
-		return &response.FeedResponse{
-			StatusCode: response.Success, //返回Success 客户端下次才会更新时间
-			StatusMsg:  response.NoMoreVideos,
+		return &pbvideo.FeedResponse{
+			StatusCode: constant.Success, //返回Success 客户端下次才会更新时间
+			StatusMsg:  constant.NoMoreVideos,
 			NextTime:   nextTime.UnixMilli(),
 		}, nil
 	}
-	// 用户未登录直接返回
-	if userID == 0 {
-		return &response.FeedResponse{
-			StatusCode: response.Success,
-			StatusMsg:  response.FeedSuccess,
-			VideoList:  videoData,
-			NextTime:   nextTime.UnixMilli(),
-		}, nil
+	// 先用map 减少rpc查询次数
+	userMap := make(map[uint64]*pbuser.UserInfo)
+	for i := range videos {
+		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
 	}
-	// 获取用户的关注列表
-	following, err := cache.GetFollowUserIDSet(userID)
-	if err != nil {
-		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		following, err = database.SelectFollowingByUserID(userID)
-		if err != nil {
-			return nil, err
-		}
-		go func() {
-			err := cache.SetFollowUserIDSet(userID, following)
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-		}()
-	}
-	followingMap := make(map[uint64]struct{}, len(following))
-	for _, f := range following {
-		followingMap[f] = struct{}{}
-	}
-	// 获取用户的喜欢视频列表
-	likingVideos, err := cache.GetFavoriteSet(userID)
-	if err != nil {
-		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		likingVideos, err = database.SelectFavoriteVideoByUserID(userID)
-		if err != nil {
-			return nil, err
-		}
-		go func() {
-			err := cache.SetFavoriteSet(userID, likingVideos)
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-		}()
-	}
-	likingMap := make(map[uint64]struct{}, len(likingVideos))
-	for _, f := range likingVideos {
-		likingMap[f] = struct{}{}
-	}
-	// 要注意 自己的视频算被自己关注了
-	// 判断是否点赞和是否关注
-	followingMap[userID] = struct{}{}
-	for i, rr := range videoData {
-		if _, ok := followingMap[rr.Author.Id]; ok {
-			videoData[i].Author.IsFollow = true
-		}
-		if _, ok := likingMap[rr.ID]; ok {
-			videoData[i].IsFavorite = true
-		}
-	}
-
-	return &response.FeedResponse{
-		StatusCode: response.Success,
-		StatusMsg:  response.FeedSuccess,
-		VideoList:  videoData,
+	videoInfos := getVideoInfo(ctx, videos, userMap, req.UserID)
+	return &pbvideo.FeedResponse{
+		StatusCode: constant.Success,
+		StatusMsg:  constant.FeedSuccess,
+		VideoList:  videoInfos,
 		NextTime:   nextTime.UnixMilli(),
 	}, nil
+}
+
+func (s *VideoService) GetVideosByUserID(ctx context.Context, req *pbvideo.GetVideosRequest) (*pbvideo.GetVideosResponse, error) {
+	// 去数据库批量查找视频数据
+	// TODO 要去redis查找视频信息 否则存视频没有意义
+	// 但是我又觉得最终还是要走DB 一开始走不就行
+	// 再看看怎么写合理 暂时只走数据库（db肯定是顺序的）
+	// 最重点的redis返回的videoIDs 不是顺序的
+	// 那么走redis查到的数据是乱序的（用zset解决 但是代码复杂）
+	videos, err := database.SelectVideosByVideoID(req.VideoID)
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
+	// 先用map 减少rpc查询次数
+	userMap := make(map[uint64]*pbuser.UserInfo)
+	for i := range videos {
+		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
+	}
+	videoInfos := getVideoInfo(ctx, videos, userMap, req.UserID)
+	return &pbvideo.GetVideosResponse{
+		VideoList: videoInfos,
+	}, nil
+
+}
+func videoDataInfo(v *model.Video, u *pbuser.UserInfo) *pbvideo.VideoData {
+	return &pbvideo.VideoData{
+		Author:        u,
+		Id:            v.ID,
+		PlayUrl:       config.System.Qiniu.OssDomain + "/" + v.PlayURL,
+		CoverUrl:      config.System.Qiniu.OssDomain + "/" + v.CoverURL,
+		FavoriteCount: v.FavoriteCount,
+		CommentCount:  v.CommentCount,
+		Title:         v.Title,
+		Topic:         v.Topic,
+		PublishTime:   v.PublishTime.Format("2006-01-02 15:04"),
+	}
+}
+
+// RPC调用拿userMap 里的用户信息 拿video里的详细信息 返回
+func getVideoInfo(ctx context.Context, videos []*model.Video, userMap map[uint64]*pbuser.UserInfo, loginUserID uint64) []*pbvideo.VideoData {
+	// rpc调用 去拿个人信息
+	wg := &sync.WaitGroup{}
+	wg.Add(len(userMap))
+	for userID := range userMap {
+		go func(id uint64) {
+			defer wg.Done()
+			// TODO 这里是不是也应该 rpc批量拿出来 而不是一个个去拿
+			user, err := userClient.Info(ctx, &pbuser.InfoRequest{
+				LoginUserID: loginUserID,
+				UserID:      id,
+			})
+			if err != nil {
+				zap.L().Error(err.Error())
+			}
+			if err == nil && user.StatusCode != 0 {
+				zap.L().Error("rpc 调用错误")
+			}
+			// 这里map会不会有并发问题啊
+			// TODO 去测试一下
+			// 这里如果不用 指针写入的化 会导致下面 videoInfo
+			// append 地址被改变 要不就上锁 所有rpc请求之后 再下一个
+			// 但是这里之间 直接使用* 似乎也不太好 报了warning
+			// 说内部有锁  不能复制 TODO
+			*userMap[id] = *user.GetUser()
+		}(userID)
+	}
+	videoInfos := make([]*pbvideo.VideoData, 0, len(videos))
+	for i := range videos {
+		videoInfos = append(videoInfos, videoDataInfo(videos[i], userMap[videos[i].AuthorID]))
+	}
+	// 判断请求用户是否喜欢
+	if loginUserID != 0 {
+		wg.Add(len(videoInfos))
+		for i := range videoInfos {
+			go func(i int) {
+				defer wg.Done()
+				result, err := favoriteClient.IsFavorite(ctx, &pbfavorite.LikeRequest{
+					UserID:  loginUserID,
+					VideoID: videoInfos[i].Id,
+				})
+				if err != nil {
+					zap.L().Error(err.Error())
+					return
+				}
+				videoInfos[i].IsFavorite = result.IsFavorite
+			}(i)
+		}
+	}
+	wg.Wait()
+	return videoInfos
 }

@@ -2,7 +2,7 @@ package llm
 
 import (
 	"douyin/config"
-	"douyin/database"
+	"douyin/storage/database"
 	"douyin/model"
 
 	"go.uber.org/zap"

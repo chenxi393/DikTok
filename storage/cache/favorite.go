@@ -1,7 +1,9 @@
 package cache
 
 import (
+	"douyin/config"
 	"douyin/package/constant"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -10,6 +12,23 @@ import (
 	"go.uber.org/zap"
 )
 
+var FavoriteRedisClient *redis.Client
+
+func InitFavoriteRedis() {
+	// FavoriteRedis 连接
+	FavoriteRedisClient = redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%s", config.System.FavoriteRedis.Host, config.System.FavoriteRedis.Port),
+		Password: config.System.FavoriteRedis.Password,
+		DB:       config.System.FavoriteRedis.Database,
+		PoolSize: config.System.FavoriteRedis.PoolSize, //每个CPU最大连接数
+	})
+	_, err := FavoriteRedisClient.Ping().Result()
+	if err != nil {
+		zap.L().Fatal("favorite_redis连接失败", zap.Error(err))
+	}
+}
+
+// FIXME记得改造成 zset 需要按照点赞倒叙展示
 func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
 	favoriteIDStrings := make([]string, 1, len(favoriteIDSet)+1)
@@ -17,7 +36,7 @@ func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 	for i := range favoriteIDSet {
 		favoriteIDStrings = append(favoriteIDStrings, strconv.FormatUint(favoriteIDSet[i], 10))
 	}
-	pp := VideoRedisClient.Pipeline()
+	pp := FavoriteRedisClient.Pipeline()
 	pp.SAdd(key, favoriteIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	_, err := pp.Exec()
@@ -27,7 +46,7 @@ func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 func GetFavoriteSet(userID uint64) ([]uint64, error) {
 	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
 	// 若key不存在会返回空集合
-	idSet, err := VideoRedisClient.SMembers(key).Result()
+	idSet, err := FavoriteRedisClient.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
@@ -59,7 +78,12 @@ func FavoriteAction(userID, author_id, videoID uint64, cnt int64) error {
 		zap.L().Error(err.Error())
 		return err
 	}
-	err = VideoRedisClient.Del(videoInfoCountKey, videoInfoKey, favoriteKey).Err()
+	err = VideoRedisClient.Del(videoInfoCountKey, videoInfoKey).Err()
+	if err != nil {
+		zap.L().Error(err.Error())
+		return err
+	}
+	err = FavoriteRedisClient.Del(favoriteKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
