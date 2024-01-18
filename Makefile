@@ -8,22 +8,22 @@ down:
 	docker compose down
 
 gate_way:
-	go run gateway/main.go gateway/msg.go gateway/route.go
+	go run gateway/*.go
 
 user:
-	go run service/user/main.go service/user/user.go
+	go run service/user/*.go
 
 video:
-	go run service/video/main.go service/video/publish.go service/video/video.go service/video/search.go
+	go run service/video/*.go
 
 relation:
-	go run service/relation/main.go service/relation/relation.go
+	go run service/relation/*.go
 
 message:
-	go run service/message/main.go service/message/message.go
+	go run service/message/*.go
 
 favorite:
-	go run service/favorite/main.go service/favorite/favorite.go
+	go run service/favorite/*.go
 
 comment:
-	go run service/comment/main.go service/comment/comment.go 
+	go run service/comment/*.go

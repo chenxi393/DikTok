@@ -26,7 +26,6 @@ func InitRelation() {
 		zap.L().Sugar().Errorf("初始化Relation exchange失败: %v", err)
 		return
 	}
-	go followConsume()
 }
 
 // t表示类型 1关注 -1取关
@@ -49,7 +48,7 @@ func SendFollowMessage(userID, toUserID uint64, t int) {
 	}
 }
 
-func followConsume() {
+func FollowConsume() {
 	// Open a new channel.
 	channel, err := connRabbitMQ.Channel()
 	if err != nil {

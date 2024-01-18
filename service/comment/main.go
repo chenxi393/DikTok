@@ -25,7 +25,7 @@ var (
 	// 需要RPC调用的客户端
 	userClient pbuser.UserClient
 	// comment模块运行在 8060-8069
-	addr = "comment:8060"
+	addr = "127.0.0.1::8060"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitComment()
-
+	go mq.CommentConsume()
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
 	if err != nil {

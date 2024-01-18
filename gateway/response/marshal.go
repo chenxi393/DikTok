@@ -1,4 +1,4 @@
-package util
+package response
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// JSON 序列化的时候0 值会被忽略 FIXME
 // 解决grpc返回成功状态码为0 会被忽略 字段为默认零值都会被忽略
 func GrpcMarshal(v interface{}) ([]byte, error) {
 	data, ok := v.(proto.Message)

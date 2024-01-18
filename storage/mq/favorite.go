@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// FIXME 这些MQ的消费者 应该对应的微服务
 func InitFavorite() {
 	initMQ()
 	err := produceChannel.ExchangeDeclare(
@@ -27,7 +26,6 @@ func InitFavorite() {
 		zap.L().Sugar().Errorf("初始化favorite exchange失败: %v", err)
 		return
 	}
-	go favoriteConsume()
 }
 
 // flag:1 表示点赞 -1表示取消赞
@@ -50,7 +48,7 @@ func SendFavoriteMessage(userID, videoID uint64, flag int) error {
 	return err
 }
 
-func favoriteConsume() {
+func FavoriteConsume() {
 	// Open a new channel.
 	channel, err := connRabbitMQ.Channel()
 	if err != nil {

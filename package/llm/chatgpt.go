@@ -1,16 +1,15 @@
 package llm
 
 import (
-	"douyin/config"
-	"douyin/storage/database"
 	"douyin/model"
+	"douyin/storage/database"
 
 	"go.uber.org/zap"
 )
 
 var (
 	// chatgpt
-	ChatGPTAvatar = config.System.Qiniu.OssDomain + "/2022chatgpt.png"
+	ChatGPTAvatar = "2022chatgpt.png"
 	ChatGPTName   = "ChatGPT"
 	ChatGPTID     = uint64(1)
 )

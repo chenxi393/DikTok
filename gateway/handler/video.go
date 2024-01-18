@@ -69,7 +69,6 @@ func Feed(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// JSON 序列化的时候0 值会被忽略 FIXME
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
 }

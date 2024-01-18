@@ -25,7 +25,6 @@ func InitComment() {
 		zap.L().Sugar().Errorf("初始化comment exchange失败: %v", err)
 		return
 	}
-	go commentConsume()
 }
 
 func SendCommentMessage(msg *model.Comment) error {
@@ -51,7 +50,7 @@ func SendCommentMessage(msg *model.Comment) error {
 	return err
 }
 
-func commentConsume() {
+func CommentConsume() {
 	// Open a new channel.
 	channel, err := connRabbitMQ.Channel()
 	if err != nil {

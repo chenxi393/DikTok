@@ -7,6 +7,7 @@ import (
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
 	"douyin/package/llm"
+	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
 	"douyin/storage/cache"
@@ -17,6 +18,7 @@ import (
 
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -24,8 +26,8 @@ import (
 var (
 	// 需要RPC调用的客户端
 	relationClient pbrelation.RelationClient
-	// 用户模块运行在 8020-8029
-	addr = "user:8020"
+	// 用户模块运行在 8020-8029  FIXME 这里用 user:8020 直接报错。。 user会直接解析出端口
+	addr = "127.0.0.1:8020"
 )
 
 func main() {
@@ -33,6 +35,8 @@ func main() {
 	config.Init()
 	// TODO 日志也应该考虑合并
 	util.InitZap()
+	shutdown := otel.Init("rpc://user", constant.ServiceName+".user")
+	defer shutdown()
 	database.InitMySQL()
 	cache.InitRedis()
 	llm.RegisterChatGPT()
@@ -51,15 +55,14 @@ func main() {
 	relationConn := rpc.SetupServiceConn(relationTarget, etcdResolverBuilder)
 	defer relationConn.Close()
 	relationClient = pbrelation.NewRelationClient(relationConn)
-
 	// 注册自己的服务
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Panicf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	// 添加 grpc otel 自动检测
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pbuser.RegisterUserServer(s, &UserService{})
-
 	// TODO 这一块context 目前还没没有理解是干嘛的
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -70,6 +73,6 @@ func main() {
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Panicf("failed to serve: %v", err)
 	}
 }

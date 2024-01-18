@@ -1,4 +1,4 @@
-package util
+package main
 
 import (
 	"math/rand"
@@ -58,14 +58,14 @@ var (
 	}
 )
 
-func GenerateAvatar() string {
+func generateAvatar() string {
 	return avatars[rand.Intn(len(avatars))]
 }
 
-func GenerateImage() string {
+func generateImage() string {
 	return backgrounds[rand.Intn(len(backgrounds))]
 }
 
-func GenerateSignatrue() string {
+func generateSignatrue() string {
 	return signatrues[rand.Intn(len(signatrues))]
 }

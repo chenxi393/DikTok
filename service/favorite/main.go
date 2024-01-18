@@ -25,7 +25,7 @@ var (
 	// 需要RPC调用的客户端
 	videoClient pbvideo.VideoClient
 	// favorite模块运行在 8050-8059
-	addr = "favorite:8050"
+	addr = "127.0.0.1:8050"
 )
 
 func main() {
@@ -36,6 +36,7 @@ func main() {
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitFavorite()
+	go mq.FavoriteConsume()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

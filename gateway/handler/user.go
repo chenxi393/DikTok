@@ -3,9 +3,10 @@ package handler
 import (
 	"context"
 	"douyin/gateway/auth"
+	"douyin/gateway/response"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/gateway/response"
+	"douyin/package/otel"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -67,6 +68,9 @@ func UserRegister(c *fiber.Ctx) error {
 }
 
 func UserLogin(c *fiber.Ctx) error {
+	// c.UserContext() 获取 父span 从进来到出去 都在一个链路上
+	ctx, span := otel.Tracer.Start(c.UserContext(), "login")
+	defer span.End()
 	var req userRequest
 	err := c.QueryParser(&req)
 	if err != nil {
@@ -78,7 +82,7 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res, err := UserClient.Login(context.Background(), &pbuser.LoginRequest{
+	res, err := UserClient.Login(ctx, &pbuser.LoginRequest{
 		Username: req.Username,
 		Password: req.Password,
 	})

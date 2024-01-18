@@ -27,7 +27,7 @@ var (
 	userClient    pbuser.UserClient
 	messageClient pbmessage.MessageClient
 	// relation模块运行在 8030-8039
-	addr = "relation:8030"
+	addr = "127.0.0.1:8030"
 )
 
 func main() {
@@ -38,6 +38,7 @@ func main() {
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitRelation()
+	go mq.FollowConsume()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

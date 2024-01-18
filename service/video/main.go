@@ -25,7 +25,7 @@ var (
 	userClient     pbuser.UserClient
 	favoriteClient pbfavorite.FavoriteClient
 	// Video模块运行在 8010-8019
-	addr = "video:8010"
+	addr = "127.0.0.1:8010"
 )
 
 func main() {

@@ -7,7 +7,6 @@ import (
 	pbuser "douyin/grpc/user"
 	"douyin/model"
 	"douyin/package/constant"
-	"douyin/package/util"
 	"douyin/storage/cache"
 	"douyin/storage/database"
 	"errors"
@@ -43,13 +42,13 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 		return nil, errors.New(constant.UserDepulicate)
 	}
 	// 对密码进行加密并存储
-	encryptedPassword := util.BcryptHash(req.Password)
+	encryptedPassword := bcryptHash(req.Password)
 	user := &model.User{
 		Username:        req.Username,
 		Password:        encryptedPassword,
-		Avatar:          util.GenerateAvatar(),
-		BackgroundImage: util.GenerateImage(),
-		Signature:       util.GenerateSignatrue(),
+		Avatar:          generateAvatar(),
+		BackgroundImage: generateImage(),
+		Signature:       generateSignatrue(),
 	}
 	userID, err := database.CreateUser(user)
 	if err != nil {
@@ -110,7 +109,7 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 	if user.ID == 0 {
 		return nil, errors.New(constant.UserNoExist)
 	}
-	if !util.BcryptCheck(req.Password, user.Password) {
+	if !bcryptCheck(req.Password, user.Password) {
 		return nil, errors.New(constant.SecretError)
 	}
 	// redis预热 用户要查看个人信息 发布的视频 喜欢的视频

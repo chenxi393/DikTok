@@ -23,7 +23,7 @@ var (
 	// 需要RPC调用的客户端
 	relationClient pbrelation.RelationClient
 	// message模块运行在 8040-8049
-	addr = "message:8040"
+	addr = "127.0.0.1:8040"
 )
 
 func main() {

@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"douyin/config"
-	"douyin/storage/database"
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
 	"douyin/model"
-	"douyin/storage/cache"
 	"douyin/package/constant"
-	"douyin/package/util"
+	"douyin/storage/cache"
+	"douyin/storage/database"
 	"os"
 	"strconv"
 	"time"
@@ -31,7 +30,7 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 	// 先上传到本地 上传到对象存储之后再删除
 	// 这里已经没有让用户临时访问本地存储了
 	// 感觉应该使用消息队列 来异步上传到OSS FIXME
-	playURL, coverURL, err := util.UploadVideo(req.Data, fileName)
+	playURL, coverURL, err := uploadVideo(req.Data, fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +60,7 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 	// 异步上传到对象存储
 	go func() {
 		localVideoPath := config.System.HttpAddress.VideoAddress + "/" + fileName
-		err := util.UploadToOSS(fileName, localVideoPath)
+		err := uploadToOSS(fileName, localVideoPath)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return

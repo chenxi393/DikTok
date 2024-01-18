@@ -4,8 +4,9 @@ import (
 	"douyin/config"
 	"douyin/gateway/auth"
 	"douyin/gateway/handler"
-	"douyin/gateway/util"
+	"douyin/gateway/response"
 
+	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -17,7 +18,7 @@ func startFiber() {
 	// 客户端文件超过30MB 返回413
 	app := fiber.New(fiber.Config{
 		BodyLimit:   30 * 1024 * 1024,
-		JSONEncoder: util.GrpcMarshal,
+		JSONEncoder: response.GrpcMarshal,
 	})
 	// 使用中间件打印日志
 	app.Use(logger.New())
@@ -28,6 +29,7 @@ func startFiber() {
 
 func initRouter(app *fiber.App) {
 	// 允许跨域请求
+	app.Use(otelfiber.Middleware())
 	app.Use(cors.New())
 	api := app.Group("/douyin")
 	{
