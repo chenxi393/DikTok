@@ -2,10 +2,11 @@ package otel
 
 import (
 	"context"
+	"douyin/config"
 	"log"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -14,10 +15,13 @@ import (
 
 func initMeterProvider(url, serviceName string) *sdkmetric.MeterProvider {
 	ctx := context.Background()
-
-	exporter, err := otlpmetricgrpc.New(ctx)
+	exporter, err := otlpmetrichttp.New(
+		ctx,
+		otlpmetrichttp.WithInsecure(),
+		otlpmetrichttp.WithEndpoint(config.System.OtelColletcor.Host+":"+config.System.OtelColletcor.Port),
+	)
 	if err != nil {
-		log.Fatalf("new otlp metric grpc exporter failed: %v", err)
+		log.Fatalf("new otlp metric exporter failed: %v", err)
 	}
 	// Ensure default SDK resources and the required service name are set.
 	r := sdkmetric.WithResource(

@@ -216,6 +216,29 @@ services:
     networks:
       - backend
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    volumes:
+      - ./config/otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - 1888:1888 # pprof extension
+      - 8888:8888 # Prometheus metrics exposed by the Collector
+      - 8889:8889 # Prometheus exporter metrics
+      - 13133:13133 # health_check extension
+      - 4317:4317 # OTLP gRPC receiver
+      - 4318:4318 # OTLP http receiver
+      - 55679:55679 # zpages extension
+  open_observe:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    volumes:
+      - open_observe_data:/data
+    environment:
+      - ZO_DATA_DIR="/data"
+      - ZO_ROOT_USER_EMAIL=root@example.com  # 加上引号居然不行 什么破 bug
+      - ZO_ROOT_USER_PASSWORD=Complexpass#123
+    ports:
+      - 5080:5080  # for http
+      - 5081:5081  # for grpc
 networks:
   mysql:
     ipam:
@@ -231,7 +254,7 @@ volumes:
   mysqlMasterData:
   mysqlSlaveData:
   redis:
-
+  open_observe_data:
 
 #    env_file:
 #      - .env

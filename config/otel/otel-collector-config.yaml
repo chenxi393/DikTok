@@ -1,0 +1,56 @@
+receivers:
+  otlp:
+    protocols:
+      http: 
+        endpoint: 0.0.0.0:4318
+      grpc: 
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch:
+    send_batch_size: 10000
+    timeout: 1s
+  memory_limiter:
+    check_interval: 2s
+    limit_mib: 1800
+    spike_limit_mib: 500
+  resourcedetection/system:
+    detectors: [ "system" ]
+    system:
+      hostname_sources: [ "os" ]
+  resource:
+    attributes:
+      - key: service.name
+        value: "serviceName"
+        action: upsert
+
+exporters:
+  debug:
+  otlp:
+    endpoint: "jaeger:4317"
+    tls:
+      insecure: true
+  otlp/logs:
+    endpoint: "dataprepper:21892"
+    tls:
+      insecure: true
+  otlphttp/openobserve:
+    endpoint: http://8.134.173.123:5080/api/default/
+    headers:
+      Authorization: Basic cm9vdEBleGFtcGxlLmNvbToxUll4ejdIM1kwZmd6N244
+      stream-name: default
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/openobserve]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/openobserve]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/openobserve]

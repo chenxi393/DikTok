@@ -43,9 +43,9 @@
 - [x] 拆分成微服务，考虑gRPC+ETCD，再考虑成熟的微服务框架go-zero
 - [x] 分布式ID生成 snowflake雪花算法
 - [x] 视频搜索功能 MySQL全文索引实现（可考虑ES）
+- [x] 接入OpenTelemetry，完成traces，metric的上报
 - [ ] 消息模块使用MongoDB存储，消息的全文搜索（考虑ES实现）
 - [ ] 项目快速部署和运维的探究 K8s CICD体系
-- [ ] 整理日志系统并且接入ELK体系（或者使用OpenTelemetry）
 - [ ] 接入视频推荐算法（Gorse），对用户画像进行刻画
 - [ ] 增加视频总结和关键词提取功能（大模型）
 - [ ] 消息模块引入大语言模型√ 每日定时做视频推荐

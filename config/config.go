@@ -45,6 +45,10 @@ type QiNiuCloud struct {
 	OssDomain string `mapstructure:"ossDomain"`
 }
 
+type Otel struct {
+	Host string `mapstructure:"host"`
+	Port string `mapstructure:"port"`
+}
 type SystemConfig struct {
 	Qiniu         QiNiuCloud `mapstructure:"qiniu"`
 	HttpAddress   HTTP       `mapstructure:"httpAddress"`
@@ -59,6 +63,7 @@ type SystemConfig struct {
 	Mode          string     `mapstructure:"mode"`
 	JwtSecret     string     `mapstructure:"jwtSecret"`
 	GPTSecret     string     `mapstructure:"gptSecret"`
+	OtelColletcor Otel       `mapstructure:"otel_collector"`
 }
 
 var System SystemConfig
@@ -82,6 +87,8 @@ func Init() {
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		log.Println("配置文件被修改 重新载入全局变量")
+		// 这里只有直接引用 config 才会热重载
+		// 已经初始化好的 没啥用
 		err = viper.Unmarshal(&System)
 		if err != nil {
 			log.Println("fatal error unmarshal config: ", err.Error())

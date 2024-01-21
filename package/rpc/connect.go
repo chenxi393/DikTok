@@ -22,7 +22,6 @@ func SetupServiceConn(serviceName string, resolver resolver.Builder) *grpc.Clien
 		grpc.WithResolvers(resolver),
 		// 声明使用的负载均衡策略为 roundrobin
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"LoadBalancingPolicy": "%s"}`, roundrobin.Name)),
-		// 这里有阻塞
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		// grpc自动检测
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),

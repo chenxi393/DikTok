@@ -7,6 +7,7 @@ import (
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
+	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
 	"douyin/storage/cache"
@@ -18,6 +19,7 @@ import (
 
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -35,6 +37,8 @@ func main() {
 	config.Init()
 	// TODO 日志也应该考虑合并
 	util.InitZap()
+	shutdown := otel.Init("rpc://relation", constant.ServiceName+".relation")
+	defer shutdown()
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitRelation()
@@ -54,7 +58,8 @@ func main() {
 	userConn := rpc.SetupServiceConn(userTarget, etcdResolverBuilder)
 	defer userConn.Close()
 	userClient = pbuser.NewUserClient(userConn)
-
+ 
+	println("dhuishduis")
 	messageTarget := fmt.Sprintf("etcd:///%s", constant.MessageService)
 	messageConn := rpc.SetupServiceConn(messageTarget, etcdResolverBuilder)
 	defer messageConn.Close()
@@ -64,7 +69,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pbrelation.RegisterRelationServer(s, &RelationService{})
 
 	// TODO 这一块context 目前还没没有理解是干嘛的

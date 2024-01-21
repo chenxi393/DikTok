@@ -56,6 +56,9 @@ func ParseToken(token string) (*UserClaims, error) {
 func Authentication(c *fiber.Ctx) error {
 	token := c.Query("token")
 	if token == "" {
+		token = c.Get("token")
+	}
+	if token == "" {
 		zap.L().Info("token为空")
 		res := response.CommonResponse{
 			StatusCode: constant.Failed,

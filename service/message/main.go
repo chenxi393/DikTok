@@ -6,6 +6,7 @@ import (
 	pbmessage "douyin/grpc/message"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
+	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
 	"douyin/storage/database"
@@ -15,6 +16,7 @@ import (
 
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -31,6 +33,8 @@ func main() {
 	config.Init()
 	// TODO 日志也应该考虑合并
 	util.InitZap()
+	shutdown := otel.Init("rpc://message", constant.ServiceName+".message")
+	defer shutdown()
 	database.InitMySQL()
 
 	// 连接到依赖的服务
@@ -52,7 +56,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pbmessage.RegisterMessageServer(s, &MessageService{})
 
 	// TODO 这一块context 目前还没没有理解是干嘛的

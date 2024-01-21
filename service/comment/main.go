@@ -6,6 +6,7 @@ import (
 	pbcomment "douyin/grpc/comment"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
+	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
 	"douyin/storage/cache"
@@ -17,6 +18,7 @@ import (
 
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -33,6 +35,8 @@ func main() {
 	config.Init()
 	// TODO 日志也应该考虑合并
 	util.InitZap()
+	shutdown := otel.Init("rpc://comment", constant.ServiceName+".comment")
+	defer shutdown()
 	database.InitMySQL()
 	cache.InitRedis()
 	mq.InitComment()
@@ -56,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pbcomment.RegisterCommentServer(s, &CommentService{})
 
 	// TODO 这一块context 目前还没没有理解是干嘛的
