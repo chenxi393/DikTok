@@ -30,31 +30,33 @@ func initMQ() {
 	if err != nil {
 		zap.L().Error("创建channel失败", zap.Error(err))
 	}
-	defer produceChannel.Close()
-
 	// 下面这段代码 确保mq异常时可以重新连接
-	for {
-		reason, ok := <-produceChannel.NotifyClose(make(chan *amqp.Error))
-		// exit this goroutine if closed by developer
-		if !ok || produceChannel.IsClosed() {
-			zap.L().Error("channel closed")
-			_ = produceChannel.Close() // close again, ensure closed flag set when connection closed
-			break
-		}
-		zap.L().Sugar().Warnf("channel closed, reason: %v", reason)
-
-		// reconnect if not closed by developer
+	go func() {
+		defer produceChannel.Close()
 		for {
-			// wait 1s for connection reconnect
-			time.Sleep(3 * time.Second)
-
-			ch, err := connRabbitMQ.Channel()
-			if err == nil {
-				zap.L().Sugar().Info("channel recreate success")
-				produceChannel = ch
+			reason, ok := <-produceChannel.NotifyClose(make(chan *amqp.Error))
+			// exit this goroutine if closed by developer
+			if !ok || produceChannel.IsClosed() {
+				zap.L().Error("channel closed")
+				_ = produceChannel.Close() // close again, ensure closed flag set when connection closed
 				break
 			}
-			zap.L().Sugar().Errorf("channel recreate failed, err: %v", err)
+			zap.L().Sugar().Warnf("channel closed, reason: %v", reason)
+
+			// reconnect if not closed by developer
+			for {
+				// wait 1s for connection reconnect
+				time.Sleep(3 * time.Second)
+
+				ch, err := connRabbitMQ.Channel()
+				if err == nil {
+					zap.L().Sugar().Info("channel recreate success")
+					produceChannel = ch
+					break
+				}
+				zap.L().Sugar().Errorf("channel recreate failed, err: %v", err)
+			}
 		}
-	}
+
+	}()
 }

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/response"
 	pbmessage "douyin/grpc/message"
 	"douyin/package/constant"
@@ -48,7 +47,7 @@ func MessageAction(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
-	resp, err := MessageClinet.Send(context.Background(), &pbmessage.SendRequest{
+	resp, err := MessageClinet.Send(c.UserContext(), &pbmessage.SendRequest{
 		UserID:   userID,
 		ToUserID: req.ToUserID,
 		Content:  req.Content,
@@ -78,7 +77,7 @@ func MessageChat(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(uint64)
-	resp, err := MessageClinet.List(context.Background(), &pbmessage.ListRequest{
+	resp, err := MessageClinet.List(c.UserContext(), &pbmessage.ListRequest{
 		UserID:     userID,
 		ToUserID:   req.ToUserID,
 		PreMsgTime: req.Pre_msg_time,

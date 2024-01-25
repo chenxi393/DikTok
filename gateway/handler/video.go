@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
@@ -56,7 +55,7 @@ func Feed(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	res, err := VideoClient.Feed(context.Background(), &pbvideo.FeedRequest{
+	res, err := VideoClient.Feed(c.UserContext(), &pbvideo.FeedRequest{
 		LatestTime: req.LatestTime,
 		Topic:      req.Topic,
 		UserID:     userID,
@@ -101,7 +100,7 @@ func SearchVideo(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	res, err := VideoClient.Search(context.Background(), &pbvideo.SearchRequest{
+	res, err := VideoClient.Search(c.UserContext(), &pbvideo.SearchRequest{
 		Keyword: req.Keyword,
 		UserID:  userID,
 	})

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbcomment "douyin/grpc/comment"
@@ -48,13 +47,13 @@ func CommentAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(uint64)
 	var resp *pbcomment.CommentResponse
 	if req.ActionType == constant.DoAction && req.CommentText != "" {
-		resp, err = CommentClient.Add(context.Background(), &pbcomment.AddRequest{
+		resp, err = CommentClient.Add(c.UserContext(), &pbcomment.AddRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
 			Content: req.CommentText,
 		})
 	} else if req.ActionType == constant.UndoAction && req.CommentID != 0 {
-		resp, err = CommentClient.Delete(context.Background(), &pbcomment.DeleteRequest{
+		resp, err = CommentClient.Delete(c.UserContext(), &pbcomment.DeleteRequest{
 			VideoID:   req.VideoID,
 			CommentID: req.CommentID,
 			UserID:    userID,
@@ -102,7 +101,7 @@ func CommentList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := CommentClient.List(context.Background(), &pbcomment.ListRequest{
+	resp, err := CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		UserID:  userID,
 		VideoID: req.VideoID,
 	})

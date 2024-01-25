@@ -58,8 +58,7 @@ func main() {
 	userConn := rpc.SetupServiceConn(userTarget, etcdResolverBuilder)
 	defer userConn.Close()
 	userClient = pbuser.NewUserClient(userConn)
- 
-	println("dhuishduis")
+
 	messageTarget := fmt.Sprintf("etcd:///%s", constant.MessageService)
 	messageConn := rpc.SetupServiceConn(messageTarget, etcdResolverBuilder)
 	defer messageConn.Close()

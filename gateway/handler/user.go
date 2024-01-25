@@ -1,14 +1,13 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/package/otel"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
 )
 
@@ -31,6 +30,7 @@ func UserRegister(c *fiber.Ctx) error {
 	var req userRequest
 	err := c.QueryParser(&req)
 	if err != nil {
+		otelzap.Ctx(c.UserContext()).Error(err.Error())
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
 			StatusCode: constant.Failed,
@@ -39,7 +39,7 @@ func UserRegister(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res, err := UserClient.Register(context.Background(), &pbuser.RegisterRequest{
+	res, err := UserClient.Register(c.UserContext(), &pbuser.RegisterRequest{
 		Username: req.Username,
 		Password: req.Password,
 	})
@@ -68,9 +68,6 @@ func UserRegister(c *fiber.Ctx) error {
 }
 
 func UserLogin(c *fiber.Ctx) error {
-	// c.UserContext() 获取 父span 从进来到出去 都在一个链路上
-	ctx, span := otel.Tracer.Start(c.UserContext(), "login")
-	defer span.End()
 	var req userRequest
 	err := c.QueryParser(&req)
 	if err != nil {
@@ -82,7 +79,7 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res, err := UserClient.Login(ctx, &pbuser.LoginRequest{
+	res, err := UserClient.Login(c.UserContext(), &pbuser.LoginRequest{
 		Username: req.Username,
 		Password: req.Password,
 	})
@@ -137,7 +134,7 @@ func UserInfo(c *fiber.Ctx) error {
 		}
 		loginUserID = claims.UserID
 	}
-	res, err := UserClient.Info(context.Background(), &pbuser.InfoRequest{
+	res, err := UserClient.Info(c.UserContext(), &pbuser.InfoRequest{
 		UserID:      req.UserID,
 		LoginUserID: loginUserID,
 	})
@@ -151,4 +148,78 @@ func UserInfo(c *fiber.Ctx) error {
 	}
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
+}
+
+type updateRequest struct {
+	// 注册用户名，最长32个字符
+	Username string `form:"username"`
+	// 密码，最长32个字符
+	OldPassword string `form:"old_password"`
+	NewPassword string `form:"new_password"`
+	Signature   string `form:"signature"`
+	UpdateType  int32  `form:"update_type"`
+}
+
+const (
+	updateUsername   = 1
+	updatePassword   = 2
+	updateAvatar     = 3
+	updateBackground = 4
+	updateSignature  = 5
+)
+
+func UserUpdate(c *fiber.Ctx) error {
+	// 	var req updateRequest
+	// 	err := c.BodyParser(req)
+	// 	if err != nil {
+	// 		otelzap.Ctx(c.UserContext()).Error(err.Error())
+	// 		zap.L().Error(err.Error())
+	// 		res := response.UserRegisterOrLogin{
+	// 			StatusCode: constant.Failed,
+	// 			StatusMsg:  constant.BadParaRequest,
+	// 		}
+	// 		return c.JSON(res)
+	// 	}
+	// 	switch req.UpdateType {
+	// 	case updateUsername:
+	// 		avatarHeader, err := c.FormFile("avatar")
+	// 		if err != nil && err != fasthttp.ErrMissingFile {
+	// 			zap.L().Error(err.Error())
+	// 			res := response.CommonResponse{
+	// 				StatusCode: constant.Failed,
+	// 				StatusMsg:  constant.FileFormatError,
+	// 			}
+	// 			return c.JSON(res)
+	// 		}
+	// 	case updatePassword:
+	// 	case updateAvatar:
+	// 	case updateBackground:
+	// 	case updateSignature:
+	// 	}
+
+	// 	backgroundHeader, err := c.FormFile("background_image")
+	// 	if err != nil && err != fasthttp.ErrMissingFile {
+	// 		zap.L().Error(err.Error())
+	// 		res := response.CommonResponse{
+	// 			StatusCode: constant.Failed,
+	// 			StatusMsg:  constant.FileFormatError,
+	// 		}
+	// 		return c.JSON(res)
+	// 	}
+	// 	res, err := UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
+	// 		Username:    req.Username,
+	// 		OldPassword: req.OldPassword,
+	// 		NewPassword: req.NewPassword,
+	// 		UserID:      c.Locals(constant.UserID).(uint64),
+	// 		Signature:   req.Signature,
+	// 	})
+	// 	if err != nil {
+	// 		res := response.UserRegisterOrLogin{
+	// 			StatusCode: constant.Failed,
+	// 			StatusMsg:  err.Error(),
+	// 		}
+	// 		return c.JSON(res)
+	// 	}
+	// return c.JSON(res)
+	return nil
 }

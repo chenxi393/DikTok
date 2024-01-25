@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbrelation "douyin/grpc/relation"
@@ -48,12 +47,12 @@ func RelationAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(uint64)
 	var res *pbrelation.FollowResponse
 	if req.ActionType == constant.DoAction {
-		res, err = RelationClient.Follow(context.Background(), &pbrelation.FollowRequest{
+		res, err = RelationClient.Follow(c.UserContext(), &pbrelation.FollowRequest{
 			UserID:   userID,
 			ToUserID: req.ToUserID,
 		})
 	} else if req.ActionType == constant.UndoAction {
-		res, err = RelationClient.Unfollow(context.Background(), &pbrelation.FollowRequest{
+		res, err = RelationClient.Unfollow(c.UserContext(), &pbrelation.FollowRequest{
 			UserID:   userID,
 			ToUserID: req.ToUserID,
 		})
@@ -100,7 +99,7 @@ func FollowList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := RelationClient.FollowList(context.Background(), &pbrelation.ListRequest{
+	resp, err := RelationClient.FollowList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})
@@ -143,7 +142,7 @@ func FollowerList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := RelationClient.FollowerList(context.Background(), &pbrelation.ListRequest{
+	resp, err := RelationClient.FollowerList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})
@@ -180,7 +179,7 @@ func FriendList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	resp, err := RelationClient.FriendList(context.Background(), &pbrelation.ListRequest{
+	resp, err := RelationClient.FriendList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})

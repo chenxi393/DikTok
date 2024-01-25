@@ -27,7 +27,7 @@ var (
 	// 需要RPC调用的客户端
 	userClient pbuser.UserClient
 	// comment模块运行在 8060-8069
-	addr = "127.0.0.1::8060"
+	addr = "127.0.0.1:8060"
 )
 
 func main() {

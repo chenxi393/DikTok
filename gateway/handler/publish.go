@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
@@ -88,7 +87,7 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	res, err := VideoClient.Publish(context.Background(), &pbvideo.PublishRequest{
+	res, err := VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
 		Title:  req.Title,
 		Topic:  req.Topic,
 		UserID: userClaim.UserID,
@@ -131,7 +130,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := VideoClient.List(context.Background(), &pbvideo.ListRequest{
+	resp, err := VideoClient.List(c.UserContext(), &pbvideo.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,
 	})

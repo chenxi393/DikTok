@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbfavorite "douyin/grpc/favorite"
@@ -43,12 +42,12 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(uint64)
 	var resp *pbfavorite.LikeResponse
 	if req.ActionType == constant.DoAction {
-		resp, err = FavoriteClient.Like(context.Background(), &pbfavorite.LikeRequest{
+		resp, err = FavoriteClient.Like(c.UserContext(), &pbfavorite.LikeRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
 		})
 	} else if req.ActionType == constant.UndoAction {
-		resp, err = FavoriteClient.Unlike(context.Background(), &pbfavorite.LikeRequest{
+		resp, err = FavoriteClient.Unlike(c.UserContext(), &pbfavorite.LikeRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
 		})
@@ -95,7 +94,7 @@ func FavoriteList(c *fiber.Ctx) error {
 		}
 		userID = claims.UserID
 	}
-	resp, err := FavoriteClient.List(context.Background(), &pbfavorite.ListRequest{
+	resp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,
 	})

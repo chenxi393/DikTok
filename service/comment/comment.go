@@ -156,6 +156,8 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 			})
 			if err != nil {
 				zap.L().Error(err.Error())
+				// 没有数据 return也是可以接收的 可以重试两次 （封装一下）
+				return // 这里 不return 会panic 下面 user
 			}
 			if err == nil && user.StatusCode != 0 {
 				zap.L().Error("rpc 调用错误")
