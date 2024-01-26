@@ -67,7 +67,12 @@ func RequestToSparkAPI(content string) string {
 			return ""
 		}
 		//解析数据
-		payload := data["payload"].(map[string]interface{})
+		data_, ok := data["payload"]
+		if !ok {
+			zap.L().Sugar().Infoln("payload err")
+			return ""
+		}
+		payload := data_.(map[string]interface{})
 		choices := payload["choices"].(map[string]interface{})
 		header := data["header"].(map[string]interface{})
 		code := header["code"].(float64)

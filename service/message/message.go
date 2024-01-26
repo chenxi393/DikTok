@@ -38,33 +38,34 @@ func (s *MessageService) Send(ctx context.Context, req *pbmessage.SendRequest) (
 				StatusMsg:  err.Error(),
 			}, nil
 		}
-	}
-	// 发送的id是不是朋友
-	isFriend, err := relationClient.IsFriend(ctx, &pbrelation.ListRequest{
-		LoginUserID: req.UserID,
-		UserID:      req.ToUserID,
-	})
-	if err != nil {
-		return &pbmessage.SendResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}, nil
-	}
-	if !isFriend.Result {
-		return &pbmessage.SendResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.IsNotFriend,
-		}, nil
-	}
-	// 发送消息考虑用不用消息队列 qps应该不大
-	// 后续可以用websocket完善 推送模型 TODO
-	err = database.CreateMessage(req.UserID, req.ToUserID, req.Content)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return &pbmessage.SendResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.DatabaseError,
-		}, nil
+	} else {
+		// 判断发送的id是不是朋友
+		isFriend, err := relationClient.IsFriend(ctx, &pbrelation.ListRequest{
+			LoginUserID: req.UserID,
+			UserID:      req.ToUserID,
+		})
+		if err != nil {
+			return &pbmessage.SendResponse{
+				StatusCode: constant.Failed,
+				StatusMsg:  err.Error(),
+			}, nil
+		}
+		if !isFriend.Result {
+			return &pbmessage.SendResponse{
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.IsNotFriend,
+			}, nil
+		}
+		// 发送消息考虑用不用消息队列 qps应该不大
+		// 后续可以用websocket完善 推送模型 TODO
+		err = database.CreateMessage(req.UserID, req.ToUserID, req.Content)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return &pbmessage.SendResponse{
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.DatabaseError,
+			}, nil
+		}
 	}
 	return &pbmessage.SendResponse{
 		StatusCode: constant.Success,
