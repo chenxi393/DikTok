@@ -44,6 +44,7 @@ func initRouter(app *fiber.App) {
 		{
 			user.Post("/register/", handler.UserRegister)
 			user.Post("/login/", handler.UserLogin)
+			user.Post("/update/", auth.Authentication, handler.UserUpdate)
 		}
 		publish := api.Group("/publish")
 		{

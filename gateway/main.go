@@ -21,9 +21,7 @@ import (
 )
 
 func main() {
-	// TODO 配置文件实际上也应该分离
 	config.Init()
-	// TODO 日志也应该考虑合并
 	util.InitZap()
 	shutdown := otel.Init("http://newclip.cn", constant.ServiceName+".gateway")
 	defer shutdown()

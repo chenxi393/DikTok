@@ -68,6 +68,7 @@ type SystemConfig struct {
 
 var System SystemConfig
 
+// TODO 配置文件实际上也应该分离
 func Init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

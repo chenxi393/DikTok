@@ -14,7 +14,7 @@ import (
 func SetupServiceConn(serviceName string, resolver resolver.Builder) *grpc.ClientConn {
 	// 开启用户服务的连接
 	// 这里如果在docker外运行 由于 etcd在内网 这里会一直阻塞
-	// FIXME 也就是 grpc 找不到etcd的位置 Dial 本身是不超时的
+	// FIXME 也就是 grpc 找不到etcd的位置 Dial本身是不超时的（非阻塞的）
 	conn, err := grpc.Dial(
 		// 服务名称
 		serviceName,

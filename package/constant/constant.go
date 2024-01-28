@@ -22,6 +22,11 @@ const (
 	TopicSport   = "体育"
 	TopicGame    = "游戏"
 	TopicMusic   = "音乐"
+
+	// chatgpt
+	ChatGPTAvatar = "2022chatgpt.png"
+	ChatGPTName   = "ChatGPT"
+	ChatGPTID     = uint64(1)
 )
 
 // redis 的key

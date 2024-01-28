@@ -5,7 +5,6 @@ import (
 	pbmessage "douyin/grpc/message"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
-	"douyin/package/llm"
 	"douyin/storage/database"
 
 	"go.uber.org/zap"
@@ -30,8 +29,8 @@ func (s *MessageService) Send(ctx context.Context, req *pbmessage.SendRequest) (
 		}, nil
 	}
 	// 给ChatGPT发送消息
-	if req.ToUserID == llm.ChatGPTID {
-		err := llm.SendToChatGPT(req.UserID, req.Content)
+	if req.ToUserID == constant.ChatGPTID {
+		err := sendToChatGPT(req.UserID, req.Content)
 		if err != nil {
 			return &pbmessage.SendResponse{
 				StatusCode: constant.Failed,

@@ -33,9 +33,7 @@ var (
 )
 
 func main() {
-	// TODO 配置文件实际上也应该分离
 	config.Init()
-	// TODO 日志也应该考虑合并
 	util.InitZap()
 	shutdown := otel.Init("rpc://relation", constant.ServiceName+".relation")
 	defer shutdown()
@@ -71,7 +69,6 @@ func main() {
 	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pbrelation.RegisterRelationServer(s, &RelationService{})
 
-	// TODO 这一块context 目前还没没有理解是干嘛的
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

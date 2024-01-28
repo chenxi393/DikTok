@@ -25,15 +25,12 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 	if len(req.Username) <= 0 || len(req.Username) > 32 {
 		return nil, errors.New(constant.BadParaRequest)
 	}
-	if len(req.Password) < 6 || len(req.Password) > 32 {
-		return nil, errors.New(constant.SecretFormatError)
-	}
-	// TODO 复杂度判断 可以使用正则 记得去除常数
-	if req.Password == constant.EasySecret {
-		return nil, errors.New(constant.SecretFormatEasy)
+	err := isPasswordOK(req.Password)
+	if err != nil {
+		return nil, err
 	}
 	//先判断用户存不存在 有唯一索引 其实可以不判断
-	_, err := database.SelectUserByName(req.Username)
+	_, err = database.SelectUserByName(req.Username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, err

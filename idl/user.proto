@@ -8,6 +8,7 @@ service User {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Login (LoginRequest) returns (LoginResponse) {}
     rpc Info (InfoRequest) returns (InfoResponse) {}
+    rpc Update (UpdateRequest) returns (UpdateResponse){}
 }
 
 message RegisterRequest {
@@ -43,6 +44,21 @@ message InfoResponse {
     int32 status_code = 1;
     string status_msg = 2;
     UserInfo user = 3;
+}
+
+message UpdateRequest {
+    uint64 userID = 1;
+    string username = 2;
+    string old_password = 3;
+    string new_password = 4;
+    string signature = 5;
+    bytes data = 6;
+    int32 update_type = 7;
+}
+
+message UpdateResponse {
+    int32 status_code = 1;
+    string status_msg = 2;
 }
 
 message UserInfo {

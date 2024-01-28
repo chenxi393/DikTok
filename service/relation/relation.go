@@ -6,7 +6,6 @@ import (
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/package/llm"
 	"douyin/storage/cache"
 	"douyin/storage/database"
 	"douyin/storage/mq"
@@ -263,7 +262,7 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 			friends = append(friends, ff)
 		}
 	}
-	friends = append(friends, llm.ChatGPTID)
+	friends = append(friends, constant.ChatGPTID)
 	friendsInfo := make([]*pbrelation.FriendInfo, len(friends))
 	wg := &sync.WaitGroup{}
 	wg.Add(len(friends))

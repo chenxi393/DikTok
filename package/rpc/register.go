@@ -30,8 +30,8 @@ func RegisterEndPointToEtcd(ctx context.Context, addr string, name string) {
 		select {
 		case <-time.After(5 * time.Second):
 			// 续约操作
-			resp, err := etcdClient.KeepAliveOnce(ctx, lease.ID)
-			log.Printf("keep alive resp: %+v\n", resp)
+			_, err := etcdClient.KeepAliveOnce(ctx, lease.ID)
+			//log.Printf("keep alive resp: %+v\n", resp)
 			if err != nil {
 				log.Printf("keep alive err: %v", err)
 			}

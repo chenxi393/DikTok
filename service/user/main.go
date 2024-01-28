@@ -6,7 +6,6 @@ import (
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/package/llm"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
@@ -31,15 +30,13 @@ var (
 )
 
 func main() {
-	// TODO 配置文件实际上也应该分离
 	config.Init()
-	// TODO 日志也应该考虑合并
 	util.InitZap()
 	shutdown := otel.Init("rpc://user", constant.ServiceName+".user")
 	defer shutdown()
 	database.InitMySQL()
 	cache.InitRedis()
-	llm.RegisterChatGPT()
+	registerChatGPT()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

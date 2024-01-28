@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// TODO 这一块 评论 签名 视频描述 做一个过滤 公共服务
 type Node struct {
 	//rune表示一个utf8字符
 	char   rune

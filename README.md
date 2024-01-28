@@ -5,12 +5,12 @@
 ## 项目结构
 |              |                   |
 | ------------ | ----------------- |
-| config       | 配置信息          |
-| gateway      | 网关（包括鉴权）  |
-| grpc         | rpc代码           |
+| config       | 公共配置信息      |
+| gateway      | API网关           |
+| grpc         | gRPC生成代码      |
 | idl          | protobuf接口定义  |
 | model        | 数据库模型        |
-| package      | 服务的依赖包      |
+| package      | 公共依赖包        |
 | service      | 拆分的微服务      |
 | storage      | 数据库 缓存 MQ    |
 | compose.yaml | docker容器编排    |
@@ -44,12 +44,12 @@
 - [x] 分布式ID生成 snowflake雪花算法
 - [x] 视频搜索功能 MySQL全文索引实现（可考虑ES）
 - [x] 接入OpenTelemetry，完成traces，metric的上报
+- [ ] 消息模块引入大语言模型√ 每日定时做视频推荐（定时任务怎么写？）
+- [ ] token的续期 双token？？
 - [ ] 消息模块使用MongoDB存储，消息的全文搜索（考虑ES实现）
 - [ ] 项目快速部署和运维的探究 K8s CICD体系
 - [ ] 接入视频推荐算法（Gorse），对用户画像进行刻画
 - [ ] 增加视频总结和关键词提取功能（大模型）
-- [ ] 消息模块引入大语言模型√ 每日定时做视频推荐
-- [ ] token的续期 双token？？
 - [ ] 完善Websocket替换消息模块轮询
 - [ ] 视频格式大小校验√ 评论敏感词过滤，视频水印生成（FFmpeg）
 - [ ] redis一主两从哨兵模式 MySQL双主互从+Keepalived（redis和MySQL集群引入）

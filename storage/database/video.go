@@ -19,6 +19,8 @@ func CreateVideo(video *model.Video) (uint64, error) {
 		if err != nil {
 			return err
 		}
+		// TODO 这里 操作别的表了 可能得去调rpc 接口 而不是 直接操作
+		// 暂时可以这样 
 		cnt, err := SelectWorkCount(video.AuthorID)
 		if err != nil {
 			return err

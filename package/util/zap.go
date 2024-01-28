@@ -1,7 +1,6 @@
 package util
 
 import (
-	"context"
 	"douyin/config"
 	"douyin/package/constant"
 
@@ -21,14 +20,14 @@ func InitZap() {
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger) //返回值似乎是一个取消函数
 
-	// TODO 还没改造 otel日志 将log 嵌入 span里面 
-	otelLogger := otelzap.New(zap.NewExample())
+	// TODO 还没改造 otel日志 将log 嵌入 span里面
+	// 如何做到 log 和trace 的联动呢？？ 不靠附在span里？？
+	// zap.L()   otelzap.L().Ctx(c.UserContext()) 做一个全局的替换
+	otelLogger := otelzap.New(logger)
 	defer otelLogger.Sync()
 
-	undo := otelzap.ReplaceGlobals(otelLogger)
-	defer undo()
-	otelzap.L().Info("replaced zap's global loggers")
-	otelzap.Ctx(context.TODO()).Info("... and with context")
-	
+	otelzap.ReplaceGlobals(otelLogger)
+	//defer undo()
+
 	logger.Info("zap初始化: 成功")
 }

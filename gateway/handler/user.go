@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"bytes"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
+	"io"
+	"mime/multipart"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
@@ -169,57 +172,92 @@ const (
 )
 
 func UserUpdate(c *fiber.Ctx) error {
-	// 	var req updateRequest
-	// 	err := c.BodyParser(req)
-	// 	if err != nil {
-	// 		otelzap.Ctx(c.UserContext()).Error(err.Error())
-	// 		zap.L().Error(err.Error())
-	// 		res := response.UserRegisterOrLogin{
-	// 			StatusCode: constant.Failed,
-	// 			StatusMsg:  constant.BadParaRequest,
-	// 		}
-	// 		return c.JSON(res)
-	// 	}
-	// 	switch req.UpdateType {
-	// 	case updateUsername:
-	// 		avatarHeader, err := c.FormFile("avatar")
-	// 		if err != nil && err != fasthttp.ErrMissingFile {
-	// 			zap.L().Error(err.Error())
-	// 			res := response.CommonResponse{
-	// 				StatusCode: constant.Failed,
-	// 				StatusMsg:  constant.FileFormatError,
-	// 			}
-	// 			return c.JSON(res)
-	// 		}
-	// 	case updatePassword:
-	// 	case updateAvatar:
-	// 	case updateBackground:
-	// 	case updateSignature:
-	// 	}
+	var req updateRequest
+	err := c.BodyParser(req)
+	if err != nil {
+		otelzap.Ctx(c.UserContext()).Error(err.Error())
+		res := response.UserRegisterOrLogin{
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
+		}
+		return c.JSON(res)
+	}
+	var updateRes *pbuser.UpdateResponse
+	var fileHeader *multipart.FileHeader
+	var file multipart.File
+	userID := c.Locals(constant.UserID).(uint64)
+	switch req.UpdateType {
+	case updateUsername, updatePassword:
+		{
+			updateRes, err = UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
+				UpdateType:  req.UpdateType,
+				Username:    req.Username,
+				UserID:      userID,
+				OldPassword: req.OldPassword,
+				NewPassword: req.NewPassword,
+			})
+		}
 
-	// 	backgroundHeader, err := c.FormFile("background_image")
-	// 	if err != nil && err != fasthttp.ErrMissingFile {
-	// 		zap.L().Error(err.Error())
-	// 		res := response.CommonResponse{
-	// 			StatusCode: constant.Failed,
-	// 			StatusMsg:  constant.FileFormatError,
-	// 		}
-	// 		return c.JSON(res)
-	// 	}
-	// 	res, err := UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
-	// 		Username:    req.Username,
-	// 		OldPassword: req.OldPassword,
-	// 		NewPassword: req.NewPassword,
-	// 		UserID:      c.Locals(constant.UserID).(uint64),
-	// 		Signature:   req.Signature,
-	// 	})
-	// 	if err != nil {
-	// 		res := response.UserRegisterOrLogin{
-	// 			StatusCode: constant.Failed,
-	// 			StatusMsg:  err.Error(),
-	// 		}
-	// 		return c.JSON(res)
-	// 	}
-	// return c.JSON(res)
-	return nil
+	case updateSignature:
+		{
+			if req.Signature == "" || len(req.Signature) > 255 {
+				res := response.CommonResponse{
+					StatusCode: constant.Failed,
+					StatusMsg:  constant.TooLongSignature,
+				}
+				return c.JSON(res)
+			}
+			updateRes, err = UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
+				UpdateType: req.UpdateType,
+				UserID:     userID,
+				Signature:  req.Signature,
+			})
+		}
+	case updateAvatar, updateBackground:
+		{
+			fileHeader, err = c.FormFile("data")
+			if err != nil {
+				otelzap.L().Error(err.Error())
+				res := response.CommonResponse{
+					StatusCode: constant.Failed,
+					StatusMsg:  constant.FileFormatError,
+				}
+				return c.JSON(res)
+			}
+			otelzap.L().Info("[UserUpdate] Filename:" + fileHeader.Filename)
+			file, err = fileHeader.Open()
+			if err != nil {
+				otelzap.L().Error(err.Error())
+				res := response.CommonResponse{
+					StatusCode: constant.Failed,
+					StatusMsg:  constant.FileFormatError,
+				}
+				return c.JSON(res)
+			}
+			defer file.Close()
+			buf := bytes.NewBuffer(nil)
+			if _, err = io.Copy(buf, file); err != nil {
+				otelzap.L().Error(err.Error())
+				res := response.CommonResponse{
+					StatusCode: constant.Failed,
+					StatusMsg:  constant.FileFormatError,
+				}
+				return c.JSON(res)
+			}
+			updateRes, err = UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
+				UserID:     userID,
+				UpdateType: req.UpdateType,
+				Data:       buf.Bytes(),
+			})
+		}
+	}
+	if err != nil {
+		otelzap.L().Error(err.Error())
+		res := response.CommonResponse{
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.FileFormatError,
+		}
+		return c.JSON(res)
+	}
+	return c.JSON(updateRes)
 }

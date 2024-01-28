@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     command: [/app/gateway]
     depends_on:
-    # 应该来一些健康检查的 TODO
+    # TODO 健康检查  所有的
       - video
       - mysql-slave
     #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互

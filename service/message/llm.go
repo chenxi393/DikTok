@@ -1,4 +1,4 @@
-package llm
+package main
 
 import (
 	"crypto/hmac"
@@ -31,7 +31,7 @@ var (
 	apiKey  = "ac3242a7e607b60233ded65c0a15cb93"
 )
 
-func RequestToSparkAPI(content string) string {
+func requestToSparkAPI(content string) string {
 	d := websocket.Dialer{
 		HandshakeTimeout: 5 * time.Second,
 	}
@@ -66,12 +66,13 @@ func RequestToSparkAPI(content string) string {
 			zap.L().Sugar().Infoln("Error parsing JSON:", err)
 			return ""
 		}
-		//解析数据
+		//解析数据 
 		data_, ok := data["payload"]
 		if !ok {
 			zap.L().Sugar().Infoln("payload err")
 			return ""
 		}
+		// 这里不做判断 可能会panic 还有下面
 		payload := data_.(map[string]interface{})
 		choices := payload["choices"].(map[string]interface{})
 		header := data["header"].(map[string]interface{})

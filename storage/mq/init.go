@@ -12,6 +12,8 @@ import (
 var connRabbitMQ *amqp.Connection
 var produceChannel *amqp.Channel
 
+// 一般来说 MQ 是单独起一个进程 去consumer的
+// 有一个事件总线 TODO 待改造
 func initMQ() {
 	var err error
 	// Create a new RabbitMQ connection.

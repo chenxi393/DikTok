@@ -23,7 +23,8 @@ const (
 	RegisterSuccess   = "用户注册成功"
 	LoginSuccess      = "用户登录成功"
 	InfoSuccess       = "加载成功"
-
+	TooLongSignature  = "签名长度不符合要求"
+	EmptyOldPassword  = "旧密码为空"
 	// 视频
 	VideoServerBug      = "视频缺少作者 服务端bug"
 	PubulishListSuccess = "发布视频列表获取成功"
