@@ -7,6 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// 感觉最终可能还是用自己的json
 // JSON 序列化的时候0 值会被忽略 FIXME
 // 解决grpc返回成功状态码为0 会被忽略 字段为默认零值都会被忽略
 func GrpcMarshal(v interface{}) ([]byte, error) {

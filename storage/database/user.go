@@ -13,6 +13,11 @@ func CreateUser(user *model.User) (uint64, error) {
 	return user.ID, nil
 }
 
+func UpdateUser(user *model.User) error {
+	err := constant.DB.Model(user).UpdateColumns(user).Error
+	return err
+}
+
 func SelectUserByName(username string) (*model.User, error) {
 	var user model.User
 	err := constant.DB.Model(&model.User{}).Where("username = ? ", username).First(&user).Error

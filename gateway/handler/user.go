@@ -34,7 +34,6 @@ func UserRegister(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		otelzap.Ctx(c.UserContext()).Error(err.Error())
-		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
 			StatusCode: constant.Failed,
 			StatusMsg:  constant.BadParaRequest,
@@ -166,16 +165,16 @@ type updateRequest struct {
 const (
 	updateUsername   = 1
 	updatePassword   = 2
-	updateAvatar     = 3
-	updateBackground = 4
-	updateSignature  = 5
+	updateSignature  = 3
+	updateAvatar     = 4
+	updateBackground = 5
 )
 
 func UserUpdate(c *fiber.Ctx) error {
 	var req updateRequest
-	err := c.BodyParser(req)
+	err := c.BodyParser(&req)
 	if err != nil {
-		otelzap.Ctx(c.UserContext()).Error(err.Error())
+		otelzap.L().Ctx(c.UserContext()).Error(err.Error())
 		res := response.UserRegisterOrLogin{
 			StatusCode: constant.Failed,
 			StatusMsg:  constant.BadParaRequest,
@@ -197,7 +196,6 @@ func UserUpdate(c *fiber.Ctx) error {
 				NewPassword: req.NewPassword,
 			})
 		}
-
 	case updateSignature:
 		{
 			if req.Signature == "" || len(req.Signature) > 255 {
@@ -224,7 +222,7 @@ func UserUpdate(c *fiber.Ctx) error {
 				}
 				return c.JSON(res)
 			}
-			otelzap.L().Info("[UserUpdate] Filename:" + fileHeader.Filename)
+			otelzap.L().Ctx(c.UserContext()).Info("[UserUpdate] Filename:" + fileHeader.Filename)
 			file, err = fileHeader.Open()
 			if err != nil {
 				otelzap.L().Error(err.Error())
@@ -252,10 +250,10 @@ func UserUpdate(c *fiber.Ctx) error {
 		}
 	}
 	if err != nil {
-		otelzap.L().Error(err.Error())
+		otelzap.L().Ctx(c.UserContext()).Error(err.Error())
 		res := response.CommonResponse{
 			StatusCode: constant.Failed,
-			StatusMsg:  constant.FileFormatError,
+			StatusMsg:  err.Error(),
 		}
 		return c.JSON(res)
 	}

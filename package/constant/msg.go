@@ -2,21 +2,22 @@ package constant
 
 // 消息
 const (
+	// 状态码 暂时旧两个 太多目前不好和前端对齐
+	Success = 0
+	Failed  = -1
+
 	// zap.L().Warn(constant.CacheMiss, zap.Error(err)) 统一使用
 	CacheMiss           = "缓存未命中"
 	SetCacheError       = "设置缓存失败"
-	EmptyKey            = "键不存在"
 	BloomFilterRejected = "布隆过滤器拦截"
 	DatabaseError       = "数据库操作失败"
 	BadParaRequest      = "参数错误"
 	WrongToken          = "token不匹配 请重新登录"
-	Success             = 0
-	Failed              = -1
 
 	// 用户
 	SecretFormatError = "密码格式错误"
 	SecretFormatEasy  = "密码太简单"
-	UserDepulicate    = "用户名已被注册"
+	UserDepulicate    = "用户名已存在"
 	FrequentLogin     = "登录次数过多 5分钟后再试"
 	UserNoExist       = "用户不存在"
 	SecretError       = "用户密码错误"
@@ -24,9 +25,9 @@ const (
 	LoginSuccess      = "用户登录成功"
 	InfoSuccess       = "加载成功"
 	TooLongSignature  = "签名长度不符合要求"
-	EmptyOldPassword  = "旧密码为空"
+	UpdateSuccess     = "更新用户信息成功"
+
 	// 视频
-	VideoServerBug      = "视频缺少作者 服务端bug"
 	PubulishListSuccess = "发布视频列表获取成功"
 	SearchSuccess       = "搜索成功"
 	FeedSuccess         = "视频列表获取成功"
@@ -61,7 +62,6 @@ const (
 
 	// message
 	SendSuccess = "发送成功"
-	SendError   = "发送失败"
 	ListSuccess = "消息列表加载成功"
 	SendToSelf  = "不能给自己发送消息"
 	SendEmpty   = "消息内容为空"

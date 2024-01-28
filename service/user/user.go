@@ -13,7 +13,6 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -21,22 +20,13 @@ type UserService struct {
 }
 
 func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest) (*pbuser.RegisterResponse, error) {
-	// 判断用户名是否合法
-	if len(req.Username) <= 0 || len(req.Username) > 32 {
-		return nil, errors.New(constant.BadParaRequest)
-	}
-	err := isPasswordOK(req.Password)
+	err := isUsernameOK(req.Username)
 	if err != nil {
 		return nil, err
 	}
-	//先判断用户存不存在 有唯一索引 其实可以不判断
-	_, err = database.SelectUserByName(req.Username)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		zap.L().Error(constant.DatabaseError, zap.Error(err))
+	err = isPasswordOK(req.Password)
+	if err != nil {
 		return nil, err
-	}
-	if err != gorm.ErrRecordNotFound {
-		return nil, errors.New(constant.UserDepulicate)
 	}
 	// 对密码进行加密并存储
 	encryptedPassword := bcryptHash(req.Password)

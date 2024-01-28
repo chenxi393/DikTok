@@ -72,3 +72,7 @@ rabbitmq:
   port: 5672
   user: user
   password: password
+
+otel_collector:
+  host: otel-collector
+  port: 4318
