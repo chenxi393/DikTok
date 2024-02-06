@@ -20,7 +20,7 @@ relation:
 	go run service/relation/*.go
 
 message:
-	go run service/message/*.go
+	go build service/message/*.go && ./chatgpt
 
 favorite:
 	go run service/favorite/*.go

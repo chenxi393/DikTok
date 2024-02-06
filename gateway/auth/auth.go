@@ -94,5 +94,7 @@ func AuthenticationOption(c *fiber.Ctx) error {
 		}
 		c.Locals(constant.UserID, claims.UserID)
 	}
+	// 解决 c.locals 无数据 反射panic的问题
+	c.Locals(constant.UserID, uint64(0))
 	return c.Next()
 }

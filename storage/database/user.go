@@ -3,6 +3,9 @@ package database
 import (
 	"douyin/model"
 	"douyin/package/constant"
+	"douyin/storage/cache"
+
+	"gorm.io/gorm"
 )
 
 func CreateUser(user *model.User) (uint64, error) {
@@ -13,9 +16,15 @@ func CreateUser(user *model.User) (uint64, error) {
 	return user.ID, nil
 }
 
+// 这里用事务 更新缓存 我们认为这个用户修改的行为 不大导致缓存不一致的情况
 func UpdateUser(user *model.User) error {
-	err := constant.DB.Model(user).UpdateColumns(user).Error
-	return err
+	return constant.DB.Transaction(func(tx *gorm.DB) error {
+		err := constant.DB.Model(user).UpdateColumns(user).Error
+		if err != nil {
+			return err
+		}
+		return cache.SetUserInfo(user)
+	})
 }
 
 func SelectUserByName(username string) (*model.User, error) {
