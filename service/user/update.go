@@ -6,6 +6,7 @@ import (
 	"douyin/package/constant"
 	"douyin/storage/database"
 	"errors"
+	"regexp"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"
@@ -77,13 +78,25 @@ func isPasswordOK(password string) error {
 }
 
 // 判断用户名是否合法 是否已经存在该用户名
-// 可以丰富用户名的判断TODO
 func isUsernameOK(username string) error {
-	if len(username) <= 0 || len(username) > 32 {
-		return errors.New(constant.BadParaRequest)
+	// 正则表达式判断 4-12个字符 英文 数字 下划线
+	/*
+		^ 表示字符串的开始
+		[a-zA-Z0-9_] 表示允许使用字母、数字和下划线
+		{4,12} 表示字符数限制在4到12个之间
+		$ 表示字符串的结束
+	*/
+	regex := `^[a-zA-Z0-9_]{4,12}$`
+	match, err := regexp.MatchString(regex, username)
+	if err != nil {
+		return err
 	}
+	if !match {
+		return errors.New(constant.UsernameFormatErr)
+	}
+
 	//判断用户名存不存在
-	_, err := database.SelectUserByName(username)
+	_, err = database.SelectUserByName(username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return err

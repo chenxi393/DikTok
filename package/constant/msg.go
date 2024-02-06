@@ -18,6 +18,7 @@ const (
 	SecretFormatError = "密码格式错误"
 	SecretFormatEasy  = "密码太简单"
 	UserDepulicate    = "用户名已存在"
+	UsernameFormatErr = "用户名格式错误"
 	FrequentLogin     = "登录次数过多 5分钟后再试"
 	UserNoExist       = "用户不存在"
 	SecretError       = "用户密码错误"
@@ -34,6 +35,7 @@ const (
 	NoMoreVideos        = "视频见底了"
 	FileFormatError     = "文件格式错误"
 	UploadVideoSuccess  = "上传视频成功"
+	GetTokenSuccess     = "获取上传凭证成功"
 
 	// relation
 	FollowSuccese       = "关注成功"

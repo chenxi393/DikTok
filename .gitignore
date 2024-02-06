@@ -3,3 +3,4 @@
 *.png
 /config/wsl.yaml
 /config/docker.yaml
+Note.md
