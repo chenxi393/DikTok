@@ -68,12 +68,31 @@ func Authentication(c *fiber.Ctx) error {
 	}
 	claims, err := ParseToken(token)
 	if err != nil {
-		res := response.UserRegisterOrLogin{
+		res := response.CommonResponse{
 			StatusCode: constant.Failed,
 			StatusMsg:  constant.WrongToken,
 		}
 		return c.JSON(res)
 	}
 	c.Locals(constant.UserID, claims.UserID)
+	return c.Next()
+}
+
+func AuthenticationOption(c *fiber.Ctx) error {
+	token := c.Get("token")
+	if token == "" {
+		token = c.Query("token")
+	}
+	if token != "" {
+		claims, err := ParseToken(token)
+		if err != nil {
+			res := response.CommonResponse{
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
+			}
+			return c.JSON(res)
+		}
+		c.Locals(constant.UserID, claims.UserID)
+	}
 	return c.Next()
 }

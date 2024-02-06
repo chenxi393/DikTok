@@ -4,6 +4,7 @@ import (
 	"douyin/package/constant"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/sony/sonyflake"
 	"go.uber.org/zap"
 )
@@ -26,4 +27,14 @@ func init() {
 
 func GetSonyFlakeID() (uint64, error) {
 	return instance.NextID()
+}
+
+func GetUUid() (string, error) {
+	value, err := uuid.NewV4()
+	if err != nil {
+		zap.L().Sugar().Error(err)
+		return "", err
+	}
+	uuidValue := value.String()
+	return uuidValue, nil
 }

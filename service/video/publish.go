@@ -27,9 +27,7 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 		return nil, err
 	}
 	fileName := u1.String() + "." + "mp4"
-	// 先上传到本地 上传到对象存储之后再删除
-	// 这里已经没有让用户临时访问本地存储了
-	// 感觉应该使用消息队列 来异步上传到OSS FIXME
+
 	playURL, coverURL, err := uploadVideo(req.Data, fileName)
 	if err != nil {
 		return nil, err

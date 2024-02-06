@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbcomment "douyin/grpc/comment"
 	"douyin/package/constant"
@@ -26,7 +25,6 @@ type commentRequest struct {
 }
 
 type commentListRequest struct {
-	Token string `query:"token"`
 	// 视频id
 	VideoID uint64 `query:"video_id"`
 }
@@ -85,22 +83,7 @@ func CommentList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.CommentListResponse{
-				StatusCode:  constant.Failed,
-				StatusMsg:   constant.WrongToken,
-				CommentList: nil,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		UserID:  userID,
 		VideoID: req.VideoID,

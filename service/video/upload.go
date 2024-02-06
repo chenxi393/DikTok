@@ -5,11 +5,11 @@ import (
 	"context"
 	"douyin/config"
 	"douyin/package/constant"
+	"douyin/package/util"
 	"os"
 	"path/filepath"
 
 	"github.com/disintegration/imaging"
-	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 	"go.uber.org/zap"
@@ -39,12 +39,7 @@ func uploadVideo(file []byte, fileName string) (string, string, error) {
 }
 
 func uploadToOSS(fileName, filePath string) error {
-	putPolicy := storage.PutPolicy{
-		Scope: config.System.Qiniu.Bucket,
-	}
-	mac := qbox.NewMac(config.System.Qiniu.AccessKey, config.System.Qiniu.SecretKey)
-	upToken := putPolicy.UploadToken(mac)
-
+	token := util.GetUploadToken(fileName)
 	cfg := storage.Config{}
 	// 是否使用https域名
 	cfg.UseHTTPS = true
@@ -62,7 +57,7 @@ func uploadToOSS(fileName, filePath string) error {
 		},
 	}
 	// 这里其实耗时很久 感觉有3/4秒
-	err := formUploader.PutFile(context.Background(), &ret, upToken, fileName, filePath, &putExtra)
+	err := formUploader.PutFile(context.Background(), &ret, token, fileName, filePath, &putExtra)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

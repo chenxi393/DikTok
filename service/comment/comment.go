@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 )
 
@@ -108,12 +107,10 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		zap.L().Sugar().Warn(constant.CacheMiss)
 		// 加分布式锁 这里分布式锁严格测试过了 感觉没什么很大问题
 		key := "lock:" + constant.CommentPrefix + strconv.FormatUint(req.VideoID, 10)
-		value, err := uuid.NewV4()
+		uuidValue, err := util.GetUUid()
 		if err != nil {
-			zap.L().Sugar().Error(err)
 			return nil, err
 		}
-		uuidValue := value.String()
 		for ok, err := cache.GetLock(key, uuidValue, constant.LockTime, cache.CommentRedisClient); err == nil; {
 			if ok {
 				defer cache.ReleaseLock(key, uuidValue, cache.VideoRedisClient)

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
@@ -23,7 +22,6 @@ type followRequest struct {
 }
 
 type followListRequest struct {
-	Token string `query:"token"`
 	// 用户id List使用 查看这个用户的关注列表，粉丝列表，好友列表
 	UserID uint64 `query:"user_id"`
 }
@@ -84,21 +82,7 @@ func FollowList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := RelationClient.FollowList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
@@ -127,21 +111,7 @@ func FollowerList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := RelationClient.FollowerList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,

@@ -6,6 +6,7 @@ import (
 	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
+	"douyin/package/util"
 	"io"
 	"strings"
 
@@ -115,21 +116,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := VideoClient.List(c.UserContext(), &pbvideo.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,
@@ -142,4 +129,47 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	return c.JSON(resp)
+}
+
+const (
+	video      = "1"
+	avatar     = "2"
+	background = "3"
+)
+
+func UploadToken(c *fiber.Ctx) error {
+	uploadType := c.Get("upload_type")
+	var prefix string
+	switch uploadType {
+	case video:
+		prefix = "V-"
+	case avatar:
+		prefix = "A-"
+	case background:
+		prefix = "B-"
+	default:
+		// TODO 这些错误返回可以封装一下 给一个 code msg 和 结构体 直接封装 之前的也是 学一下
+		res := response.CommonResponse{
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
+		}
+		return c.JSON(res)
+	}
+	key, err := util.GetUUid()
+	if err != nil {
+		res := response.CommonResponse{
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.BadParaRequest,
+		}
+		return c.JSON(res)
+	}
+	key = prefix + key
+	token := util.GetUploadToken(key)
+	res := response.UploadTokenResponse{
+		StatusCode:  constant.Success,
+		StatusMsg:   constant.GetTokenSuccess,
+		UploadToken: token,
+		FileName:    key,
+	}
+	return c.JSON(res)
 }

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
@@ -16,16 +15,8 @@ var (
 
 type feedRequest struct {
 	LatestTime int64 `query:"latest_time"`
-	// 用户登录状态下设置
-	Token string `query:"token"`
 	// 新增topic
 	Topic string `query:"topic"`
-}
-
-type searchRequest struct {
-	Keyword string `query:"keyword"`
-	// 用户登录状态下设置
-	Token string `query:"token"`
 }
 
 func Feed(c *fiber.Ctx) error {
@@ -40,21 +31,7 @@ func Feed(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	res, err := VideoClient.Feed(c.UserContext(), &pbvideo.FeedRequest{
 		LatestTime: req.LatestTime,
 		Topic:      req.Topic,
@@ -72,6 +49,10 @@ func Feed(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
+type searchRequest struct {
+	Keyword string `query:"keyword"`
+}
+
 // 23.11.03 新增视频搜索功能
 func SearchVideo(c *fiber.Ctx) error {
 	var req searchRequest
@@ -85,21 +66,7 @@ func SearchVideo(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.VideoListResponse{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	res, err := VideoClient.Search(c.UserContext(), &pbvideo.SearchRequest{
 		Keyword: req.Keyword,
 		UserID:  userID,

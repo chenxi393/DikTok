@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbfavorite "douyin/grpc/favorite"
 	"douyin/package/constant"
@@ -23,7 +22,6 @@ type likeRequest struct {
 }
 
 type likeListRequest struct {
-	Token  string `query:"token"`
 	UserID uint64 `query:"user_id"`
 }
 
@@ -79,21 +77,7 @@ func FavoriteList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var userID uint64
-	if req.Token == "" {
-		userID = 0
-	} else {
-		claims, err := auth.ParseToken(req.Token)
-		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
-		}
-		userID = claims.UserID
-	}
+	userID := c.Locals(constant.UserID).(uint64)
 	resp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,
