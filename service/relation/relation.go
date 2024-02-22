@@ -202,7 +202,7 @@ func (s *RelationService) FollowerList(ctx context.Context, req *pbrelation.List
 	wg.Wait()
 	return &pbrelation.ListResponse{
 		StatusCode: constant.Success,
-		StatusMsg:  constant.FollowListSuccess,
+		StatusMsg:  constant.FollowerListSuccess,
 		UserList:   usersInfo,
 	}, nil
 }

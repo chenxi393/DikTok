@@ -26,8 +26,6 @@ import (
 var (
 	// 需要RPC调用的客户端
 	userClient pbuser.UserClient
-	// comment模块运行在 8060-8069
-	addr = "127.0.0.1:8060"
 )
 
 func main() {
@@ -54,7 +52,7 @@ func main() {
 	defer userConn.Close()
 	userClient = pbuser.NewUserClient(userConn)
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", constant.CommentAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -66,7 +64,7 @@ func main() {
 
 	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, addr, constant.CommentService)
+	go rpc.RegisterEndPointToEtcd(ctx, constant.CommentAddr, constant.CommentService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

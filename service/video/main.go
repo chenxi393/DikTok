@@ -24,8 +24,6 @@ import (
 var (
 	userClient     pbuser.UserClient
 	favoriteClient pbfavorite.FavoriteClient
-	// Video模块运行在 8010-8019
-	addr = "127.0.0.1:8010"
 )
 
 func main() {
@@ -57,7 +55,7 @@ func main() {
 	favoriteClient = pbfavorite.NewFavoriteClient(favoriteConn)
 	defer favoriteConn.Close()
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", constant.VideoAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -70,7 +68,7 @@ func main() {
 
 	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, addr, constant.VideoService)
+	go rpc.RegisterEndPointToEtcd(ctx, constant.VideoAddr, constant.VideoService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

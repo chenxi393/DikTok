@@ -28,8 +28,6 @@ var (
 	// 需要RPC调用的客户端
 	userClient    pbuser.UserClient
 	messageClient pbmessage.MessageClient
-	// relation模块运行在 8030-8039
-	addr = "127.0.0.1:8030"
 )
 
 func main() {
@@ -62,7 +60,7 @@ func main() {
 	defer messageConn.Close()
 	messageClient = pbmessage.NewMessageClient(messageConn)
 
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", constant.RelationAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -74,7 +72,7 @@ func main() {
 
 	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, addr, constant.RalationService)
+	go rpc.RegisterEndPointToEtcd(ctx, constant.RelationAddr, constant.RalationService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

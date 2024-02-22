@@ -35,7 +35,7 @@ exporters:
     tls:
       insecure: true
   otlphttp/openobserve:
-    endpoint: http://8.134.173.123:5080/api/default/
+    endpoint: http://otel-collector:5080/api/default/
     headers:
       Authorization: Basic cm9vdEBleGFtcGxlLmNvbToxUll4ejdIM1kwZmd6N244
       stream-name: default

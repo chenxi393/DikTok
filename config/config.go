@@ -1,7 +1,10 @@
 package config
 
 import (
+	"douyin/package/constant"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -96,5 +99,21 @@ func Init() {
 		}
 		log.Println(System.Qiniu.OssDomain)
 	})
+
+	// TODO 适配本机和docker 不然会阻塞 是不是有更好的办法 能不能不阻塞直接报错
+	if os.Getenv("RUN_ENV") != "docker" {
+		constant.MyEtcdURL = getLocalAddr(constant.MyEtcdURL)
+		constant.VideoAddr = getLocalAddr(constant.VideoAddr)
+		constant.UserAddr = getLocalAddr(constant.UserAddr)
+		constant.RelationAddr = getLocalAddr(constant.RelationAddr)
+		constant.MessageAddr = getLocalAddr(constant.MessageAddr)
+		constant.FavoriteAddr = getLocalAddr(constant.FavoriteAddr)
+		constant.CommentAddr = getLocalAddr(constant.CommentAddr)
+	}
 	log.Println("viper读取配置文件成功")
+}
+
+func getLocalAddr(addr string) string {
+	e := strings.Split(addr, ":")
+	return "127.0.0.1:" + e[1]
 }
