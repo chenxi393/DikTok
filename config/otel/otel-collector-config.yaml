@@ -35,9 +35,9 @@ exporters:
     tls:
       insecure: true
   otlphttp/openobserve:
-    endpoint: http://otel-collector:5080/api/default/
+    endpoint: http://open_observe:5080/api/default/  # docker  http://open_observe:5080/api/default/ 
     headers:
-      Authorization: Basic cm9vdEBleGFtcGxlLmNvbToxUll4ejdIM1kwZmd6N244
+      Authorization: Basic cm9vdEBleGFtcGxlLmNvbTpUTWJaZlRsaXNJeGpuQWhr # 这个密钥也会变 TODO
       stream-name: default
 
 service:
