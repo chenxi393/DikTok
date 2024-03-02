@@ -9,7 +9,6 @@ import (
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/database"
 	"fmt"
 	"log"
 	"net"
@@ -31,7 +30,8 @@ func main() {
 	util.InitZap()
 	shutdown := otel.Init("rpc://message", constant.ServiceName+".message")
 	defer shutdown()
-	database.InitMySQL()
+	close := InitMongoDB()
+	defer close()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

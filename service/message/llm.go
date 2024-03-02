@@ -43,7 +43,6 @@ func requestToSparkAPI(content string) string {
 		return ""
 	} else if resp.StatusCode != 101 {
 		zap.L().Error(errors.New(readResp(resp)).Error())
-		zap.L().Error(err.Error())
 	}
 
 	go func() {

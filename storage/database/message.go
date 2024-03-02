@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// 弃用 改用mongoDB
+
 func CreateMessage(userID, toUSerId uint64, content string) error {
 	msg := model.Message{
 		Content:    content,

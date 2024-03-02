@@ -5,7 +5,6 @@ import (
 	pbmessage "douyin/grpc/message"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
-	"douyin/storage/database"
 
 	"go.uber.org/zap"
 )
@@ -57,7 +56,7 @@ func (s *MessageService) Send(ctx context.Context, req *pbmessage.SendRequest) (
 		}
 		// 发送消息考虑用不用消息队列 qps应该不大
 		// 后续可以用websocket完善 推送模型 TODO
-		err = database.CreateMessage(req.UserID, req.ToUserID, req.Content)
+		err = CreateMessage(req.UserID, req.ToUserID, req.Content)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return &pbmessage.SendResponse{
@@ -81,7 +80,7 @@ func (s *MessageService) List(ctx context.Context, req *pbmessage.ListRequest) (
 	}
 	// 查询所有的聊天记录 按时间顺序
 	// 这里并未建立缓存
-	msgs, err := database.MessageList(req.UserID, req.ToUserID, req.PreMsgTime)
+	msgs, err := GetMessages(req.UserID, req.ToUserID, req.PreMsgTime)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return &pbmessage.ListResponse{
@@ -108,9 +107,10 @@ func (s *MessageService) List(ctx context.Context, req *pbmessage.ListRequest) (
 }
 
 func (s *MessageService) GetFirstMessage(ctx context.Context, req *pbmessage.GetFirstRequest) (*pbmessage.GetFirstResponse, error) {
-	msg, err := database.GetMessageNewest(req.UserID, req.ToUserID)
+	msg, err := GetNewestMessage(req.UserID, req.ToUserID)
 	if err != nil {
 		zap.L().Error(err.Error())
+		return nil, err
 	}
 	// 0 表示 user send to to_user
 	msgt := int32(0)
