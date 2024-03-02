@@ -110,7 +110,6 @@ func (s *MessageService) GetFirstMessage(ctx context.Context, req *pbmessage.Get
 	msg, err := GetNewestMessage(req.UserID, req.ToUserID)
 	if err != nil {
 		zap.L().Error(err.Error())
-		return nil, err
 	}
 	// 0 表示 user send to to_user
 	msgt := int32(0)

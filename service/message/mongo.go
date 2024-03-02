@@ -98,7 +98,7 @@ func GetMessages(userID, toUserID uint64, msgTime int64) ([]model.MessageMongo, 
 }
 
 // 用来呈现好友列表的第一条消息
-func GetNewestMessage(userID, toUserID uint64) (*model.MessageMongo, error) {
+func GetNewestMessage(userID, toUserID uint64) (model.MessageMongo, error) {
 	msg := model.MessageMongo{}
 
 	sort := bson.D{{Key: "create_time", Value: -1}}
@@ -107,7 +107,7 @@ func GetNewestMessage(userID, toUserID uint64) (*model.MessageMongo, error) {
 		"to_user_id":   bson.M{"$in": []uint64{userID, toUserID}},
 	}, options.FindOne().SetSort(sort)).Decode(&msg)
 	if err != nil {
-		return nil, err
+		return msg, err
 	}
-	return &msg, nil
+	return msg, nil
 }
