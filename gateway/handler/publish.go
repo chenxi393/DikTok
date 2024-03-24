@@ -60,7 +60,7 @@ func PublishAction(c *fiber.Ctx) error {
 	}
 	// 检查文件后缀是不是mp4 大小在上传的时候会限制30MB
 	if !strings.HasSuffix(fileHeader.Filename, constant.MP4Suffix) {
-		zap.L().Error(err.Error())
+		zap.L().Error(constant.FileFormatError)
 		res := response.CommonResponse{
 			StatusCode: constant.Failed,
 			StatusMsg:  constant.FileFormatError,
