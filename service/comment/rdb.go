@@ -1,16 +1,15 @@
-package database
+package main
 
 import (
 	"douyin/model"
-	"douyin/package/constant"
-	"douyin/storage/cache"
+	"douyin/package/database"
 
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
 )
 
-func CommentAdd(com *model.Comment) error {
-	err := constant.DB.Transaction(func(tx *gorm.DB) error {
+func CreateComment(com *model.Comment) error {
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
 		// 先查询videoID是否存在
 		video := model.Video{ID: com.VideoID}
 		err := tx.First(&video).Error
@@ -25,7 +24,7 @@ func CommentAdd(com *model.Comment) error {
 		if err != nil {
 			return err
 		}
-		return cache.CommentAdd(com)
+		return CommentAdd(com)
 	})
 	if err != nil {
 		return err
@@ -33,10 +32,10 @@ func CommentAdd(com *model.Comment) error {
 	return nil
 }
 
-func CommentDelete(commentID, videoID, userID uint64) (*model.Comment, error) {
+func DeleteComment(commentID, videoID, userID uint64) (*model.Comment, error) {
 	comment := model.Comment{}
 	// delete 不会回写到comment里  Clauses(clause.Returning{}) 这个才会回写
-	err := constant.DB.Transaction(func(tx *gorm.DB) error {
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
 		// 删除要先检查里面有没有啊
 		err := tx.Where("id = ? AND video_id = ? AND user_id = ?", commentID, videoID, userID).First(&comment).Error
 		if err != nil || comment.ID == 0 {
@@ -55,7 +54,7 @@ func CommentDelete(commentID, videoID, userID uint64) (*model.Comment, error) {
 		if err != nil {
 			return err
 		}
-		return cache.CommentDelete(&comment)
+		return CommentDelete(&comment)
 	})
 	if err != nil {
 		return nil, err
@@ -63,9 +62,9 @@ func CommentDelete(commentID, videoID, userID uint64) (*model.Comment, error) {
 	return &comment, nil
 }
 
-func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
+func GetCommentsByVideoIDRDB(videoID uint64) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
-	err := constant.DB.Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
+	err := database.DB.Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +73,7 @@ func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
 
 func GetCommentsByVideoIDFromMaster(videoID uint64) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
-	err := constant.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
+	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}

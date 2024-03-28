@@ -6,9 +6,9 @@ import (
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
 	"douyin/model"
+	"douyin/package/cache"
 	"douyin/package/constant"
-	"douyin/storage/cache"
-	"douyin/storage/database"
+	"douyin/package/database"
 	"os"
 	"strconv"
 	"time"
@@ -39,7 +39,7 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 	default:
 		req.Topic = constant.TopicDefualt + req.Topic
 	}
-	video_id, err := database.CreateVideo(&model.Video{
+	video_id, err := CreateVideo(&model.Video{
 		PublishTime:   time.Now(),
 		AuthorID:      req.UserID,
 		PlayURL:       playURL,
@@ -57,26 +57,26 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 	cache.VideoIDBloomFilter.AddString(strconv.FormatUint(video_id, 10))
 	// 异步上传到对象存储
 	go func() {
-		localVideoPath := config.System.HttpAddress.VideoAddress + "/" + fileName
+		localVideoPath := config.System.HTTP.VideoAddress + "/" + fileName
 		err := uploadToOSS(fileName, localVideoPath)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return
 		}
 		coverURL = u1.String() + "." + "jpg"
-		err = database.UpdateVideoURL(playURL, coverURL, video_id)
+		err = UpdateVideoURL(playURL, coverURL, video_id)
 		if err != nil {
 			zap.L().Error(err.Error())
 		}
 		// 这里会有主从复制延时导致缓存不一致的问题。。
 		// 对于即时写即时读的要指定主库去读 不能读从库
 		var video model.Video
-		err = constant.DB.Clauses(dbresolver.Write).Where("id = ?", video_id).First(&video).Error
+		err = database.DB.Clauses(dbresolver.Write).Where("id = ?", video_id).First(&video).Error
 		if err != nil {
 			zap.L().Error(err.Error())
 			return
 		}
-		cache.SetVideoInfo(&video)
+		SetVideoInfo(&video)
 		// 删除本地的视频
 		err = os.Remove(localVideoPath)
 		if err != nil {
@@ -95,7 +95,7 @@ func (s *VideoService) List(ctx context.Context, req *pbvideo.ListRequest) (*pbv
 	// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
 	// TODO 加分布式锁 redis
 	// TODO 这里其实应当先去redis拿列表 再去数据库拿数据D
-	videos, err := database.SelectVideosByUserID(req.UserID)
+	videos, err := SelectVideosByUserID(req.UserID)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err

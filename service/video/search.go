@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"douyin/storage/database"
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
 	"douyin/package/constant"
@@ -16,7 +15,7 @@ func (s *VideoService) Search(ctx context.Context, req *pbvideo.SearchRequest) (
 		return nil, errors.New(constant.BadParaRequest)
 	}
 	// 去数据库利用全文索引拿出所有视频数据
-	videos, err := database.SearchVideoByKeyword(req.Keyword)
+	videos, err := SearchVideoByKeyword(req.Keyword)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err

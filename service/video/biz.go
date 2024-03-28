@@ -8,7 +8,6 @@ import (
 	pbvideo "douyin/grpc/video"
 	"douyin/model"
 	"douyin/package/constant"
-	"douyin/storage/database"
 	"sync"
 	"time"
 
@@ -21,14 +20,15 @@ type VideoService struct {
 
 // userID =0 表示未登录
 func (s *VideoService) Feed(ctx context.Context, req *pbvideo.FeedRequest) (*pbvideo.FeedResponse, error) {
+	zap.L().Sugar().Infof("%+v", req)
 	// TODO: 已登录可以有一个用户画像 做一个视频推荐功能
 	// 直接去数据库里查出30个数据  LatestTime 限制返回视频的最晚时间
 	var videos []*model.Video
 	var err error
 	if req.Topic == "" {
-		videos, err = database.SelectFeedVideoList(constant.MaxVideoNumber, req.LatestTime)
+		videos, err = SelectFeedVideoList(constant.MaxVideoNumber, req.LatestTime)
 	} else {
-		videos, err = database.SelectFeedVideoByTopic(constant.MaxVideoNumber, req.LatestTime, req.Topic)
+		videos, err = SelectFeedVideoByTopic(constant.MaxVideoNumber, req.LatestTime, req.Topic)
 	}
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -67,7 +67,7 @@ func (s *VideoService) GetVideosByUserID(ctx context.Context, req *pbvideo.GetVi
 	// 再看看怎么写合理 暂时只走数据库（db肯定是顺序的）
 	// 最重点的redis返回的videoIDs 不是顺序的
 	// 那么走redis查到的数据是乱序的（用zset解决 但是代码复杂）
-	videos, err := database.SelectVideosByVideoID(req.VideoID)
+	videos, err := SelectVideosByVideoID(req.VideoID)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err

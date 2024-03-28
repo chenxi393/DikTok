@@ -16,13 +16,13 @@ import (
 )
 
 func uploadVideo(file []byte, fileName string) (string, string, error) {
-	err := os.MkdirAll(config.System.HttpAddress.VideoAddress, os.ModePerm)
+	err := os.MkdirAll(config.System.HTTP.VideoAddress, os.ModePerm)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return "", "", err
 	}
 	// 还得有个变量是宿主机ip
-	outputFilePath := filepath.Join(config.System.HttpAddress.VideoAddress, fileName)
+	outputFilePath := filepath.Join(config.System.HTTP.VideoAddress, fileName)
 	outputFile, err := os.Create(outputFilePath)
 	if err != nil {
 		zap.L().Error(err.Error())

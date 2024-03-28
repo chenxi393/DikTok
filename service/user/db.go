@@ -1,15 +1,14 @@
-package database
+package main
 
 import (
 	"douyin/model"
-	"douyin/package/constant"
-	"douyin/storage/cache"
+	"douyin/package/database"
 
 	"gorm.io/gorm"
 )
 
 func CreateUser(user *model.User) (uint64, error) {
-	err := constant.DB.Model(&model.User{}).Create(user).Error
+	err := database.DB.Model(&model.User{}).Create(user).Error
 	if err != nil {
 		return 0, err
 	}
@@ -18,18 +17,18 @@ func CreateUser(user *model.User) (uint64, error) {
 
 // 这里用事务 更新缓存 我们认为这个用户修改的行为 不大导致缓存不一致的情况
 func UpdateUser(user *model.User) error {
-	return constant.DB.Transaction(func(tx *gorm.DB) error {
-		err := constant.DB.Model(user).UpdateColumns(user).Error
+	return database.DB.Transaction(func(tx *gorm.DB) error {
+		err := database.DB.Model(user).UpdateColumns(user).Error
 		if err != nil {
 			return err
 		}
-		return cache.SetUserInfo(user)
+		return SetUserInfo(user)
 	})
 }
 
 func SelectUserByName(username string) (*model.User, error) {
 	var user model.User
-	err := constant.DB.Model(&model.User{}).Where("username = ? ", username).First(&user).Error
+	err := database.DB.Model(&model.User{}).Where("username = ? ", username).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +37,7 @@ func SelectUserByName(username string) (*model.User, error) {
 
 func SelectUserByID(userID uint64) (*model.User, error) {
 	var user model.User
-	err := constant.DB.Model(&model.User{}).Where("id = ? ", userID).First(&user).Error
+	err := database.DB.Model(&model.User{}).Where("id = ? ", userID).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func SelectUserByID(userID uint64) (*model.User, error) {
 
 func SelectWorkCount(userID uint64) (int64, error) {
 	var cnt int64
-	err := constant.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
+	err := database.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
 	if err != nil {
 		return 0, err
 	}
@@ -58,7 +57,7 @@ func SelectWorkCount(userID uint64) (int64, error) {
 func SelectUserListByIDs(userIDs []uint64) ([]model.User, error) {
 	var users []model.User
 	// (?)  ( ? )会多加一个括号
-	err := constant.DB.Model(&model.User{}).Where("id IN (?)  ", userIDs).Find(&users).Error
+	err := database.DB.Model(&model.User{}).Where("id IN (?)  ", userIDs).Find(&users).Error
 	if err != nil {
 		return nil, err
 	}

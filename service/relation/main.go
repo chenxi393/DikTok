@@ -6,17 +6,17 @@ import (
 	pbmessage "douyin/grpc/message"
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
+	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/mq"
 	"fmt"
 	"log"
 	"net"
 
+	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -28,6 +28,8 @@ var (
 	// 需要RPC调用的客户端
 	userClient    pbuser.UserClient
 	messageClient pbmessage.MessageClient
+
+	relationRedis, userRedis *redis.Client
 )
 
 func main() {
@@ -36,9 +38,8 @@ func main() {
 	shutdown := otel.Init("rpc://relation", constant.ServiceName+".relation")
 	defer shutdown()
 	database.InitMySQL()
-	cache.InitRedis()
-	mq.InitRelation()
-	go mq.FollowConsume()
+	relationRedis = cache.InitRedis(config.System.Redis.RelationDB)
+	userRedis = cache.InitRedis(config.System.Redis.UserDB)
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

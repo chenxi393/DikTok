@@ -1,23 +1,16 @@
-package cache
+package main
 
 import (
-	"douyin/config"
 	"douyin/model"
 	"douyin/package/constant"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
-	"github.com/bits-and-blooms/bloom/v3"
-	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
-
-var UserRedisClient *redis.Client
-var UserIDBloomFilter *bloom.BloomFilter
 
 // redis的用户表
 // 用户信息拆成两部分
@@ -33,31 +26,6 @@ type UserInfo struct {
 	Avatar          string // 用户头像
 	BackgroundImage string // 用户个人页顶部大图
 	Signature       string // 个人简介
-}
-
-func InitUserRedis() {
-	// userRedis 连接
-	UserRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.System.UserRedis.Host, config.System.UserRedis.Port),
-		Password: config.System.UserRedis.Password,
-		DB:       config.System.UserRedis.Database,
-		PoolSize: config.System.UserRedis.PoolSize, //每个CPU最大连接数
-	})
-	_, err := UserRedisClient.Ping().Result()
-	if err != nil {
-		zap.L().Fatal("user_redis连接失败", zap.Error(err))
-	}
-	initUserBloomFilter()
-}
-
-func initUserBloomFilter() {
-	// 估计会有10万个用户 误报率是0.01
-	UserIDBloomFilter = bloom.NewWithEstimates(100000, 0.01)
-	userIDList := make([]uint64, 0)
-	constant.DB.Model(&model.User{}).Select("id").Find(&userIDList)
-	for _, u := range userIDList {
-		UserIDBloomFilter.AddString(strconv.FormatUint(u, 10))
-	}
 }
 
 // 拆分userInfo 哈希存储易变的字段 string存储基本不变的字段
@@ -79,7 +47,7 @@ func SetUserInfo(user *model.User) error {
 		return err
 	}
 	// 开启管道 一次发送请求
-	pipeline := UserRedisClient.Pipeline()
+	pipeline := userRedis.Pipeline()
 
 	// 下面两个的过期时间保持一致 不然查库还是会查出信息
 	randomTime := rand.Intn(100)
@@ -123,7 +91,7 @@ func GetUserInfo(userID uint64) (*model.User, error) {
 	infoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
 	infoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
 	// 使用管道加速
-	pipeline := UserRedisClient.Pipeline()
+	pipeline := userRedis.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil
 	userInfoCmd := pipeline.Get(infoKey)               // key 不存在会返回 redis:nil err
 	userInfoCountCmd := pipeline.HGetAll(infoCountKey) // 注意这里键不存在又不会返回nil err

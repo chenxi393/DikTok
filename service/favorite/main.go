@@ -5,17 +5,17 @@ import (
 	"douyin/config"
 	pbfavorite "douyin/grpc/favorite"
 	pbvideo "douyin/grpc/video"
+	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/mq"
 	"fmt"
 	"log"
 	"net"
 
+	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -26,6 +26,8 @@ import (
 var (
 	// 需要RPC调用的客户端
 	videoClient pbvideo.VideoClient
+
+	favoriteRedis, videoRedis, userRedis *redis.Client
 )
 
 func main() {
@@ -34,9 +36,9 @@ func main() {
 	shutdown := otel.Init("rpc://favorite", constant.ServiceName+".favorite")
 	defer shutdown()
 	database.InitMySQL()
-	cache.InitRedis()
-	mq.InitFavorite()
-	go mq.FavoriteConsume()
+	favoriteRedis = cache.InitRedis(config.System.Redis.FavoriteDB)
+	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
+	userRedis = cache.InitRedis(config.System.Redis.UserDB)
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

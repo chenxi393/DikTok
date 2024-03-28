@@ -52,23 +52,23 @@ func main() {
 
 	videoConn := rpc.SetupServiceConn(videoTarget, etcdResolverBuilder)
 	handler.VideoClient = pbvideo.NewVideoClient(videoConn)
-	defer userConn.Close()
+	defer videoConn.Close()
 
 	relationConn := rpc.SetupServiceConn(relationTarget, etcdResolverBuilder)
 	handler.RelationClient = pbrelation.NewRelationClient(relationConn)
-	defer userConn.Close()
+	defer relationConn.Close()
 
 	favoriteConn := rpc.SetupServiceConn(favoriteTarget, etcdResolverBuilder)
 	handler.FavoriteClient = pbfavorite.NewFavoriteClient(favoriteConn)
-	defer userConn.Close()
+	defer favoriteConn.Close()
 
 	messageConn := rpc.SetupServiceConn(messageTarget, etcdResolverBuilder)
 	handler.MessageClinet = pbmessage.NewMessageClient(messageConn)
-	defer userConn.Close()
+	defer messageConn.Close()
 
 	commentConn := rpc.SetupServiceConn(commentTarget, etcdResolverBuilder)
 	handler.CommentClient = pbcomment.NewCommentClient(commentConn)
-	defer userConn.Close()
+	defer commentConn.Close()
 
 	// 初始化http框架 并listen
 	startFiber()

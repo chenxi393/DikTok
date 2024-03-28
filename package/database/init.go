@@ -13,6 +13,8 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
+var DB *gorm.DB
+
 func InitMySQL() {
 	var ormLogger logger.Interface
 	//根据配置文件设置不同的日志等级
@@ -79,13 +81,13 @@ func InitMySQL() {
 	}
 	zap.L().Info("MySQL从库连接: 成功")
 	// 连接池什么的不懂 先放着
-	constant.DB = db
+	DB = db
 	//migration()
 }
 
 // 弃用自动建表
 // func migration() {
-// 	err := constant.DB.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
+// 	err :=DB.Set("gorm:table_options", "charset=utf8mb4").AutoMigrate(
 // 		&model.User{},
 // 		&model.Follow{},
 // 		&model.Video{},

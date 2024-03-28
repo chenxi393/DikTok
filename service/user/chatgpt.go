@@ -3,7 +3,6 @@ package main
 import (
 	"douyin/model"
 	"douyin/package/constant"
-	"douyin/storage/database"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )
@@ -15,7 +14,7 @@ func registerChatGPT() {
 		Username: constant.ChatGPTName,
 		Avatar:   constant.ChatGPTAvatar,
 	}
-	_, err := database.CreateUser(user)
+	_, err := CreateUser(user)
 	if err != nil {
 		otelzap.L().Info("ChatGPT已写入user表")
 	}

@@ -1,9 +1,7 @@
-package cache
+package main
 
 import (
-	"douyin/config"
 	"douyin/package/constant"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -16,22 +14,6 @@ import (
 // 这里关注和点赞都用set，去redis拿到了set再去
 // 数据库里查 也算用了缓存 也没有顺序问题
 
-var RelationRedisClient *redis.Client
-
-func InitRelationRedis() {
-	// RelationRedis 连接
-	RelationRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.System.RelationRedis.Host, config.System.RelationRedis.Port),
-		Password: config.System.RelationRedis.Password,
-		DB:       config.System.RelationRedis.Database,
-		PoolSize: config.System.RelationRedis.PoolSize, //每个CPU最大连接数
-	})
-	_, err := RelationRedisClient.Ping().Result()
-	if err != nil {
-		zap.L().Fatal("relation_redis连接失败", zap.Error(err))
-	}
-}
-
 func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
 	// 初始化的时候 加一个0 维持缓存存在
@@ -39,7 +21,7 @@ func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 	for i := range followIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followIDSet[i], 10))
 	}
-	pp := RelationRedisClient.Pipeline()
+	pp := relationRedis.Pipeline()
 	pp.SAdd(key, followIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	_, err := pp.Exec()
@@ -53,7 +35,7 @@ func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 	for i := range followerIDSet {
 		followIDStrings = append(followIDStrings, strconv.FormatUint(followerIDSet[i], 10))
 	}
-	pp := RelationRedisClient.Pipeline()
+	pp := relationRedis.Pipeline()
 	pp.SAdd(key, followIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	_, err := pp.Exec()
@@ -63,9 +45,9 @@ func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 func IsFollow(loginUserID, userID uint64) (bool, error) {
 	key := constant.FollowIDPrefix + strconv.FormatUint(loginUserID, 10)
 	// 应当判断键存不存再 不存在返回err
-	exist, _ := RelationRedisClient.Exists(key).Result()
+	exist, _ := relationRedis.Exists(key).Result()
 	if exist > 0 {
-		return RelationRedisClient.SIsMember(key, strconv.FormatUint(userID, 10)).Result()
+		return relationRedis.SIsMember(key, strconv.FormatUint(userID, 10)).Result()
 	}
 	return false, redis.Nil
 }
@@ -73,7 +55,7 @@ func IsFollow(loginUserID, userID uint64) (bool, error) {
 func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
 	// 注意 若key不存在 则会返回空集合
-	idSet, err := RelationRedisClient.SMembers(key).Result()
+	idSet, err := relationRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
@@ -96,7 +78,7 @@ func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 
 func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
 	key := constant.FollowerIDPrefix + strconv.FormatUint(userID, 10)
-	idSet, err := RelationRedisClient.SMembers(key).Result()
+	idSet, err := relationRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
@@ -129,12 +111,12 @@ func FollowAction(userID, toUserID uint64, cnt int64) error {
 	toUserInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(toUserID, 10)
 	userInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
 	toUserInfoKey := constant.UserInfoPrefix + strconv.FormatUint(toUserID, 10)
-	err := RelationRedisClient.Del(followKey, followerKey).Err()
+	err := relationRedis.Del(followKey, followerKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
-	err = UserRedisClient.Del(userInfoCountKey, toUserInfoCountKey, userInfoKey, toUserInfoKey).Err()
+	err = userRedis.Del(userInfoCountKey, toUserInfoCountKey, userInfoKey, toUserInfoKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

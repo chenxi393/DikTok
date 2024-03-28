@@ -5,16 +5,17 @@ import (
 	"douyin/config"
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
+	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
 	"fmt"
 	"log"
 	"net"
 
+	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -25,6 +26,7 @@ import (
 var (
 	// 需要RPC调用的客户端
 	relationClient pbrelation.RelationClient
+	userRedis      *redis.Client
 )
 
 func main() {
@@ -33,7 +35,7 @@ func main() {
 	shutdown := otel.Init("rpc://user", constant.ServiceName+".user")
 	defer shutdown()
 	database.InitMySQL()
-	cache.InitRedis()
+	userRedis = cache.InitRedis(config.System.Redis.UserDB)
 	registerChatGPT()
 
 	// 连接到依赖的服务

@@ -6,9 +6,8 @@ import (
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/model"
+	"douyin/package/cache"
 	"douyin/package/constant"
-	"douyin/storage/cache"
-	"douyin/storage/database"
 	"errors"
 	"strconv"
 
@@ -37,7 +36,7 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 		BackgroundImage: generateImage(),
 		Signature:       generateSignatrue(),
 	}
-	userID, err := database.CreateUser(user)
+	userID, err := CreateUser(user)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, err
@@ -49,7 +48,7 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 	go func() {
 		// 将用户ID加入到布隆过滤器里  对抗缓存穿透
 		cache.UserIDBloomFilter.AddString(strconv.FormatUint(userID, 10))
-		err = cache.SetUserInfo(user)
+		err = SetUserInfo(user)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
@@ -74,11 +73,11 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbuser.LoginResponse, error) {
 	// 使用redis 限制用户一定时间的登录次数
 	loginKey := constant.LoginCounterPrefix + req.Username
-	logintimes, err := cache.UserRedisClient.Get(loginKey).Result()
+	logintimes, err := userRedis.Get(loginKey).Result()
 	var logintimesInt int
 	if err != nil {
 		// 说明没有这个键 初始化键的登录次数
-		cache.UserRedisClient.Set(loginKey, 0, constant.MaxloginInernal)
+		userRedis.Set(loginKey, 0, constant.MaxloginInernal)
 	} else {
 		logintimesInt, _ = strconv.Atoi(logintimes)
 		if logintimesInt >= constant.MaxLoginTime {
@@ -86,9 +85,9 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 		}
 	}
 	// 无论登录成功还是失败 这里redis记录的数据都+1
-	go cache.UserRedisClient.Set(loginKey, logintimesInt+1, constant.MaxloginInernal)
+	go userRedis.Set(loginKey, logintimesInt+1, constant.MaxloginInernal)
 	//先判断用户存不存在
-	user, err := database.SelectUserByName(req.Username)
+	user, err := SelectUserByName(req.Username)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, errors.New(constant.UserNoExist)
@@ -102,13 +101,13 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 	// redis预热 用户要查看个人信息 发布的视频 喜欢的视频
 	go func() {
 		// 个人的用户信息
-		err = cache.SetUserInfo(user)
+		err = SetUserInfo(user)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
 		// FIXME 这一部分缓存预热 必须掉接口 跨服务调用
 		// // 喜欢的视频列表
-		// favoriteIDs, err := database.SelectFavoriteVideoByUserID(user.ID)
+		// favoriteIDs, err := SelectFavoriteVideoByUserID(user.ID)
 		// if err != nil {
 		// 	zap.L().Error(constant.DatabaseError, zap.Error(err))
 		// } else {
@@ -118,7 +117,7 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 		// 	}
 		// }
 		// 关注列表
-		// followUserIDSet, err := database.SelectFollowingByUserID(user.ID)
+		// followUserIDSet, err := SelectFollowingByUserID(user.ID)
 		// if err != nil {
 		// 	zap.L().Error(constant.DatabaseError, zap.Error(err))
 		// 	return
@@ -143,18 +142,18 @@ func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuse
 		return nil, err
 	}
 	// 去redis里查询用户信息 这是热点数据 redis缓存确实快了很多
-	user, err := cache.GetUserInfo(req.UserID)
+	user, err := GetUserInfo(req.UserID)
 	// 缓存未命中再去查数据库
 	if err != nil {
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		user, err = database.SelectUserByID(req.UserID)
+		user, err = SelectUserByID(req.UserID)
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 			return nil, err
 		}
 		// 设置缓存
 		go func() {
-			err = cache.SetUserInfo(user)
+			err = SetUserInfo(user)
 			if err != nil {
 				zap.L().Error(constant.SetCacheError, zap.Error(err))
 			}

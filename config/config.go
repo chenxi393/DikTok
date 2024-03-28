@@ -27,11 +27,15 @@ type HTTP struct {
 }
 
 type Redis struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	Database int    `mapstructure:"db"`
-	PoolSize int    `mapstructure:"poolSize"`
-	Password string `mapstructure:"password"`
+	Host       string `mapstructure:"host"`
+	Port       string `mapstructure:"port"`
+	PoolSize   int    `mapstructure:"poolSize"`
+	Password   string `mapstructure:"password"`
+	UserDB     int    `mapstructure:"user_db"`
+	VideoDB    int    `mapstructure:"video_db"`
+	RelationDB int    `mapstructure:"relation_db"`
+	FavoriteDB int    `mapstructure:"favorite_db"`
+	CommentDB  int    `mapstructure:"comment_db"`
 }
 
 type RabbitMQ struct {
@@ -41,6 +45,14 @@ type RabbitMQ struct {
 	Password string `mapstructure:"password"`
 }
 
+type MongoDB struct {
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	DB       string `mapstructure:"db"`
+}
+
 type QiNiuCloud struct {
 	Bucket    string `mapstructure:"bucket"`
 	AccessKey string `mapstructure:"accessKey"`
@@ -48,25 +60,22 @@ type QiNiuCloud struct {
 	OssDomain string `mapstructure:"ossDomain"`
 }
 
-type Otel struct {
+type OTEL struct {
 	Host string `mapstructure:"host"`
 	Port string `mapstructure:"port"`
 }
 type SystemConfig struct {
-	Qiniu         QiNiuCloud `mapstructure:"qiniu"`
-	HttpAddress   HTTP       `mapstructure:"httpAddress"`
-	MysqlMaster   MySQL      `mapstructure:"mysqlMaster"`
-	MysqlSlave    MySQL      `mapstructure:"mysqlSlave"`
-	UserRedis     Redis      `mapstructure:"userRedis"`
-	VideoRedis    Redis      `mapstructure:"videoRedis"`
-	RelationRedis Redis      `mapstructure:"relationRedis"`
-	FavoriteRedis Redis      `mapstructure:"favoriteRedis"`
-	CommentRedis  Redis      `mapstructure:"commentRedis"`
-	MQ            RabbitMQ   `mapstructure:"rabbitmq"`
 	Mode          string     `mapstructure:"mode"`
 	JwtSecret     string     `mapstructure:"jwtSecret"`
 	GPTSecret     string     `mapstructure:"gptSecret"`
-	OtelColletcor Otel       `mapstructure:"otel_collector"`
+	Qiniu         QiNiuCloud `mapstructure:"qiniu"`
+	HTTP          HTTP       `mapstructure:"http"`
+	MysqlMaster   MySQL      `mapstructure:"mysqlMaster"`
+	MysqlSlave    MySQL      `mapstructure:"mysqlSlave"`
+	Redis         Redis      `mapstructure:"redis"`
+	MQ            RabbitMQ   `mapstructure:"rabbitmq"`
+	OtelColletcor OTEL       `mapstructure:"otel_collector"`
+	Mongo         MongoDB    `mapstructure:"mongo"`
 }
 
 var System SystemConfig

@@ -1,22 +1,15 @@
-package cache
+package main
 
 import (
-	"douyin/config"
 	"douyin/model"
 	"douyin/package/constant"
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
-	"github.com/bits-and-blooms/bloom/v3"
-	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
-
-var VideoRedisClient *redis.Client
-var VideoIDBloomFilter *bloom.BloomFilter
 
 // VideoInfo 视频固定的信息
 type VideoInfo struct {
@@ -26,33 +19,6 @@ type VideoInfo struct {
 	PlayURL     string
 	CoverURL    string
 	Title       string
-}
-
-func InitVideoRedis() {
-	// videoRedis 连接
-	VideoRedisClient = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", config.System.VideoRedis.Host, config.System.VideoRedis.Port),
-		Password: config.System.VideoRedis.Password,
-		DB:       config.System.VideoRedis.Database,
-		PoolSize: config.System.VideoRedis.PoolSize, //每个CPU最大连接数
-	})
-	_, err := VideoRedisClient.Ping().Result()
-	if err != nil {
-		zap.L().Fatal("video_redis连接失败", zap.Error(err))
-	}
-	initVideoBloomFilter()
-}
-
-// 初始化布隆过滤器
-// 布隆过滤器的预估元素数量 和误报率 决定了底层bitmap的大小 和 无偏哈希函数的个数
-func initVideoBloomFilter() {
-	VideoIDBloomFilter = bloom.NewWithEstimates(100000, 0.01)
-	videoIDList := make([]uint64, 0)
-	constant.DB.Model(&model.Video{}).Select("id").Find(&videoIDList)
-	for _, v := range videoIDList {
-		VideoIDBloomFilter.AddString(strconv.FormatUint(v, 10))
-	}
-	zap.L().Info("初始化布隆过滤器: 成功")
 }
 
 func SetVideoInfo(video *model.Video) error {
@@ -70,7 +36,7 @@ func SetVideoInfo(video *model.Video) error {
 		return err
 	}
 	// 开启管道 一次发送请求
-	pipeline := VideoRedisClient.Pipeline()
+	pipeline := videoRedis.Pipeline()
 
 	// 下面两个的过期时间保持一致 不然查库还是会查出信息
 	randomTime := constant.Expiration + time.Duration(rand.Intn(100))*time.Second
@@ -110,7 +76,7 @@ func GetVideoInfo(videoID uint64) (*model.Video, error) {
 	infoKey := constant.VideoInfoPrefix + strconv.FormatUint(videoID, 10)
 	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(videoID, 10)
 	// 使用管道加速
-	pipeline := VideoRedisClient.Pipeline()
+	pipeline := videoRedis.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil
 	videoInfoCmd := pipeline.Get(infoKey)
 	videoInfoCountCmd := pipeline.HGetAll(infoCountKey)
@@ -161,7 +127,7 @@ func SetPublishSet(userID uint64, pubulishIDSet []uint64) error {
 	for i := range pubulishIDSet {
 		pubulishIDStrings = append(pubulishIDStrings, strconv.FormatUint(pubulishIDSet[i], 10))
 	}
-	pp := VideoRedisClient.Pipeline()
+	pp := videoRedis.Pipeline()
 	pp.SAdd(key, pubulishIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	_, err := pp.Exec()
@@ -170,7 +136,7 @@ func SetPublishSet(userID uint64, pubulishIDSet []uint64) error {
 
 func GetPubulishSet(userID uint64) ([]uint64, error) {
 	key := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
-	idSet, err := VideoRedisClient.SMembers(key).Result()
+	idSet, err := videoRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
@@ -192,14 +158,14 @@ func PublishVideo(userID, videoID uint64) error {
 	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
 	authorInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
 	// 这里也应该删缓存 不能增加
-	err := UserRedisClient.Del(authorInfoCountKey, authorInfoKey).Err()
+	err := userRedis.Del(authorInfoCountKey, authorInfoKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
 	// 应该删缓存 而不是增加 或者重新设置整个集合
 	// TODO可以考虑把视频加入 以便feed使用
-	err = VideoRedisClient.Del(publishSet).Err()
+	err = videoRedis.Del(publishSet).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

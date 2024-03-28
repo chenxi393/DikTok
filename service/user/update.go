@@ -4,7 +4,6 @@ import (
 	"context"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/storage/database"
 	"errors"
 	"regexp"
 
@@ -22,7 +21,7 @@ const (
 )
 
 func (s *UserService) Update(ctx context.Context, req *pbuser.UpdateRequest) (*pbuser.UpdateResponse, error) {
-	user, err := database.SelectUserByID(req.UserID)
+	user, err := SelectUserByID(req.UserID)
 	if err != nil {
 		otelzap.L().Error(constant.DatabaseError, zap.Error(err))
 		return nil, errors.New(constant.UserNoExist)
@@ -56,7 +55,7 @@ func (s *UserService) Update(ctx context.Context, req *pbuser.UpdateRequest) (*p
 		// TODO 上传图片怎么做
 		return nil, nil
 	}
-	err = database.UpdateUser(user)
+	err = UpdateUser(user)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +95,7 @@ func isUsernameOK(username string) error {
 	}
 
 	//判断用户名存不存在
-	_, err = database.SelectUserByName(username)
+	_, err = SelectUserByName(username)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
 		return err

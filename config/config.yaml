@@ -9,7 +9,7 @@ qiniu:
   secretKey: 
   ossDomain: 
 
-httpAddress:
+http:
   host: 0.0.0.0 #需要更换为主机的ip
   port: 8000 #更换为运行的端口
   videoAddress: "./douyinVideo"
@@ -32,40 +32,23 @@ mysqlSlave:
   maxOpenConn: 100
   maxIdleConn: 10
 
-userRedis:
+redis:
   host: redis # docker：redis:6379 本机：127.0.0.1:6379
   port: 6379
   password:
-  db: 0
   poolSize: 100
+  user_db: 0
+  video_db: 1
+  relation_db: 2
+  favorite_db: 3
+  comment_db: 4
 
-videoRedis:
-  host: redis # docker：redis:6379 本机：127.0.0.1:6379
-  port: 6379
-  password:
-  db: 1
-  poolSize: 100
-
-relationRedis:
-  host: redis # docker：redis:6379 本机：127.0.0.1:6379
-  port: 6379
-  password:
-  db: 2
-  poolSize: 100
-
-favoriteRedis:
-  host: redis # docker：redis:6379 本机：127.0.0.1:6379
-  port: 6379
-  password:
-  db: 3
-  poolSize: 100
-
-commentRedis:
-  host: redis # docker：redis:6379 本机：127.0.0.1:6379
-  port: 6379
-  password:
-  db: 4
-  poolSize: 100
+mongo:
+  host: 
+  port: 
+  user: 
+  password: 
+  db: 
 
 rabbitmq:
   host: dev-rabbitmq # docker： dev-rabbitmq:6379 本机：127.0.0.1:5672

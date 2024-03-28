@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"douyin/config"
 	"douyin/model"
 	"douyin/package/util"
 	"log"
@@ -34,18 +35,18 @@ func InitMongoDB() func() {
 
 	//1.建立连接
 	// TODO 待配置 暂时写死
+
+	//1.建立连接
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(
-		"mongodb://localhost:27017",
-	).SetAuth(options.Credential{
-		Username: "root",
-		Password: "123456",
-	}).SetMonitor(&logMonitor).SetConnectTimeout(5*time.Second))
+		"mongodb://"+config.System.Mongo.User+":"+config.System.Mongo.Password+"@"+
+			config.System.Mongo.Host+":"+config.System.Mongo.Port+"/?authSource="+
+			config.System.Mongo.DB,
+	).SetMonitor(&logMonitor).SetConnectTimeout(5*time.Second))
 	if err != nil {
 		log.Panic(err)
 	}
-
 	//2.选择数据库
-	db := client.Database("db")
+	db := client.Database(config.System.Mongo.DB)
 
 	//3.选择表
 	MessageClinet = db.Collection("message")
@@ -78,7 +79,7 @@ func GetMessages(userID, toUserID uint64, msgTime int64) ([]model.MessageMongo, 
 	msgs := make([]model.MessageMongo, 0)
 
 	// 构建排序规则
-	sort := bson.D{{Key: "create_time", Value: -1}}
+	sort := bson.D{{Key: "create_time", Value: 1}}
 	// TODO 这里是不是可以用联合索引 create_time
 	cursor, err := MessageClinet.Find(context.TODO(), bson.M{
 		"from_user_id": bson.M{"$in": []uint64{userID, toUserID}},

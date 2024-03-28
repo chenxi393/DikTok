@@ -1,9 +1,8 @@
-package database
+package main
 
 import (
 	"douyin/model"
-	"douyin/package/constant"
-	"douyin/storage/cache"
+	"douyin/package/database"
 	"time"
 
 	"gorm.io/gorm"
@@ -13,14 +12,14 @@ import (
 // CreateVideo 新增视频，返回的 videoID 是为了将 videoID 放入布隆过滤器
 // 这里简单的先写到数据库 后序使用redis + 布隆过滤器
 func CreateVideo(video *model.Video) (uint64, error) {
-	err := constant.DB.Transaction(func(tx *gorm.DB) error {
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
 		// If value doesn't contain a matching primary key, value is inserted.
 		err := tx.Create(video).Error
 		if err != nil {
 			return err
 		}
 		// TODO 这里 操作别的表了 可能得去调rpc 接口 而不是 直接操作
-		// 暂时可以这样 
+		// 暂时可以这样
 		cnt, err := SelectWorkCount(video.AuthorID)
 		if err != nil {
 			return err
@@ -30,7 +29,7 @@ func CreateVideo(video *model.Video) (uint64, error) {
 		if err != nil {
 			return err
 		}
-		return cache.PublishVideo(video.AuthorID, video.ID)
+		return PublishVideo(video.AuthorID, video.ID)
 	})
 	if err != nil {
 		return 0, err
@@ -40,7 +39,7 @@ func CreateVideo(video *model.Video) (uint64, error) {
 
 func SelectVideosByUserID(userID uint64) ([]*model.Video, error) {
 	videos := make([]*model.Video, 0)
-	err := constant.DB.Model(&model.Video{}).Where("author_id = ? ", userID).Order("publish_time desc").Find(&videos).Error
+	err := database.DB.Model(&model.Video{}).Where("author_id = ? ", userID).Order("publish_time desc").Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func SelectVideosByUserID(userID uint64) ([]*model.Video, error) {
 // 但是这里只用在 favorite_id视频上
 func SelectVideosByVideoID(videoIDList []uint64) ([]*model.Video, error) {
 	res := make([]*model.Video, 0, len(videoIDList))
-	err := constant.DB.Where("id IN (?)", videoIDList).Clauses(clause.OrderBy{
+	err := database.DB.Where("id IN (?)", videoIDList).Clauses(clause.OrderBy{
 		Expression: clause.Expr{SQL: "FIELD(id,?)", Vars: []interface{}{videoIDList}, WithoutParentheses: true},
 	}).Find(&res).Error
 	// 如果想用指定顺序 可以用filed ？？ 是用field还是 业务中再去排序呢？
@@ -63,7 +62,7 @@ func SelectVideosByVideoID(videoIDList []uint64) ([]*model.Video, error) {
 
 func UpdateVideoURL(playURL, coverURL string, videoID uint64) error {
 	//  Don’t use Save with Model, it’s an Undefined Behavior.
-	return constant.DB.Model(&model.Video{ID: videoID}).Updates(&model.Video{PlayURL: playURL, CoverURL: coverURL}).Error
+	return database.DB.Model(&model.Video{ID: videoID}).Updates(&model.Video{PlayURL: playURL, CoverURL: coverURL}).Error
 }
 
 func SelectFeedVideoList(numberVideos int, lastTime int64) ([]*model.Video, error) {
@@ -71,7 +70,7 @@ func SelectFeedVideoList(numberVideos int, lastTime int64) ([]*model.Video, erro
 		lastTime = time.Now().UnixMilli()
 	}
 	res := make([]*model.Video, 0, 30)
-	err := constant.DB.Model(&model.Video{}).Where("video.publish_time < ? ",
+	err := database.DB.Model(&model.Video{}).Where("video.publish_time < ? ",
 		time.UnixMilli(lastTime)).Order("video.publish_time desc").Limit(numberVideos).Find(&res).Error
 	if err != nil {
 		return nil, err
@@ -84,7 +83,7 @@ func SelectFeedVideoByTopic(numberVideos int, lastTime int64, topic string) ([]*
 		lastTime = time.Now().UnixMilli()
 	}
 	res := make([]*model.Video, 0, 30)
-	err := constant.DB.Model(&model.Video{}).Where("video.publish_time < ? and topic like ?",
+	err := database.DB.Model(&model.Video{}).Where("video.publish_time < ? and topic like ?",
 		time.UnixMilli(lastTime), topic+"%").Order("video.publish_time desc").Limit(numberVideos).Find(&res).Error
 	if err != nil {
 		return nil, err
@@ -94,7 +93,7 @@ func SelectFeedVideoByTopic(numberVideos int, lastTime int64, topic string) ([]*
 
 func SearchVideoByKeyword(keyword string) ([]*model.Video, error) {
 	var videos []*model.Video
-	err := constant.DB.Raw("select * from video where match(title,topic) against(?) order by publish_time desc", keyword).Scan(&videos).Error
+	err := database.DB.Raw("select * from video where match(title,topic) against(?) order by publish_time desc", keyword).Scan(&videos).Error
 	return videos, err
 }
 
@@ -107,7 +106,7 @@ func SearchVideoByKeyword(keyword string) ([]*model.Video, error) {
 // 	}
 // 	res := make([]*response.VideoData, 0, 30)
 // 	// 这里使用外连接 双表联查 可以考虑改多次单表 联查太麻烦
-// 	err := constant.DB.Model(&model.User{}).Select(`user.*,
+// 	err :=DB.Model(&model.User{}).Select(`user.*,
 //     video.id as vid,
 //     video.play_url,
 //     video.cover_url,
@@ -123,3 +122,12 @@ func SearchVideoByKeyword(keyword string) ([]*model.Video, error) {
 // 	}
 // 	return res, nil
 // }
+
+func SelectWorkCount(userID uint64) (int64, error) {
+	var cnt int64
+	err := database.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
+}

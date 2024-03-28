@@ -5,17 +5,17 @@ import (
 	"douyin/config"
 	pbcomment "douyin/grpc/comment"
 	pbuser "douyin/grpc/user"
+	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/mq"
 	"fmt"
 	"log"
 	"net"
 
+	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -26,6 +26,8 @@ import (
 var (
 	// 需要RPC调用的客户端
 	userClient pbuser.UserClient
+
+	commentRedis, videoRedis *redis.Client
 )
 
 func main() {
@@ -34,9 +36,8 @@ func main() {
 	shutdown := otel.Init("rpc://comment", constant.ServiceName+".comment")
 	defer shutdown()
 	database.InitMySQL()
-	cache.InitRedis()
-	mq.InitComment()
-	go mq.CommentConsume()
+	commentRedis = cache.InitRedis(config.System.Redis.CommentDB)
+	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
 	if err != nil {

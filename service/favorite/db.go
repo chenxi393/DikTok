@@ -1,9 +1,9 @@
-package database
+package main
 
 import (
 	"douyin/model"
 	"douyin/package/constant"
-	"douyin/storage/cache"
+	"douyin/package/database"
 	"errors"
 
 	"gorm.io/gorm"
@@ -16,7 +16,7 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 		VideoID: videoID,
 	}
 	// 一般输入流程 在是事务里 使用tx而不是db 返回任何错误都会回滚事务
-	return constant.DB.Transaction(func(tx *gorm.DB) error {
+	return database.DB.Transaction(func(tx *gorm.DB) error {
 		// 先看有没有点赞过
 		var isFavorite int64
 		err := tx.Model(&model.Favorite{}).Where("user_id = ? AND video_id = ?", userID, videoID).Count(&isFavorite).Error
@@ -64,12 +64,12 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 		if err != nil {
 			return err
 		}
-		return cache.FavoriteAction(userID, author.ID, videoID, cnt)
+		return FavoriteAction(userID, author.ID, videoID, cnt)
 	})
 }
 
 func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
 	res := make([]uint64, 0)
-	err := constant.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
+	err := database.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }

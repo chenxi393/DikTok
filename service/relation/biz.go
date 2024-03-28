@@ -6,9 +6,6 @@ import (
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/mq"
 	"sync"
 
 	"go.uber.org/zap"
@@ -27,10 +24,10 @@ func (s *RelationService) Follow(ctx context.Context, req *pbrelation.FollowRequ
 		}, nil
 	}
 	// 需要先看看有没有关注 不能重复关注
-	isFollow, err := cache.IsFollow(req.UserID, req.ToUserID)
+	isFollow, err := IsFollow(req.UserID, req.ToUserID)
 	if err != nil { // 缓存不存在去查库
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		isFollow, err = database.IsFollowed(req.UserID, req.ToUserID)
+		isFollow, err = IsFollowed(req.UserID, req.ToUserID)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 			return &pbrelation.FollowResponse{
@@ -40,12 +37,12 @@ func (s *RelationService) Follow(ctx context.Context, req *pbrelation.FollowRequ
 		}
 		// 异步更新缓存
 		go func() {
-			followIDs, err := database.SelectFollowingByUserID(req.UserID)
+			followIDs, err := SelectFollowingByUserID(req.UserID)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 				return
 			}
-			err = cache.SetFollowUserIDSet(req.UserID, followIDs)
+			err = SetFollowUserIDSet(req.UserID, followIDs)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 			}
@@ -59,7 +56,14 @@ func (s *RelationService) Follow(ctx context.Context, req *pbrelation.FollowRequ
 	}
 	// 放入消息队列 异步 返回成功
 	// 这里先写入redis 再写入数据库
-	mq.SendFollowMessage(req.UserID, req.ToUserID, 1)
+	err = Follow(req.UserID, req.ToUserID, 1)
+	if err != nil {
+		zap.L().Sugar().Error(err)
+		return &pbrelation.FollowResponse{
+			StatusCode: constant.Failed,
+			StatusMsg:  constant.DatabaseError,
+		}, nil
+	}
 	zap.L().Debug("Follow: publish a message")
 	return &pbrelation.FollowResponse{
 		StatusCode: constant.Success,
@@ -74,10 +78,10 @@ func (s *RelationService) Unfollow(ctx context.Context, req *pbrelation.FollowRe
 			StatusMsg:  constant.CantNotUnFollowSelf,
 		}, nil
 	}
-	isFollow, err := cache.IsFollow(req.UserID, req.ToUserID)
+	isFollow, err := IsFollow(req.UserID, req.ToUserID)
 	if err != nil { // 缓存不存在去查库
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		isFollow, err = database.IsFollowed(req.UserID, req.ToUserID)
+		isFollow, err = IsFollowed(req.UserID, req.ToUserID)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 			return &pbrelation.FollowResponse{
@@ -87,12 +91,12 @@ func (s *RelationService) Unfollow(ctx context.Context, req *pbrelation.FollowRe
 		}
 		// 异步更新缓存
 		go func() {
-			followIDs, err := database.SelectFollowingByUserID(req.UserID)
+			followIDs, err := SelectFollowingByUserID(req.UserID)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 				return
 			}
-			err = cache.SetFollowUserIDSet(req.UserID, followIDs)
+			err = SetFollowUserIDSet(req.UserID, followIDs)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 			}
@@ -104,7 +108,7 @@ func (s *RelationService) Unfollow(ctx context.Context, req *pbrelation.FollowRe
 			StatusMsg:  constant.UnFollowNotFollowed,
 		}, nil
 	}
-	mq.SendFollowMessage(req.UserID, req.ToUserID, -1)
+	SendFollowMessage(req.UserID, req.ToUserID, -1)
 	zap.L().Debug("Follow: publish a message")
 	return &pbrelation.FollowResponse{
 		StatusCode: constant.Success,
@@ -117,21 +121,21 @@ func (s *RelationService) FollowList(ctx context.Context, req *pbrelation.ListRe
 	// FIXME 这里需要考虑的是 布隆过滤器在哪里用
 	// 网关层 还是具体到服务里 ？？ 感觉网关会好点
 	// 或者用redis实现一个 又或者每次RPC调用？？
-	// if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+	// if !UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
 	// 	err := fmt.Errorf(constant.BloomFilterRejected)
 	// 	zap.L().Error(err.Error())
 	// 	return nil, err
 	// }
-	following, err := cache.GetFollowUserIDSet(req.UserID)
+	following, err := GetFollowUserIDSet(req.UserID)
 	// 缓存未命中 查数据库
 	if err != nil {
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		following, err = database.SelectFollowingByUserID(req.UserID)
+		following, err = SelectFollowingByUserID(req.UserID)
 		if err != nil {
 			return nil, err
 		}
 		// 将缓存写入
-		err = cache.SetFollowUserIDSet(req.UserID, following)
+		err = SetFollowUserIDSet(req.UserID, following)
 		if err != nil {
 			zap.L().Error(err.Error())
 		}
@@ -162,22 +166,22 @@ func (s *RelationService) FollowList(ctx context.Context, req *pbrelation.ListRe
 }
 
 func (s *RelationService) FollowerList(ctx context.Context, req *pbrelation.ListRequest) (*pbrelation.ListResponse, error) {
-	// if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+	// if !UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
 	// 	err := fmt.Errorf(constant.BloomFilterRejected)
 	// 	zap.L().Error(err.Error())
 	// 	return nil, err
 	// }
-	follower, err := cache.GetFollowerUserIDSet(req.UserID)
+	follower, err := GetFollowerUserIDSet(req.UserID)
 	// 缓存未命中 查数据库
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		follower, err = database.SelectFollowerByUserID(req.UserID)
+		follower, err = SelectFollowerByUserID(req.UserID)
 		if err != nil {
 			return nil, err
 		}
 		go func() {
 			// 将缓存写入
-			err = cache.SetFollowerUserIDSet(req.UserID, follower)
+			err = SetFollowerUserIDSet(req.UserID, follower)
 			if err != nil {
 				zap.L().Error(err.Error())
 			}
@@ -211,7 +215,7 @@ func (s *RelationService) FollowerList(ctx context.Context, req *pbrelation.List
 // 客户端需要知道最近的一条消息
 func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRequest) (*pbrelation.FriendsResponse, error) {
 	// 布隆过滤器这块看看怎么用
-	// if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
+	// if !UserIDBloomFilter.TestString(strconv.FormatUint(service.UserID, 10)) {
 	// 	err := fmt.Errorf(constant.BloomFilterRejected)
 	// 	zap.L().Error(err.Error())
 	// 	return nil, err
@@ -220,32 +224,32 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 	//或者先去关注表找自己已经关注的人 然后去关注表 找关注自己的人 （可以用in）
 	//拿到一组ID 就是好友 然后再批量拿出信息
 	// 拿用户的关注列表
-	following, err := cache.GetFollowUserIDSet(req.UserID)
+	following, err := GetFollowUserIDSet(req.UserID)
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		following, err = database.SelectFollowingByUserID(req.UserID)
+		following, err = SelectFollowingByUserID(req.UserID)
 		if err != nil {
 			return nil, err
 		}
 		go func() {
 			// 将缓存写入
-			err = cache.SetFollowUserIDSet(req.UserID, following)
+			err = SetFollowUserIDSet(req.UserID, following)
 			if err != nil {
 				zap.L().Error(err.Error())
 			}
 		}()
 	}
-	follower, err := cache.GetFollowerUserIDSet(req.UserID)
+	follower, err := GetFollowerUserIDSet(req.UserID)
 	// 缓存未命中 查数据库
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
-		follower, err = database.SelectFollowerByUserID(req.UserID)
+		follower, err = SelectFollowerByUserID(req.UserID)
 		if err != nil {
 			return nil, err
 		}
 		go func() {
 			// 将缓存写入
-			err = cache.SetFollowerUserIDSet(req.UserID, follower)
+			err = SetFollowerUserIDSet(req.UserID, follower)
 			if err != nil {
 				zap.L().Error(err.Error())
 			}
@@ -312,11 +316,11 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 }
 
 func (s *RelationService) IsFollow(ctx context.Context, req *pbrelation.ListRequest) (*pbrelation.IsFollowResponse, error) {
-	isFollow, err := cache.IsFollow(req.LoginUserID, req.UserID)
+	isFollow, err := IsFollow(req.LoginUserID, req.UserID)
 	// 缓存未命中 查询数据库
 	if err != nil {
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		isFollow, err = database.IsFollowed(req.LoginUserID, req.UserID)
+		isFollow, err = IsFollowed(req.LoginUserID, req.UserID)
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 			return &pbrelation.IsFollowResponse{
@@ -325,12 +329,12 @@ func (s *RelationService) IsFollow(ctx context.Context, req *pbrelation.ListRequ
 		}
 		go func() {
 			// 关注列表
-			followUserIDSet, err := database.SelectFollowingByUserID(req.LoginUserID)
+			followUserIDSet, err := SelectFollowingByUserID(req.LoginUserID)
 			if err != nil {
 				zap.L().Error(constant.DatabaseError, zap.Error(err))
 				return
 			}
-			err = cache.SetFollowUserIDSet(req.LoginUserID, followUserIDSet)
+			err = SetFollowUserIDSet(req.LoginUserID, followUserIDSet)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 			}
@@ -342,11 +346,11 @@ func (s *RelationService) IsFollow(ctx context.Context, req *pbrelation.ListRequ
 }
 
 func (s *RelationService) IsFriend(ctx context.Context, req *pbrelation.ListRequest) (*pbrelation.IsFriendResponse, error) {
-	isFollow, err := cache.IsFollow(req.LoginUserID, req.UserID)
+	isFollow, err := IsFollow(req.LoginUserID, req.UserID)
 	// 缓存未命中 查询数据库
 	if err != nil {
 		zap.L().Warn(constant.CacheMiss, zap.Error(err))
-		isFollow, err = database.IsFollowed(req.LoginUserID, req.UserID)
+		isFollow, err = IsFollowed(req.LoginUserID, req.UserID)
 		if err != nil {
 			zap.L().Error(constant.DatabaseError, zap.Error(err))
 			return &pbrelation.IsFriendResponse{
@@ -355,23 +359,23 @@ func (s *RelationService) IsFriend(ctx context.Context, req *pbrelation.ListRequ
 		}
 		go func() {
 			// 关注列表
-			followUserIDSet, err := database.SelectFollowingByUserID(req.LoginUserID)
+			followUserIDSet, err := SelectFollowingByUserID(req.LoginUserID)
 			if err != nil {
 				zap.L().Error(constant.DatabaseError, zap.Error(err))
 				return
 			}
-			err = cache.SetFollowUserIDSet(req.LoginUserID, followUserIDSet)
+			err = SetFollowUserIDSet(req.LoginUserID, followUserIDSet)
 			if err != nil {
 				zap.L().Sugar().Error(err)
 			}
 		}()
 	}
 	if isFollow {
-		isFollowed, err := cache.IsFollow(req.UserID, req.LoginUserID)
+		isFollowed, err := IsFollow(req.UserID, req.LoginUserID)
 		// 缓存未命中 查询数据库
 		if err != nil {
 			zap.L().Warn(constant.CacheMiss, zap.Error(err))
-			isFollowed, err = database.IsFollowed(req.UserID, req.LoginUserID)
+			isFollowed, err = IsFollowed(req.UserID, req.LoginUserID)
 			if err != nil {
 				zap.L().Error(constant.DatabaseError, zap.Error(err))
 				return &pbrelation.IsFriendResponse{
@@ -380,12 +384,12 @@ func (s *RelationService) IsFriend(ctx context.Context, req *pbrelation.ListRequ
 			}
 			go func() {
 				// 关注列表
-				followUserIDSet, err := database.SelectFollowingByUserID(req.UserID)
+				followUserIDSet, err := SelectFollowingByUserID(req.UserID)
 				if err != nil {
 					zap.L().Error(constant.DatabaseError, zap.Error(err))
 					return
 				}
-				err = cache.SetFollowUserIDSet(req.UserID, followUserIDSet)
+				err = SetFollowUserIDSet(req.UserID, followUserIDSet)
 				if err != nil {
 					zap.L().Sugar().Error(err)
 				}

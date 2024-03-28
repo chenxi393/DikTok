@@ -6,15 +6,16 @@ import (
 	pbfavorite "douyin/grpc/favorite"
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
+	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/rpc"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
 	"fmt"
 	"log"
 	"net"
 
+	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.uber.org/zap"
@@ -24,13 +25,16 @@ import (
 var (
 	userClient     pbuser.UserClient
 	favoriteClient pbfavorite.FavoriteClient
+
+	videoRedis, userRedis *redis.Client
 )
 
 func main() {
 	config.Init()
 	util.InitZap()
 	database.InitMySQL()
-	cache.InitRedis()
+	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
+	userRedis = cache.InitRedis(config.System.Redis.UserDB)
 
 	// 创建 etcd 客户端 连接到
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)

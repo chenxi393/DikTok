@@ -5,11 +5,9 @@ import (
 	pbcomment "douyin/grpc/comment"
 	pbuser "douyin/grpc/user"
 	"douyin/model"
+	"douyin/package/cache"
 	"douyin/package/constant"
 	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/mq"
 	"sync"
 
 	"strconv"
@@ -37,7 +35,7 @@ func (s *CommentService) Add(ctx context.Context, req *pbcomment.AddRequest) (*p
 		Content:     req.Content,
 		CreatedTime: time.Now(),
 	}
-	err = mq.SendCommentMessage(msg)
+	err = CreateComment(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +66,7 @@ func (s *CommentService) Delete(ctx context.Context, req *pbcomment.DeleteReques
 	// 我们认为删除评论不是高频动作 故不使用消息队列
 	// database里会删缓存 并且校验是不是自己发的 实际上不校验也行
 	// 注意还需要在database里减少视频的评论数
-	msg, err := database.CommentDelete(req.CommentID, req.VideoID, req.UserID)
+	msg, err := DeleteComment(req.CommentID, req.VideoID, req.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +95,12 @@ func (s *CommentService) Delete(ctx context.Context, req *pbcomment.DeleteReques
 
 func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (*pbcomment.ListResponse, error) {
 	// // 使用布隆过滤器判断视频ID是否存在
-	// if !cache.VideoIDBloomFilter.TestString(strconv.FormatUint(service.VideoID, 10)) {
+	// if !VideoIDBloomFilter.TestString(strconv.FormatUint(service.VideoID, 10)) {
 	// 	zap.L().Sugar().Error(constant.BloomFilterRejected)
 	// 	return nil, fmt.Errorf(constant.BloomFilterRejected)
 	// }
 	// 先拿到这个视频的所有评论
-	comments, err := cache.GetCommentsByVideoID(req.VideoID)
+	comments, err := GetCommentsByVideoID(req.VideoID)
 	if err != nil {
 		zap.L().Sugar().Warn(constant.CacheMiss)
 		// 加分布式锁 这里分布式锁严格测试过了 感觉没什么很大问题
@@ -111,22 +109,23 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		if err != nil {
 			return nil, err
 		}
-		for ok, err := cache.GetLock(key, uuidValue, constant.LockTime, cache.CommentRedisClient); err == nil; {
+		ok := true
+		for ok, err = cache.GetLock(key, uuidValue, constant.LockTime, commentRedis); err == nil; {
 			if ok {
-				defer cache.ReleaseLock(key, uuidValue, cache.VideoRedisClient)
-				comments, err = database.GetCommentsByVideoIDFromMaster(req.VideoID)
+				defer cache.ReleaseLock(key, uuidValue, videoRedis)
+				comments, err = GetCommentsByVideoIDFromMaster(req.VideoID)
 				if err != nil {
 					zap.L().Sugar().Error(err)
 					return nil, err
 				}
-				err := cache.SetComments(req.VideoID, comments)
+				err := SetComments(req.VideoID, comments)
 				if err != nil {
 					zap.L().Error(err.Error())
 				}
 				break
 			}
 			time.Sleep(constant.RetryTime * time.Millisecond)
-			comments, err = cache.GetCommentsByVideoID(req.VideoID)
+			comments, err = GetCommentsByVideoID(req.VideoID)
 			if err == nil {
 				break
 			}
@@ -156,7 +155,7 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 				// 没有数据 return也是可以接收的 可以重试两次 （封装一下）
 				return // 这里 不return 会panic 下面 user
 			}
-			if err == nil && user.StatusCode != 0 {
+			if user.StatusCode != 0 {
 				zap.L().Error("rpc 调用错误")
 			}
 			// 这里map会不会有并发问题啊
