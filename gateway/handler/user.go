@@ -2,12 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"douyin/gateway/auth"
 	"douyin/gateway/response"
 	pbuser "douyin/grpc/user"
 	"douyin/package/constant"
 	"io"
 	"mime/multipart"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
@@ -81,7 +83,11 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	res, err := UserClient.Login(c.UserContext(), &pbuser.LoginRequest{
+	// 初始化一个带取消功能的ctx 超时控制 ！ TODO 超时控制
+	// 注意这里的dial 
+	ctx, cancel := context.WithTimeout(c.UserContext(), 1*time.Second)
+	defer cancel()
+	res, err := UserClient.Login(ctx, &pbuser.LoginRequest{
 		Username: req.Username,
 		Password: req.Password,
 	})

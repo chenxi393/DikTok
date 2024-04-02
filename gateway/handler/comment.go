@@ -15,18 +15,16 @@ var (
 )
 
 type commentRequest struct {
-	ActionType string `query:"action_type"`
-	// 要删除的评论id，在action_type=2的时候使用
-	CommentID uint64 `query:"comment_id,omitempty"`
-	// 用户填写的评论内容，在action_type=1的时候使用
-	CommentText string `query:"comment_text,omitempty"`
-	// 视频id
-	VideoID uint64 `query:"video_id"`
+	ActionType  string `query:"action_type"` // 要删除的评论id，在action_type=2的时候使用
+	CommentID   uint64 `query:"comment_id,omitempty"`
+	CommentText string `query:"comment_text,omitempty"` // 用户填写的评论内容，在action_type=1的时候使用
+	VideoID     uint64 `query:"video_id"`               // 视频id
 }
 
 type commentListRequest struct {
-	// 视频id
-	VideoID uint64 `query:"video_id"`
+	VideoID uint64 `query:"video_id"` // 视频id
+	Count   int32  `query:"count"`
+	Offset  int32  `query:"offset"`
 }
 
 func CommentAction(c *fiber.Ctx) error {
@@ -87,6 +85,8 @@ func CommentList(c *fiber.Ctx) error {
 	resp, err := CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		UserID:  userID,
 		VideoID: req.VideoID,
+		Offset:  req.Offset,
+		Count:   req.Count,
 	})
 	if err != nil {
 		res := response.CommentActionResponse{

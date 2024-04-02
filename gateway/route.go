@@ -5,7 +5,6 @@ import (
 	"douyin/gateway/auth"
 	"douyin/gateway/handler"
 	"douyin/gateway/response"
-	"douyin/package/constant"
 
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/contrib/websocket"
@@ -24,10 +23,10 @@ func startFiber() {
 	// 使用中间件打印日志
 	app.Use(logger.New())
 	initRouter(app)
-	if config.System.Mode != constant.DebugMode {
-		zap.L().Fatal("fiber启动失败: ", zap.Error(app.ListenTLS(
-			config.System.HTTP.Host+":"+config.System.HTTP.Port, "./server.crt", "./server.key")))
-	}
+	// if config.System.Mode != constant.DebugMode {
+	// 	zap.L().Fatal("fiber启动失败: ", zap.Error(app.ListenTLS(
+	// 		config.System.HTTP.Host+":"+config.System.HTTP.Port, "./server.crt", "./server.key")))
+	// }
 	zap.L().Fatal("fiber启动失败: ", zap.Error(app.Listen(
 		config.System.HTTP.Host+":"+config.System.HTTP.Port)))
 }
@@ -97,6 +96,5 @@ func initRouter(app *fiber.App) {
 			})
 			messgae.Get("/ws", websocket.New(handler.MessageWebsocket()))
 		}
-
 	}
 }

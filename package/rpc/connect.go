@@ -13,9 +13,8 @@ import (
 
 func SetupServiceConn(serviceName string, resolver resolver.Builder) *grpc.ClientConn {
 	// 开启用户服务的连接
-	// 这里如果在docker外运行 由于 etcd在内网 这里会一直阻塞
-	// FIXME 也就是 grpc 找不到etcd的位置 Dial本身是不超时的（非阻塞的）
-	// TODO 有个疑问 这里dial 是阻塞 等到建立连接 启动 还是 直接连接不上 panic
+	// Dial本身是不超时的（非阻塞的） 也可以通过etcd拿到ip信息 只不过ip没有部署 会阻塞
+	// 这里的dial 是异步的 等到真正去调用 才会建立连接 而grpc 默认超时时间很长 需要手动设置
 	conn, err := grpc.Dial(
 		// 服务名称
 		serviceName,
@@ -26,6 +25,8 @@ func SetupServiceConn(serviceName string, resolver resolver.Builder) *grpc.Clien
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		// grpc自动检测
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		// 不推荐使用 阻塞
+		// grpc.WithBlock()
 	)
 	if err != nil {
 		zap.L().Sugar().Fatalf("did not connect %s : %v\n", serviceName, err)

@@ -59,3 +59,12 @@ type VideoListResponse struct {
 	// 用户发布的视频列表
 	VideoList []Video `json:"video_list"`
 }
+
+type UploadTokenResponse struct {
+	UploadToken string `json:"upload_token"`
+	// 状态码，0-成功，其他值-失败
+	StatusCode int `json:"status_code"`
+	// 返回状态描述
+	StatusMsg string `json:"status_msg"`
+	FileName  string `json:"file_name"`
+}

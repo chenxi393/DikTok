@@ -1,10 +1,5 @@
 package response
 
-type CommonResponse struct {
-	StatusCode int    `json:"status_code"`
-	StatusMsg  string `json:"status_msg"`
-}
-
 type CommentActionResponse struct {
 	// 评论成功返回评论内容，不需要重新拉取整个列表
 	Comment *Comment `json:"comment"`

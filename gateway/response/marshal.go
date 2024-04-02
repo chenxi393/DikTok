@@ -10,6 +10,7 @@ import (
 // 感觉最终可能还是用自己的json
 // JSON 序列化的时候0 值会被忽略 FIXME
 // 解决grpc返回成功状态码为0 会被忽略 字段为默认零值都会被忽略
+// 24.4.2 弃用 rpc 返回的再封装打包 不直接序列化返回
 func GrpcMarshal(v interface{}) ([]byte, error) {
 	data, ok := v.(proto.Message)
 	if ok {
@@ -19,11 +20,8 @@ func GrpcMarshal(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
 }
 
-type UploadTokenResponse struct {
-	UploadToken string `json:"upload_token"`
-	// 状态码，0-成功，其他值-失败
-	StatusCode int `json:"status_code"`
-	// 返回状态描述
-	StatusMsg string `json:"status_msg"`
-	FileName  string `json:"file_name"`
+type CommonResponse struct {
+	StatusCode int         `json:"status_code"` // 状态码，0-成功，其他值-失败
+	StatusMsg  string      `json:"status_msg"`  // 返回状态信息
+	Data       interface{} `json:"data,omitempty"`
 }

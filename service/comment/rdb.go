@@ -71,11 +71,20 @@ func GetCommentsByVideoIDRDB(videoID uint64) ([]*model.Comment, error) {
 	return videos, nil
 }
 
-func GetCommentsByVideoIDFromMaster(videoID uint64) ([]*model.Comment, error) {
+func GetCommentsByVideoIDFromMaster(videoID uint64, offset, count int) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
-	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Find(&videos).Error
+	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Order("created_time desc").Offset(int(offset)).Limit(count).Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}
 	return videos, nil
+}
+
+func GetCommentsNumByVideoIDFromMaster(videoID uint64) (int64, error) {
+	var cnt int64
+	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Count(&cnt).Error
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
 }

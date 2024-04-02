@@ -31,12 +31,16 @@ message CommentResponse {
 message ListRequest {
     uint64 UserID = 1;
     uint64 VideoID = 2;
+    int32 Count = 3;
+    int32 Offset = 4;
 }
 
 message ListResponse {
     int32 status_code = 1;
     string status_msg = 2;
-    repeated CommentData comment_list = 3;
+    bool has_more = 3;
+    int64 total = 4;
+    repeated CommentData comment_list = 5;
 }
   
 message CommentData {

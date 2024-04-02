@@ -8,6 +8,7 @@ import (
 	"douyin/package/cache"
 	"douyin/package/constant"
 	"douyin/package/util"
+	"errors"
 	"sync"
 
 	"strconv"
@@ -99,42 +100,64 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 	// 	zap.L().Sugar().Error(constant.BloomFilterRejected)
 	// 	return nil, fmt.Errorf(constant.BloomFilterRejected)
 	// }
-	// 先拿到这个视频的所有评论
-	comments, err := GetCommentsByVideoID(req.VideoID)
-	if err != nil {
-		zap.L().Sugar().Warn(constant.CacheMiss)
-		// 加分布式锁 这里分布式锁严格测试过了 感觉没什么很大问题
-		key := "lock:" + constant.CommentPrefix + strconv.FormatUint(req.VideoID, 10)
-		uuidValue, err := util.GetUUid()
-		if err != nil {
-			return nil, err
-		}
-		ok := true
-		for ok, err = cache.GetLock(key, uuidValue, constant.LockTime, commentRedis); err == nil; {
-			if ok {
-				defer cache.ReleaseLock(key, uuidValue, videoRedis)
-				comments, err = GetCommentsByVideoIDFromMaster(req.VideoID)
-				if err != nil {
-					zap.L().Sugar().Error(err)
-					return nil, err
-				}
-				err := SetComments(req.VideoID, comments)
-				if err != nil {
-					zap.L().Error(err.Error())
-				}
-				break
-			}
-			time.Sleep(constant.RetryTime * time.Millisecond)
-			comments, err = GetCommentsByVideoID(req.VideoID)
-			if err == nil {
-				break
-			}
-		}
+	zap.L().Sugar().Infof("[CommentService list] req: %+v", req)
+	if req.Count < 0 || req.Count > 50 || req.Offset < 0 {
+		return nil, errors.New(constant.BadParaRequest)
+	}
+	if req.Count == 0 {
+		req.Count = 50
+	}
+	var comments []*model.Comment
+	var err error
+	if req.GetOffset()+req.Count >= 50 {
+		comments, err = GetCommentsByVideoIDFromMaster(req.VideoID, int(req.GetOffset()), int(req.Count))
 		if err != nil {
 			zap.L().Sugar().Error(err)
 			return nil, err
 		}
+	} else {
+		// redis只存50条 评论 多的 去数据库里拿
+		comments, err = GetCommentsByVideoID(req.VideoID)
+		if err != nil {
+			zap.L().Sugar().Warn(constant.CacheMiss)
+			// 加分布式锁 这里分布式锁严格测试过了 感觉没什么很大问题
+			key := "lock:" + constant.CommentPrefix + strconv.FormatUint(req.VideoID, 10)
+			uuidValue, err := util.GetUUid()
+			if err != nil {
+				return nil, err
+			}
+			ok := true
+			for ok, err = cache.GetLock(key, uuidValue, constant.LockTime, commentRedis); err == nil; {
+				if ok {
+					defer cache.ReleaseLock(key, uuidValue, videoRedis)
+					// redis 只存 50条
+					comments, err = GetCommentsByVideoIDFromMaster(req.VideoID, 0, 50)
+					if err != nil {
+						zap.L().Sugar().Error(err)
+						return nil, err
+					}
+					err := SetComments(req.VideoID, comments)
+					if err != nil {
+						zap.L().Error(err.Error())
+					}
+					break
+				}
+				time.Sleep(constant.RetryTime * time.Millisecond)
+				comments, err = GetCommentsByVideoID(req.VideoID)
+				if err == nil {
+					break
+				}
+			}
+			if err != nil {
+				zap.L().Sugar().Error(err)
+				return nil, err
+			}
+		}
+		if int(req.GetOffset()+req.Count) <= len(comments) {
+			comments = comments[req.GetOffset() : req.GetOffset()+req.Count]
+		}
 	}
+
 	// 先用map 减少rpc查询次数
 	userMap := make(map[uint64]*pbuser.UserInfo)
 	for i := range comments {
@@ -177,9 +200,17 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		}
 	}
 	wg.Wait()
+	total, err := GetCommentsNumByVideoIDFromMaster(req.VideoID)
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
+	hasMore := total > int64(int(req.Offset)+len(commentResponse))
 	return &pbcomment.ListResponse{
 		StatusCode:  constant.Success,
 		StatusMsg:   constant.LoadCommentsSuccess,
 		CommentList: commentResponse,
+		HasMore:     hasMore,
+		Total:       total,
 	}, nil
 }
