@@ -6,6 +6,7 @@ import (
 	pbmessage "douyin/grpc/message"
 	pbrelation "douyin/grpc/relation"
 	"douyin/package/constant"
+	"douyin/package/database"
 	"douyin/package/otel"
 	"douyin/package/rpc"
 	"douyin/package/util"
@@ -30,8 +31,7 @@ func main() {
 	util.InitZap()
 	shutdown := otel.Init("rpc://message", constant.ServiceName+".message")
 	defer shutdown()
-	close := InitMongoDB()
-	defer close()
+	database.InitMySQL()
 
 	// 连接到依赖的服务
 	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
