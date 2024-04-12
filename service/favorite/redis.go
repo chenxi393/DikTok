@@ -11,12 +11,12 @@ import (
 )
 
 // FIXME记得改造成 zset 需要按照点赞倒叙展示
-func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
-	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
+func SetFavoriteSet(userID int64, favoriteIDSet []int64) error {
+	key := constant.FavoriteIDPrefix + strconv.FormatInt(userID, 10)
 	favoriteIDStrings := make([]string, 1, len(favoriteIDSet)+1)
 	favoriteIDStrings[0] = "0"
 	for i := range favoriteIDSet {
-		favoriteIDStrings = append(favoriteIDStrings, strconv.FormatUint(favoriteIDSet[i], 10))
+		favoriteIDStrings = append(favoriteIDStrings, strconv.FormatInt(favoriteIDSet[i], 10))
 	}
 	pp := favoriteRedis.Pipeline()
 	pp.SAdd(key, favoriteIDStrings)
@@ -25,8 +25,8 @@ func SetFavoriteSet(userID uint64, favoriteIDSet []uint64) error {
 	return err
 }
 
-func GetFavoriteSet(userID uint64) ([]uint64, error) {
-	key := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
+func GetFavoriteSet(userID int64) ([]int64, error) {
+	key := constant.FavoriteIDPrefix + strconv.FormatInt(userID, 10)
 	// 若key不存在会返回空集合
 	idSet, err := favoriteRedis.SMembers(key).Result()
 	if err != nil {
@@ -36,9 +36,9 @@ func GetFavoriteSet(userID uint64) ([]uint64, error) {
 	if len(idSet) == 0 {
 		return nil, redis.Nil
 	}
-	res := make([]uint64, 0, len(idSet))
+	res := make([]int64, 0, len(idSet))
 	for _, t := range idSet {
-		id, err := strconv.ParseUint(t, 10, 64)
+		id, err := strconv.ParseInt(t, 10, 64)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return nil, err
@@ -49,12 +49,12 @@ func GetFavoriteSet(userID uint64) ([]uint64, error) {
 }
 
 // 注意要更新redis 视频表的点赞数 点赞表 用户的点赞数 用户表的被点赞数（弃用）（目前采取删缓存）
-func FavoriteAction(userID, author_id, videoID uint64, cnt int64) error {
-	videoInfoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(videoID, 10)
-	videoInfoKey := constant.VideoInfoPrefix + strconv.FormatUint(videoID, 10)
-	favoriteKey := constant.FavoriteIDPrefix + strconv.FormatUint(userID, 10)
-	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
-	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(author_id, 10)
+func FavoriteAction(userID, author_id, videoID int64, cnt int64) error {
+	videoInfoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(videoID, 10)
+	videoInfoKey := constant.VideoInfoPrefix + strconv.FormatInt(videoID, 10)
+	favoriteKey := constant.FavoriteIDPrefix + strconv.FormatInt(userID, 10)
+	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(userID, 10)
+	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(author_id, 10)
 	err := userRedis.Del(userInfoCountKey, authorInfoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())

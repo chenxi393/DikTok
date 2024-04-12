@@ -9,7 +9,7 @@ import (
 )
 
 // t表示类型 1关注 -1取关
-func SendFollowMessage(userID, toUserID uint64, t int) {
+func SendFollowMessage(userID, toUserID int64, t int) {
 	// Attempt to publish a message to the queue.
 	err := mq.ProduceChannel.PublishWithContext(
 		context.Background(),

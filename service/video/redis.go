@@ -13,9 +13,9 @@ import (
 
 // VideoInfo 视频固定的信息
 type VideoInfo struct {
-	ID          uint64
+	ID          int64
 	PublishTime time.Time
-	AuthorID    uint64
+	AuthorID    int64
 	PlayURL     string
 	CoverURL    string
 	Title       string
@@ -41,14 +41,14 @@ func SetVideoInfo(video *model.Video) error {
 	// 下面两个的过期时间保持一致 不然查库还是会查出信息
 	randomTime := constant.Expiration + time.Duration(rand.Intn(100))*time.Second
 	// 设置 UserInfo 的 JSON 缓存
-	infoKey := constant.VideoInfoPrefix + strconv.FormatUint(video.ID, 10)
+	infoKey := constant.VideoInfoPrefix + strconv.FormatInt(video.ID, 10)
 	err = pipeline.Set(infoKey, videoInfoJSON, randomTime).Err()
 	if err != nil {
 		zap.L().Sugar().Error(err)
 		return err
 	}
 
-	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(video.ID, 10)
+	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(video.ID, 10)
 	// 使用 MSet 进行批量设置
 	err = pipeline.HMSet(infoCountKey, map[string]interface{}{
 		constant.FavoritedCountField: video.FavoriteCount,
@@ -72,9 +72,9 @@ func SetVideoInfo(video *model.Video) error {
 	return nil
 }
 
-func GetVideoInfo(videoID uint64) (*model.Video, error) {
-	infoKey := constant.VideoInfoPrefix + strconv.FormatUint(videoID, 10)
-	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(videoID, 10)
+func GetVideoInfo(videoID int64) (*model.Video, error) {
+	infoKey := constant.VideoInfoPrefix + strconv.FormatInt(videoID, 10)
+	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(videoID, 10)
 	// 使用管道加速
 	pipeline := videoRedis.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil
@@ -120,12 +120,12 @@ func GetVideoInfo(videoID uint64) (*model.Video, error) {
 	}, nil
 }
 
-func SetPublishSet(userID uint64, pubulishIDSet []uint64) error {
-	key := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
+func SetPublishSet(userID int64, pubulishIDSet []int64) error {
+	key := constant.PublishIDPrefix + strconv.FormatInt(userID, 10)
 	pubulishIDStrings := make([]string, 1, len(pubulishIDSet)+1)
 	pubulishIDStrings[0] = "0"
 	for i := range pubulishIDSet {
-		pubulishIDStrings = append(pubulishIDStrings, strconv.FormatUint(pubulishIDSet[i], 10))
+		pubulishIDStrings = append(pubulishIDStrings, strconv.FormatInt(pubulishIDSet[i], 10))
 	}
 	pp := videoRedis.Pipeline()
 	pp.SAdd(key, pubulishIDStrings)
@@ -134,16 +134,16 @@ func SetPublishSet(userID uint64, pubulishIDSet []uint64) error {
 	return err
 }
 
-func GetPubulishSet(userID uint64) ([]uint64, error) {
-	key := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
+func GetPubulishSet(userID int64) ([]int64, error) {
+	key := constant.PublishIDPrefix + strconv.FormatInt(userID, 10)
 	idSet, err := videoRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	res := make([]uint64, 0, len(idSet))
+	res := make([]int64, 0, len(idSet))
 	for _, t := range idSet {
-		id, err := strconv.ParseUint(t, 10, 64)
+		id, err := strconv.ParseInt(t, 10, 64)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return nil, err
@@ -153,10 +153,10 @@ func GetPubulishSet(userID uint64) ([]uint64, error) {
 	return res, nil
 }
 
-func PublishVideo(userID, videoID uint64) error {
-	publishSet := constant.PublishIDPrefix + strconv.FormatUint(userID, 10)
-	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
-	authorInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
+func PublishVideo(userID, videoID int64) error {
+	publishSet := constant.PublishIDPrefix + strconv.FormatInt(userID, 10)
+	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(userID, 10)
+	authorInfoKey := constant.UserInfoPrefix + strconv.FormatInt(userID, 10)
 	// 这里也应该删缓存 不能增加
 	err := userRedis.Del(authorInfoCountKey, authorInfoKey).Err()
 	if err != nil {

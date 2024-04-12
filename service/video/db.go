@@ -11,7 +11,7 @@ import (
 
 // CreateVideo 新增视频，返回的 videoID 是为了将 videoID 放入布隆过滤器
 // 这里简单的先写到数据库 后序使用redis + 布隆过滤器
-func CreateVideo(video *model.Video) (uint64, error) {
+func CreateVideo(video *model.Video) (int64, error) {
 	err := database.DB.Transaction(func(tx *gorm.DB) error {
 		// If value doesn't contain a matching primary key, value is inserted.
 		err := tx.Create(video).Error
@@ -37,7 +37,7 @@ func CreateVideo(video *model.Video) (uint64, error) {
 	return video.ID, nil
 }
 
-func SelectVideosByUserID(userID uint64) ([]*model.Video, error) {
+func SelectVideosByUserID(userID int64) ([]*model.Video, error) {
 	videos := make([]*model.Video, 0)
 	err := database.DB.Model(&model.Video{}).Where("author_id = ? ", userID).Order("publish_time desc").Find(&videos).Error
 	if err != nil {
@@ -48,7 +48,7 @@ func SelectVideosByUserID(userID uint64) ([]*model.Video, error) {
 
 // 根据视频ID集合查询视频信息 按id排序
 // 但是这里只用在 favorite_id视频上
-func SelectVideosByVideoID(videoIDList []uint64) ([]*model.Video, error) {
+func SelectVideosByVideoID(videoIDList []int64) ([]*model.Video, error) {
 	res := make([]*model.Video, 0, len(videoIDList))
 	err := database.DB.Where("id IN (?)", videoIDList).Clauses(clause.OrderBy{
 		Expression: clause.Expr{SQL: "FIELD(id,?)", Vars: []interface{}{videoIDList}, WithoutParentheses: true},
@@ -60,7 +60,7 @@ func SelectVideosByVideoID(videoIDList []uint64) ([]*model.Video, error) {
 	return res, err
 }
 
-func UpdateVideoURL(playURL, coverURL string, videoID uint64) error {
+func UpdateVideoURL(playURL, coverURL string, videoID int64) error {
 	//  Don’t use Save with Model, it’s an Undefined Behavior.
 	return database.DB.Model(&model.Video{ID: videoID}).Updates(&model.Video{PlayURL: playURL, CoverURL: coverURL}).Error
 }
@@ -123,7 +123,7 @@ func SearchVideoByKeyword(keyword string) ([]*model.Video, error) {
 // 	return res, nil
 // }
 
-func SelectWorkCount(userID uint64) (int64, error) {
+func SelectWorkCount(userID int64) (int64, error) {
 	var cnt int64
 	err := database.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
 	if err != nil {

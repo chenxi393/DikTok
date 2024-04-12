@@ -16,15 +16,16 @@ var (
 
 type commentRequest struct {
 	ActionType  string `query:"action_type"` // 要删除的评论id，在action_type=2的时候使用
-	CommentID   uint64 `query:"comment_id,omitempty"`
+	CommentID   int64  `query:"comment_id,omitempty"`
 	CommentText string `query:"comment_text,omitempty"` // 用户填写的评论内容，在action_type=1的时候使用
-	VideoID     uint64 `query:"video_id"`               // 视频id
+	VideoID     int64  `query:"video_id"`               // 视频id
+	ParentID    int64  `query:"parent_id"`
 }
 
 type commentListRequest struct {
-	VideoID uint64 `query:"video_id"` // 视频id
-	Count   int32  `query:"count"`
-	Offset  int32  `query:"offset"`
+	VideoID       int64 `query:"video_id"` // 视频id
+	Count         int32 `query:"count"`
+	LastCommentId int64 `query:"last_comment_id"`
 }
 
 func CommentAction(c *fiber.Ctx) error {
@@ -40,13 +41,14 @@ func CommentAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	var resp *pbcomment.CommentResponse
 	if req.ActionType == constant.DoAction && req.CommentText != "" {
 		resp, err = CommentClient.Add(c.UserContext(), &pbcomment.AddRequest{
-			UserID:  userID,
-			VideoID: req.VideoID,
-			Content: req.CommentText,
+			UserID:   userID,
+			VideoID:  req.VideoID,
+			Content:  req.CommentText,
+			ParentID: req.ParentID,
 		})
 	} else if req.ActionType == constant.UndoAction && req.CommentID != 0 {
 		resp, err = CommentClient.Delete(c.UserContext(), &pbcomment.DeleteRequest{
@@ -81,12 +83,12 @@ func CommentList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
-		UserID:  userID,
-		VideoID: req.VideoID,
-		Offset:  req.Offset,
-		Count:   req.Count,
+		UserID:        userID,
+		VideoID:       req.VideoID,
+		LastCommentId: req.LastCommentId,
+		Count:         req.Count,
 	})
 	if err != nil {
 		res := response.CommentActionResponse{

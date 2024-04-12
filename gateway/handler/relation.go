@@ -18,17 +18,17 @@ type followRequest struct {
 	// 1-关注，2-取消关注
 	ActionType string `query:"action_type"`
 	// 对方用户id
-	ToUserID uint64 `query:"to_user_id"`
+	ToUserID int64 `query:"to_user_id"`
 }
 
 type followListRequest struct {
 	// 用户id List使用 查看这个用户的关注列表，粉丝列表，好友列表
-	UserID uint64 `query:"user_id"`
+	UserID int64 `query:"user_id"`
 }
 
 type friendListRequest struct {
 	// 用户id List使用 查看这个用户的关注列表，粉丝列表，好友列表
-	UserID uint64 `query:"user_id"`
+	UserID int64 `query:"user_id"`
 }
 
 func RelationAction(c *fiber.Ctx) error {
@@ -42,7 +42,7 @@ func RelationAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	var res *pbrelation.FollowResponse
 	if req.ActionType == constant.DoAction {
 		res, err = RelationClient.Follow(c.UserContext(), &pbrelation.FollowRequest{
@@ -82,7 +82,7 @@ func FollowList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := RelationClient.FollowList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
@@ -111,7 +111,7 @@ func FollowerList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := RelationClient.FollowerList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
@@ -140,7 +140,7 @@ func FriendList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	if userID != req.UserID {
 		res := response.RelationListResponse{
 			StatusCode: constant.Failed,

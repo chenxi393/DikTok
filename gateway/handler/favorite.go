@@ -18,11 +18,11 @@ type likeRequest struct {
 	// 1-点赞，2-取消点赞
 	ActionType string `query:"action_type"`
 	// 视频id
-	VideoID uint64 `query:"video_id"`
+	VideoID int64 `query:"video_id"`
 }
 
 type likeListRequest struct {
-	UserID uint64 `query:"user_id"`
+	UserID int64 `query:"user_id"`
 }
 
 func FavoriteVideoAction(c *fiber.Ctx) error {
@@ -37,7 +37,7 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	var resp *pbfavorite.LikeResponse
 	if req.ActionType == constant.DoAction {
 		resp, err = FavoriteClient.Like(c.UserContext(), &pbfavorite.LikeRequest{
@@ -77,7 +77,7 @@ func FavoriteList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,

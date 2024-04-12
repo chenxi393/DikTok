@@ -10,7 +10,7 @@ import (
 )
 
 // cnt=1表示 点赞 cnt=-1 表示取消赞
-func FavoriteVideo(userID, videoID uint64, cnt int64) error {
+func FavoriteVideo(userID, videoID int64, cnt int64) error {
 	favorite := model.Favorite{
 		UserID:  userID,
 		VideoID: videoID,
@@ -68,8 +68,8 @@ func FavoriteVideo(userID, videoID uint64, cnt int64) error {
 	})
 }
 
-func SelectFavoriteVideoByUserID(userID uint64) ([]uint64, error) {
-	res := make([]uint64, 0)
+func SelectFavoriteVideoByUserID(userID int64) ([]int64, error) {
+	res := make([]int64, 0)
 	err := database.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }

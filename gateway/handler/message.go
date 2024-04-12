@@ -24,11 +24,11 @@ type sendRequest struct {
 	// 消息内容
 	Content string `query:"content"`
 	// 对方用户id
-	ToUserID uint64 `query:"to_user_id"`
+	ToUserID int64 `query:"to_user_id"`
 }
 type messageListRequest struct {
 	// 对方用户id
-	ToUserID uint64 `query:"to_user_id"`
+	ToUserID int64 `query:"to_user_id"`
 	// //上次最新消息的时间（新增字段-apk更新中）
 	Pre_msg_time int64 `query:"pre_msg_time"`
 }
@@ -52,7 +52,7 @@ func MessageAction(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := MessageClinet.Send(c.UserContext(), &pbmessage.SendRequest{
 		UserID:   userID,
 		ToUserID: req.ToUserID,
@@ -82,7 +82,7 @@ func MessageChat(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := MessageClinet.List(c.UserContext(), &pbmessage.ListRequest{
 		UserID:     userID,
 		ToUserID:   req.ToUserID,
@@ -109,12 +109,12 @@ func MessageWebsocket() func(*websocket.Conn) {
 			err error
 		)
 		// c.Locals is added to the *websocket.Conn
-		toUserID, err := strconv.ParseUint(c.Query("to_user_id"), 10, 64)
+		toUserID, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return
 		}
-		userID := c.Locals(constant.UserID).(uint64)
+		userID := c.Locals(constant.UserID).(int64)
 		for {
 			if mt, msg, err = c.ReadMessage(); err != nil {
 				zap.L().Sugar().Errorf("read:", err)

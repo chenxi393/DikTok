@@ -13,11 +13,11 @@ import (
 )
 
 type UserClaims struct {
-	UserID uint64
+	UserID int64
 	jwt.RegisteredClaims
 }
 
-func SignToken(userID uint64) (string, error) {
+func SignToken(userID int64) (string, error) {
 	signingKey := []byte(config.System.JwtSecret)
 	// 配置 userClaims ,并生成 token
 	claims := UserClaims{
@@ -95,7 +95,7 @@ func AuthenticationOption(c *fiber.Ctx) error {
 		c.Locals(constant.UserID, claims.UserID)
 	} else {
 		// 解决 c.locals 无数据 反射panic的问题
-		c.Locals(constant.UserID, uint64(0))
+		c.Locals(constant.UserID, int64(0))
 	}
 	return c.Next()
 }

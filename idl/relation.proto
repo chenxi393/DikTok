@@ -15,8 +15,8 @@ service Relation {
 }
 
 message FollowRequest {
-    uint64 UserID = 1;
-    uint64 ToUserID = 2;
+    int64 UserID = 1;
+    int64 ToUserID = 2;
 }
 
 message FollowResponse {
@@ -25,8 +25,8 @@ message FollowResponse {
 }
 
 message ListRequest {
-    uint64 loginUserID = 1;
-    uint64 userID = 2;
+    int64 loginUserID = 1;
+    int64 userID = 2;
 }
 
 message ListResponse {
@@ -50,7 +50,7 @@ message FriendsResponse{
 }
 
 message FriendInfo {
-    uint64 id = 1; // 用户id
+    int64 id = 1; // 用户id
     string name = 2; // 用户名称
     string avatar = 3; //用户头像
     string background_image = 4; //用户个人页顶部大图

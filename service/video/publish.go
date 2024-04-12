@@ -54,7 +54,7 @@ func (s *VideoService) Publish(ctx context.Context, req *pbvideo.PublishRequest)
 		return nil, err
 	}
 	//加入布隆过滤器
-	cache.VideoIDBloomFilter.AddString(strconv.FormatUint(video_id, 10))
+	cache.VideoIDBloomFilter.AddString(strconv.FormatInt(video_id, 10))
 	// 异步上传到对象存储
 	go func() {
 		localVideoPath := config.System.HTTP.VideoAddress + "/" + fileName
@@ -101,7 +101,7 @@ func (s *VideoService) List(ctx context.Context, req *pbvideo.ListRequest) (*pbv
 		return nil, err
 	}
 	// 作者都是一个 rpc拿作者信息 作者信息包括关注信息
-	userMap := make(map[uint64]*pbuser.UserInfo)
+	userMap := make(map[int64]*pbuser.UserInfo)
 	userMap[req.UserID] = &pbuser.UserInfo{}
 	videoInfos := getVideoInfo(ctx, videos, userMap, req.LoginUserID)
 	return &pbvideo.VideoListResponse{

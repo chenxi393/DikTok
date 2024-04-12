@@ -7,7 +7,7 @@ import (
 )
 
 // 弃用 改用mongoDB
-func CreateMessage(userID, toUSerId uint64, content string) error {
+func CreateMessage(userID, toUSerId int64, content string) error {
 	msg := model.Message{
 		Content:    content,
 		FromUserID: userID,
@@ -17,7 +17,7 @@ func CreateMessage(userID, toUSerId uint64, content string) error {
 	return database.DB.Model(&model.Message{}).Create(&msg).Error
 }
 
-func GetMessages(userID, toUserID uint64, msgTime int64) ([]model.Message, error) {
+func GetMessages(userID, toUserID int64, msgTime int64) ([]model.Message, error) {
 	// 这里是客户端bug 客户端post发送评论成功后会在界面上显示 然后又请求一次数据
 	// 即客户端发送消息时会显示两次重复的
 	newMsgTime := time.UnixMilli(msgTime)
@@ -35,7 +35,7 @@ func GetMessages(userID, toUserID uint64, msgTime int64) ([]model.Message, error
 }
 
 // 用来呈现好友列表的第一条消息
-func GetNewestMessage(userID, toUserID uint64) (model.Message, error) {
+func GetNewestMessage(userID, toUserID int64) (model.Message, error) {
 	msg := model.Message{}
 	// 这里用 union 避免or 不走索引的情况 or两侧必须都走索引 括号也没用
 	err := database.DB.Raw("? UNION ? ORDER BY create_time DESC LIMIT 1",

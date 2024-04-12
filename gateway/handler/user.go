@@ -28,7 +28,7 @@ type userRequest struct {
 	// 用户鉴权token
 	Token string `query:"token"`
 	// 用户id 注意上面token会带一个userID
-	UserID uint64 `query:"user_id"`
+	UserID int64 `query:"user_id"`
 }
 
 func UserRegister(c *fiber.Ctx) error {
@@ -84,7 +84,7 @@ func UserLogin(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	// 初始化一个带取消功能的ctx 超时控制 ！ TODO 超时控制
-	// 注意这里的dial 
+	// 注意这里的dial
 	ctx, cancel := context.WithTimeout(c.UserContext(), 1*time.Second)
 	defer cancel()
 	res, err := UserClient.Login(ctx, &pbuser.LoginRequest{
@@ -100,7 +100,7 @@ func UserLogin(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	// 签发token
-	token, err := auth.SignToken(uint64(res.UserId))
+	token, err := auth.SignToken(int64(res.UserId))
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -127,7 +127,7 @@ func UserInfo(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	var loginUserID uint64
+	var loginUserID int64
 	if req.Token == "" {
 		loginUserID = 0
 	} else {
@@ -190,7 +190,7 @@ func UserUpdate(c *fiber.Ctx) error {
 	var updateRes *pbuser.UpdateResponse
 	var fileHeader *multipart.FileHeader
 	var file multipart.File
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	switch req.UpdateType {
 	case updateUsername, updatePassword:
 		{

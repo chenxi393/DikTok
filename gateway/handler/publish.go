@@ -26,7 +26,7 @@ type publishRequest struct {
 type listRequest struct {
 	// 用户鉴权token
 	Token  string `query:"token"`
-	UserID uint64 `query:"user_id"`
+	UserID int64  `query:"user_id"`
 }
 
 func PublishAction(c *fiber.Ctx) error {
@@ -116,7 +116,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	resp, err := VideoClient.List(c.UserContext(), &pbvideo.ListRequest{
 		UserID:      req.UserID,
 		LoginUserID: userID,

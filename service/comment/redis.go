@@ -15,7 +15,7 @@ import (
 // 评论增加 会影响视频的评论数 和评论表 需要lua脚本保证原子性 （目前采取删缓存）
 // 评论列表zset吧 按照评论时间排序（可以考虑时间加赞数加权排序）
 func CommentAdd(c *model.Comment) error {
-	zsetKey := constant.CommentPrefix + strconv.FormatUint(c.VideoID, 10)
+	zsetKey := constant.CommentPrefix + strconv.FormatInt(c.VideoID, 10)
 	// 应该删缓存 而不是增加 有过期时间的 过期了怎么办
 	// 更新倒是可以考虑 但是可能有数据不一致的情况
 	err := commentRedis.Del(zsetKey).Err()
@@ -23,7 +23,7 @@ func CommentAdd(c *model.Comment) error {
 		zap.L().Error(err.Error())
 		return err
 	}
-	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(c.VideoID, 10)
+	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(c.VideoID, 10)
 	err = videoRedis.Del(videoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -34,7 +34,7 @@ func CommentAdd(c *model.Comment) error {
 
 // lua脚本保证原子性 （目前采取删缓存）
 func CommentDelete(c *model.Comment) error {
-	zsetKey := constant.CommentPrefix + strconv.FormatUint(c.VideoID, 10)
+	zsetKey := constant.CommentPrefix + strconv.FormatInt(c.VideoID, 10)
 	dataJSON, err := json.Marshal(c)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func CommentDelete(c *model.Comment) error {
 		return err
 	}
 	// 减少视频的评论数
-	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatUint(c.VideoID, 10)
+	videoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(c.VideoID, 10)
 	err = videoRedis.Del(videoCountKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -54,8 +54,8 @@ func CommentDelete(c *model.Comment) error {
 	return nil
 }
 
-func SetComments(videoID uint64, comments []*model.Comment) error {
-	zsetKey := constant.CommentPrefix + strconv.FormatUint(videoID, 10)
+func SetComments(videoID int64, comments []*model.Comment) error {
+	zsetKey := constant.CommentPrefix + strconv.FormatInt(videoID, 10)
 	members := make([]redis.Z, 0, len(comments))
 	for _, c := range comments {
 		dataJSON, err := json.Marshal(c)
@@ -80,8 +80,8 @@ func SetComments(videoID uint64, comments []*model.Comment) error {
 	return nil
 }
 
-func GetCommentsByVideoID(videoID uint64) ([]*model.Comment, error) {
-	zsetKey := constant.CommentPrefix + strconv.FormatUint(videoID, 10)
+func GetCommentsByVideoID(videoID int64) ([]*model.Comment, error) {
+	zsetKey := constant.CommentPrefix + strconv.FormatInt(videoID, 10)
 	commentsJSON, err := commentRedis.ZRevRange(zsetKey, 0, -1).Result()
 	if err != nil {
 		zap.L().Error(err.Error())

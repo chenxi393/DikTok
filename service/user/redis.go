@@ -20,7 +20,7 @@ import (
 
 // UserInfo 用户信息中基本信息，不做更改或更改频率较低
 type UserInfo struct {
-	ID              uint64 // 自增主键
+	ID              int64  // 自增主键
 	Username        string // 用户名
 	Password        string // 用户密码
 	Avatar          string // 用户头像
@@ -52,7 +52,7 @@ func SetUserInfo(user *model.User) error {
 	// 下面两个的过期时间保持一致 不然查库还是会查出信息
 	randomTime := rand.Intn(100)
 	// 设置 UserInfo 的 JSON 缓存
-	infoKey := constant.UserInfoPrefix + strconv.FormatUint(user.ID, 10)
+	infoKey := constant.UserInfoPrefix + strconv.FormatInt(user.ID, 10)
 	err = pipeline.Set(infoKey, userInfoJSON,
 		constant.Expiration+time.Duration(randomTime)*time.Second).Err()
 	if err != nil {
@@ -60,7 +60,7 @@ func SetUserInfo(user *model.User) error {
 		return err
 	}
 
-	infoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(user.ID, 10)
+	infoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(user.ID, 10)
 	// 使用 MSet 进行批量设置
 	err = pipeline.HMSet(infoCountKey, map[string]interface{}{
 		constant.FollowCountField:    user.FollowCount,
@@ -87,9 +87,9 @@ func SetUserInfo(user *model.User) error {
 	return nil
 }
 
-func GetUserInfo(userID uint64) (*model.User, error) {
-	infoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
-	infoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
+func GetUserInfo(userID int64) (*model.User, error) {
+	infoKey := constant.UserInfoPrefix + strconv.FormatInt(userID, 10)
+	infoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(userID, 10)
 	// 使用管道加速
 	pipeline := userRedis.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil

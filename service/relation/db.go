@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Follow(userID, toUserID uint64, cnt int64) error {
+func Follow(userID, toUserID int64, cnt int64) error {
 	follow := model.Follow{
 		UserID:   userID,
 		ToUserID: toUserID,
@@ -50,20 +50,20 @@ func Follow(userID, toUserID uint64, cnt int64) error {
 	})
 }
 
-func SelectFollowingByUserID(userID uint64) ([]uint64, error) {
-	res := make([]uint64, 0)
+func SelectFollowingByUserID(userID int64) ([]int64, error) {
+	res := make([]int64, 0)
 	err := database.DB.Model(&model.Follow{}).Select("to_user_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }
 
-func SelectFollowerByUserID(userID uint64) ([]uint64, error) {
-	res := make([]uint64, 0)
+func SelectFollowerByUserID(userID int64) ([]int64, error) {
+	res := make([]int64, 0)
 	err := database.DB.Model(&model.Follow{}).Select("user_id").Where("to_user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
 }
 
 // 查询userID 有没有关注 id
-func IsFollowed(userID uint64, id uint64) (bool, error) {
+func IsFollowed(userID int64, id int64) (bool, error) {
 	var cnt int64
 	err := database.DB.Model(&model.Follow{}).Where("user_id= ? AND to_user_id = ? ", userID, id).Count(&cnt).Error
 	if err != nil {

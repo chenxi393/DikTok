@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func sendToChatGPT(userID uint64, content string) error {
+func sendToChatGPT(userID int64, content string) error {
 	// 先将消息写入数据库
 	err := CreateMessage(userID, constant.ChatGPTID, content)
 	if err != nil {
@@ -16,7 +16,7 @@ func sendToChatGPT(userID uint64, content string) error {
 	return nil
 }
 
-func requestToChatGPT(userID uint64, content string) {
+func requestToChatGPT(userID int64, content string) {
 	ans := requestToSparkAPI(content)
 	if ans == "" {
 		return

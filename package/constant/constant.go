@@ -26,7 +26,7 @@ const (
 	// chatgpt
 	ChatGPTAvatar = "2022chatgpt.png"
 	ChatGPTName   = "ChatGPT"
-	ChatGPTID     = uint64(1)
+	ChatGPTID     = 1
 )
 
 // redis 的key

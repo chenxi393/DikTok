@@ -47,7 +47,7 @@ func (s *VideoService) Feed(ctx context.Context, req *pbvideo.FeedRequest) (*pbv
 		}, nil
 	}
 	// 先用map 减少rpc查询次数
-	userMap := make(map[uint64]*pbuser.UserInfo)
+	userMap := make(map[int64]*pbuser.UserInfo)
 	for i := range videos {
 		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
 	}
@@ -73,7 +73,7 @@ func (s *VideoService) GetVideosByUserID(ctx context.Context, req *pbvideo.GetVi
 		return nil, err
 	}
 	// 先用map 减少rpc查询次数
-	userMap := make(map[uint64]*pbuser.UserInfo)
+	userMap := make(map[int64]*pbuser.UserInfo)
 	for i := range videos {
 		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
 	}
@@ -98,12 +98,12 @@ func videoDataInfo(v *model.Video, u *pbuser.UserInfo) *pbvideo.VideoData {
 }
 
 // RPC调用拿userMap 里的用户信息 拿video里的详细信息 返回
-func getVideoInfo(ctx context.Context, videos []*model.Video, userMap map[uint64]*pbuser.UserInfo, loginUserID uint64) []*pbvideo.VideoData {
+func getVideoInfo(ctx context.Context, videos []*model.Video, userMap map[int64]*pbuser.UserInfo, loginUserID int64) []*pbvideo.VideoData {
 	// rpc调用 去拿个人信息
 	wg := &sync.WaitGroup{}
 	wg.Add(len(userMap))
 	for userID := range userMap {
-		go func(id uint64) {
+		go func(id int64) {
 			defer wg.Done()
 			// TODO 这里是不是也应该 rpc批量拿出来 而不是一个个去拿
 			user, err := userClient.Info(ctx, &pbuser.InfoRequest{

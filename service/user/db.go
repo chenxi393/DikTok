@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateUser(user *model.User) (uint64, error) {
+func CreateUser(user *model.User) (int64, error) {
 	err := database.DB.Model(&model.User{}).Create(user).Error
 	if err != nil {
 		return 0, err
@@ -35,7 +35,7 @@ func SelectUserByName(username string) (*model.User, error) {
 	return &user, nil
 }
 
-func SelectUserByID(userID uint64) (*model.User, error) {
+func SelectUserByID(userID int64) (*model.User, error) {
 	var user model.User
 	err := database.DB.Model(&model.User{}).Where("id = ? ", userID).First(&user).Error
 	if err != nil {
@@ -44,7 +44,7 @@ func SelectUserByID(userID uint64) (*model.User, error) {
 	return &user, nil
 }
 
-func SelectWorkCount(userID uint64) (int64, error) {
+func SelectWorkCount(userID int64) (int64, error) {
 	var cnt int64
 	err := database.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
 	if err != nil {
@@ -54,7 +54,7 @@ func SelectWorkCount(userID uint64) (int64, error) {
 }
 
 // 通过一组id 批量获取用户信息
-func SelectUserListByIDs(userIDs []uint64) ([]model.User, error) {
+func SelectUserListByIDs(userIDs []int64) ([]model.User, error) {
 	var users []model.User
 	// (?)  ( ? )会多加一个括号
 	err := database.DB.Model(&model.User{}).Where("id IN (?)  ", userIDs).Find(&users).Error

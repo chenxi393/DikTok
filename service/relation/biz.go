@@ -256,11 +256,11 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 		}()
 	}
 	// 判断用户的粉丝列表有没有关注
-	followerMap := make(map[uint64]struct{}, len(follower))
+	followerMap := make(map[int64]struct{}, len(follower))
 	for _, item := range follower {
 		followerMap[item] = struct{}{}
 	}
-	friends := make([]uint64, 0)
+	friends := make([]int64, 0)
 	for _, ff := range following {
 		if _, ok := followerMap[ff]; ok {
 			friends = append(friends, ff)

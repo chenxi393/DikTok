@@ -47,18 +47,18 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 	// 注册和登录之后是一样的
 	go func() {
 		// 将用户ID加入到布隆过滤器里  对抗缓存穿透
-		cache.UserIDBloomFilter.AddString(strconv.FormatUint(userID, 10))
+		cache.UserIDBloomFilter.AddString(strconv.FormatInt(userID, 10))
 		err = SetUserInfo(user)
 		if err != nil {
 			zap.L().Sugar().Error(err)
 		}
 		// FIXME 这里预热应该
-		// err = cache.SetFavoriteSet(userID, []uint64{})
+		// err = cache.SetFavoriteSet(userID, []int64{})
 		// if err != nil {
 		// 	zap.L().Sugar().Error(err)
 		// }
 		// // 用0值维护 redis key 的存在
-		// err = cache.SetFollowUserIDSet(userID, []uint64{})
+		// err = cache.SetFollowUserIDSet(userID, []int64{})
 		// if err != nil {
 		// 	zap.L().Sugar().Error(err)
 		// }
@@ -136,7 +136,7 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 
 func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuser.InfoResponse, error) {
 	// 使用布隆过滤器判断用户ID是否存在
-	if !cache.UserIDBloomFilter.TestString(strconv.FormatUint(req.UserID, 10)) {
+	if !cache.UserIDBloomFilter.TestString(strconv.FormatInt(req.UserID, 10)) {
 		err := errors.New(constant.BloomFilterRejected)
 		zap.L().Sugar().Error(err)
 		return nil, err

@@ -13,8 +13,8 @@ service Favorite {
 }
 
 message LikeRequest {
-    uint64 UserID = 1;
-    uint64 VideoID = 2;
+    int64 UserID = 1;
+    int64 VideoID = 2;
 }
 
 message LikeResponse {
@@ -24,12 +24,12 @@ message LikeResponse {
 
 message SearchRequest {
     string Keyword = 1;
-    uint64 UserID = 2;
+    int64 UserID = 2;
 }
 
 message ListRequest {
-    uint64 UserID = 1;
-    uint64 LoginUserID = 2;
+    int64 UserID = 1;
+    int64 LoginUserID = 2;
 }
 
 message ListResponse {

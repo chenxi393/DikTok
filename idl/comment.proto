@@ -11,15 +11,17 @@ service Comment {
 }
 
 message AddRequest {
-    uint64 UserID = 1;
-    uint64 VideoID = 2;
-    string Content = 3;
+    int64 VideoID = 1;
+    int64 UserID = 2;
+    int64 ParentID = 3;
+    string Content = 4;
+    int64 ToUserID  = 5; 
 }
 
 message DeleteRequest {
-    uint64 CommentID = 1;
-    uint64 VideoID = 2;
-    uint64 UserID = 3;
+    int64 CommentID = 1;
+    int64 VideoID = 2;
+    int64 UserID = 3;
 }
 
 message CommentResponse {
@@ -29,10 +31,10 @@ message CommentResponse {
 }
 
 message ListRequest {
-    uint64 UserID = 1;
-    uint64 VideoID = 2;
+    int64 UserID = 1;
+    int64 VideoID = 2;
     int32 Count = 3;
-    int32 Offset = 4;
+    int64 last_comment_id = 4;
 }
 
 message ListResponse {
@@ -44,7 +46,7 @@ message ListResponse {
 }
   
 message CommentData {
-    uint64 id = 1;
+    int64 id = 1;
     user.UserInfo user = 2;
     string content = 3;
     string create_date = 4;

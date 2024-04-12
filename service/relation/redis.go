@@ -14,12 +14,12 @@ import (
 // 这里关注和点赞都用set，去redis拿到了set再去
 // 数据库里查 也算用了缓存 也没有顺序问题
 
-func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
-	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
+func SetFollowUserIDSet(userID int64, followIDSet []int64) error {
+	key := constant.FollowIDPrefix + strconv.FormatInt(userID, 10)
 	// 初始化的时候 加一个0 维持缓存存在
 	followIDStrings := make([]string, 0, len(followIDSet))
 	for i := range followIDSet {
-		followIDStrings = append(followIDStrings, strconv.FormatUint(followIDSet[i], 10))
+		followIDStrings = append(followIDStrings, strconv.FormatInt(followIDSet[i], 10))
 	}
 	pp := relationRedis.Pipeline()
 	pp.SAdd(key, followIDStrings)
@@ -29,11 +29,11 @@ func SetFollowUserIDSet(userID uint64, followIDSet []uint64) error {
 }
 
 // 设置粉丝信息
-func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
-	key := constant.FollowerIDPrefix + strconv.FormatUint(userID, 10)
+func SetFollowerUserIDSet(userID int64, followerIDSet []int64) error {
+	key := constant.FollowerIDPrefix + strconv.FormatInt(userID, 10)
 	followIDStrings := make([]string, 0, len(followerIDSet))
 	for i := range followerIDSet {
-		followIDStrings = append(followIDStrings, strconv.FormatUint(followerIDSet[i], 10))
+		followIDStrings = append(followIDStrings, strconv.FormatInt(followerIDSet[i], 10))
 	}
 	pp := relationRedis.Pipeline()
 	pp.SAdd(key, followIDStrings)
@@ -42,18 +42,18 @@ func SetFollowerUserIDSet(userID uint64, followerIDSet []uint64) error {
 	return err
 }
 
-func IsFollow(loginUserID, userID uint64) (bool, error) {
-	key := constant.FollowIDPrefix + strconv.FormatUint(loginUserID, 10)
+func IsFollow(loginUserID, userID int64) (bool, error) {
+	key := constant.FollowIDPrefix + strconv.FormatInt(loginUserID, 10)
 	// 应当判断键存不存再 不存在返回err
 	exist, _ := relationRedis.Exists(key).Result()
 	if exist > 0 {
-		return relationRedis.SIsMember(key, strconv.FormatUint(userID, 10)).Result()
+		return relationRedis.SIsMember(key, strconv.FormatInt(userID, 10)).Result()
 	}
 	return false, redis.Nil
 }
 
-func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
-	key := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
+func GetFollowUserIDSet(userID int64) ([]int64, error) {
+	key := constant.FollowIDPrefix + strconv.FormatInt(userID, 10)
 	// 注意 若key不存在 则会返回空集合
 	idSet, err := relationRedis.SMembers(key).Result()
 	if err != nil {
@@ -64,9 +64,9 @@ func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 		zap.L().Info(redis.Nil.Error())
 		return nil, redis.Nil
 	}
-	res := make([]uint64, 0, len(idSet))
+	res := make([]int64, 0, len(idSet))
 	for _, t := range idSet {
-		id, err := strconv.ParseUint(t, 10, 64)
+		id, err := strconv.ParseInt(t, 10, 64)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return nil, err
@@ -76,8 +76,8 @@ func GetFollowUserIDSet(userID uint64) ([]uint64, error) {
 	return res, nil
 }
 
-func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
-	key := constant.FollowerIDPrefix + strconv.FormatUint(userID, 10)
+func GetFollowerUserIDSet(userID int64) ([]int64, error) {
+	key := constant.FollowerIDPrefix + strconv.FormatInt(userID, 10)
 	idSet, err := relationRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -87,9 +87,9 @@ func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
 		zap.L().Error(redis.Nil.Error())
 		return nil, redis.Nil
 	}
-	res := make([]uint64, 0, len(idSet))
+	res := make([]int64, 0, len(idSet))
 	for _, t := range idSet {
-		id, err := strconv.ParseUint(t, 10, 64)
+		id, err := strconv.ParseInt(t, 10, 64)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return nil, err
@@ -104,13 +104,13 @@ func GetFollowerUserIDSet(userID uint64) ([]uint64, error) {
 // touserID 粉丝集合加1
 // user表关注+1
 // toUser 粉丝加1
-func FollowAction(userID, toUserID uint64, cnt int64) error {
-	followKey := constant.FollowIDPrefix + strconv.FormatUint(userID, 10)
-	followerKey := constant.FollowerIDPrefix + strconv.FormatUint(toUserID, 10)
-	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(userID, 10)
-	toUserInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatUint(toUserID, 10)
-	userInfoKey := constant.UserInfoPrefix + strconv.FormatUint(userID, 10)
-	toUserInfoKey := constant.UserInfoPrefix + strconv.FormatUint(toUserID, 10)
+func FollowAction(userID, toUserID int64, cnt int64) error {
+	followKey := constant.FollowIDPrefix + strconv.FormatInt(userID, 10)
+	followerKey := constant.FollowerIDPrefix + strconv.FormatInt(toUserID, 10)
+	userInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(userID, 10)
+	toUserInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(toUserID, 10)
+	userInfoKey := constant.UserInfoPrefix + strconv.FormatInt(userID, 10)
+	toUserInfoKey := constant.UserInfoPrefix + strconv.FormatInt(toUserID, 10)
 	err := relationRedis.Del(followKey, followerKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())

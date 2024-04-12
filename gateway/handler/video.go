@@ -31,7 +31,7 @@ func Feed(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	res, err := VideoClient.Feed(c.UserContext(), &pbvideo.FeedRequest{
 		LatestTime: req.LatestTime,
 		Topic:      req.Topic,
@@ -66,7 +66,7 @@ func SearchVideo(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	userID := c.Locals(constant.UserID).(uint64)
+	userID := c.Locals(constant.UserID).(int64)
 	res, err := VideoClient.Search(c.UserContext(), &pbvideo.SearchRequest{
 		Keyword: req.Keyword,
 		UserID:  userID,

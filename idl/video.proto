@@ -14,7 +14,7 @@ service Video {
 }
 
 message VideoData {
-    uint64 id = 1;
+    int64 id = 1;
     user.UserInfo author = 2;
     string play_url = 3;
     string cover_url = 4;
@@ -29,7 +29,7 @@ message VideoData {
 message FeedRequest {
     int64 LatestTime = 1;
     string Topic = 2;
-    uint64 UserID = 3;
+    int64 UserID = 3;
 }
 
 message FeedResponse {
@@ -41,7 +41,7 @@ message FeedResponse {
 
 message SearchRequest {
     string Keyword = 1;
-    uint64 UserID = 2;
+    int64 UserID = 2;
 }
 
 message VideoListResponse {
@@ -53,7 +53,7 @@ message VideoListResponse {
 message PublishRequest {
     string Title = 1;
     string Topic = 2;
-    uint64 UserID = 3;
+    int64 UserID = 3;
     bytes data = 4; // 视频数据
 }
 
@@ -63,13 +63,13 @@ message PublishResponse {
 }
 
 message ListRequest {
-    uint64 UserID = 1;
-    uint64 LoginUserID = 2;
+    int64 UserID = 1;
+    int64 LoginUserID = 2;
 }
 
 message GetVideosRequest{
-    uint64 UserID = 1;
-    repeated uint64 VideoID = 2;
+    int64 UserID = 1;
+    repeated int64 VideoID = 2;
 }
 
 message GetVideosResponse{

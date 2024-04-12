@@ -19,7 +19,7 @@ message RegisterRequest {
 message RegisterResponse {
     int32 status_code = 1;
     string status_msg = 2;
-    uint64 user_id = 3;
+    int64 user_id = 3;
     string token = 4;
 }
 
@@ -31,13 +31,13 @@ message LoginRequest {
 message LoginResponse {
     int32 status_code = 1;
     string status_msg = 2;
-    uint64 user_id = 3;
+    int64 user_id = 3;
     string token = 4;
 }
 
 message InfoRequest {
-    uint64 loginUserID = 1;
-    uint64 userID = 2;
+    int64 loginUserID = 1;
+    int64 userID = 2;
 }
 
 message InfoResponse {
@@ -47,7 +47,7 @@ message InfoResponse {
 }
 
 message UpdateRequest {
-    uint64 userID = 1;
+    int64 userID = 1;
     string username = 2;
     string old_password = 3;
     string new_password = 4;
@@ -62,7 +62,7 @@ message UpdateResponse {
 }
 
 message UserInfo {
-    uint64 id = 1; // 用户id
+    int64 id = 1; // 用户id
     string name = 2; // 用户名称
     string avatar = 3; //用户头像
     string background_image = 4; //用户个人页顶部大图

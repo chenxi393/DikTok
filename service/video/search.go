@@ -21,7 +21,7 @@ func (s *VideoService) Search(ctx context.Context, req *pbvideo.SearchRequest) (
 		return nil, err
 	}
 	// 先用map 减少rpc查询次数
-	userMap := make(map[uint64]*pbuser.UserInfo)
+	userMap := make(map[int64]*pbuser.UserInfo)
 	for i := range videos {
 		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
 	}

@@ -11,8 +11,8 @@ service Message {
 }
 
 message SendRequest {
-    uint64 UserID = 1;
-    uint64 ToUserID = 2;
+    int64 UserID = 1;
+    int64 ToUserID = 2;
     string Content = 3;
 }
 
@@ -22,8 +22,8 @@ message SendResponse {
 }
 
 message ListRequest {
-    uint64 UserID = 1;
-    uint64 ToUserID = 2;
+    int64 UserID = 1;
+    int64 ToUserID = 2;
     int64 pre_msg_time = 3;
 }
 
@@ -37,13 +37,13 @@ message MessageData {
     int64 id = 1;
     string content = 2;
     int64 create_time = 3;
-    uint64 from_user_id = 4;
-    uint64 to_user_id = 5;
+    int64 from_user_id = 4;
+    int64 to_user_id = 5;
 }
 
 message GetFirstRequest{
-    uint64 UserID = 1;
-    uint64 ToUserID = 2;
+    int64 UserID = 1;
+    int64 ToUserID = 2;
 }
 
 message GetFirstResponse{
