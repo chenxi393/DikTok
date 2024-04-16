@@ -160,7 +160,9 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		return nil, err
 	}
 	hasMore := len(comments) > int(req.GetCount())
-
+	if hasMore {
+		comments = comments[:len(comments)-1]
+	}
 	// 先用map 减少rpc查询次数
 	userMap := make(map[int64]*pbuser.UserInfo)
 	for i := range comments {

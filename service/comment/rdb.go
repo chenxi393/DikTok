@@ -80,7 +80,7 @@ func GetCommentsByVideoIDRDB(videoID int64) ([]*model.Comment, error) {
 
 func GetCommentsByVideoIDFromMaster(videoID, lastCommentID int64, count int32) ([]*model.Comment, error) {
 	videos := make([]*model.Comment, 0)
-	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ? and id <", videoID, lastCommentID).Order("created_time desc").Limit(int(count)).Find(&videos).Error
+	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ? and id < ?", videoID, lastCommentID).Order("created_time desc").Limit(int(count)).Find(&videos).Error
 	if err != nil {
 		return nil, err
 	}

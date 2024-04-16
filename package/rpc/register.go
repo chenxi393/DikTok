@@ -22,8 +22,11 @@ func RegisterEndPointToEtcd(ctx context.Context, addr string, name string) {
 	lease, _ := etcdClient.Grant(ctx, ttl)
 
 	// 添加注册节点到 etcd 中，并且携带上租约 id
-	_ = etcdManager.AddEndpoint(ctx, fmt.Sprintf("%s/%s", name, addr),
+	err := etcdManager.AddEndpoint(ctx, fmt.Sprintf("%s/%s", name, addr),
 		endpoints.Endpoint{Addr: addr}, eclient.WithLease(lease.ID))
+	if err != nil {
+		log.Fatalf("add endpoint err: %v", err)
+	}
 
 	// 每隔 5 s进行一次延续租约的动作
 	for {
@@ -33,7 +36,8 @@ func RegisterEndPointToEtcd(ctx context.Context, addr string, name string) {
 			_, err := etcdClient.KeepAliveOnce(ctx, lease.ID)
 			//log.Printf("keep alive resp: %+v\n", resp)
 			if err != nil {
-				log.Printf("keep alive err: %v", err)
+				// 直接 fatal 然后etcd 重启就行
+				log.Fatalf("keep alive err: %v", err)
 			}
 		case <-ctx.Done():
 			return
