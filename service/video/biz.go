@@ -6,8 +6,8 @@ import (
 	pbfavorite "douyin/grpc/favorite"
 	pbuser "douyin/grpc/user"
 	pbvideo "douyin/grpc/video"
-	"douyin/model"
 	"douyin/package/constant"
+	"douyin/storage/database/model"
 	"sync"
 	"time"
 

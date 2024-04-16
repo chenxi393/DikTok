@@ -1,9 +1,9 @@
 package main
 
 import (
-	"douyin/model"
 	"douyin/package/constant"
-	"douyin/package/database"
+	"douyin/storage/database"
+	"douyin/storage/database/model"
 	"errors"
 
 	"gorm.io/gorm"

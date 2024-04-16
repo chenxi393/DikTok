@@ -2,7 +2,7 @@ package main
 
 // import (
 // 	"context"
-// 	"douyin/model"
+// 	"douyin/storage/database/model"
 // 	"douyin/package/mq"
 // 	"encoding/json"
 

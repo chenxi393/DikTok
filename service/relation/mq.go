@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"douyin/package/mq"
+	"douyin/storage/mq"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"

@@ -5,9 +5,9 @@ import (
 	"douyin/config"
 	pbrelation "douyin/grpc/relation"
 	pbuser "douyin/grpc/user"
-	"douyin/model"
-	"douyin/package/cache"
 	"douyin/package/constant"
+	"douyin/storage/cache"
+	"douyin/storage/database/model"
 	"errors"
 	"strconv"
 

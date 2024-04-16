@@ -9,9 +9,9 @@ main分支为微服务版本，持续开发中
 | gateway      | API网关服务       |
 | grpc         | gRPC生成代码      |
 | idl          | rpc服务接口定义   |
-| model        | 数据库模型        |
 | package      | 公共依赖包        |
 | service      | 拆分的RPC服务     |
+| storage      | MySQL Redis MQ    |
 | compose.yaml | docker容器编排    |
 | Dockerfile   | web服务的镜像文件 |
 | Makefile     | 一键部署服务      |

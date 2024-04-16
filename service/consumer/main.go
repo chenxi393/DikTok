@@ -2,7 +2,7 @@ package main
 
 // import (
 // 	"douyin/config"
-// 	"douyin/package/database"
+// 	"douyin/storage/database"
 // 	"douyin/package/util"
 // 	"fmt"
 

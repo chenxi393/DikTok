@@ -1,8 +1,8 @@
 package main
 
 import (
-	"douyin/model"
 	"douyin/package/constant"
+	"douyin/storage/database/model"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 )

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"douyin/model"
-	"douyin/package/database"
+	"douyin/storage/database"
+	"douyin/storage/database/model"
 	"time"
 
 	"gorm.io/gorm"

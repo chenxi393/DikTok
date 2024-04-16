@@ -2,8 +2,8 @@ package cache
 
 import (
 	"douyin/config"
-	"douyin/model"
-	"douyin/package/database"
+	"douyin/storage/database"
+	"douyin/storage/database/model"
 	"fmt"
 	"strconv"
 

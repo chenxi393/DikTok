@@ -1,7 +1,7 @@
 package main
 
 // import (
-// 	"douyin/package/database"
+// 	"douyin/storage/database"
 // 	"strconv"
 // 	"strings"
 

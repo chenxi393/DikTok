@@ -4,9 +4,9 @@ import (
 	"context"
 	pbcomment "douyin/grpc/comment"
 	pbuser "douyin/grpc/user"
-	"douyin/model"
 	"douyin/package/constant"
 	"douyin/package/util"
+	"douyin/storage/database/model"
 	"errors"
 	"sync"
 

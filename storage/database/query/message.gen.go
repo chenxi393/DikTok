@@ -16,7 +16,7 @@ import (
 
 	"gorm.io/plugin/dbresolver"
 
-	"douyin/model"
+	"douyin/storage/database/model"
 )
 
 func newMessage(db *gorm.DB, opts ...gen.DOOption) message {

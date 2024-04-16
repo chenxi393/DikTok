@@ -1,8 +1,8 @@
 package main
 
 import (
-	"douyin/model"
 	"douyin/package/constant"
+	"douyin/storage/database/model"
 	"encoding/json"
 	"errors"
 	"math/rand"
