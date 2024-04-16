@@ -71,6 +71,7 @@ func (s *UserService) Register(ctx context.Context, req *pbuser.RegisterRequest)
 }
 
 func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbuser.LoginResponse, error) {
+	resp := &pbuser.LoginResponse{}
 	// 使用redis 限制用户一定时间的登录次数
 	loginKey := constant.LoginCounterPrefix + req.Username
 	logintimes, err := userRedis.Get(loginKey).Result()
@@ -81,7 +82,9 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 	} else {
 		logintimesInt, _ = strconv.Atoi(logintimes)
 		if logintimesInt >= constant.MaxLoginTime {
-			return nil, errors.New(constant.FrequentLogin)
+			resp.StatusCode = -1
+			resp.StatusMsg = constant.FrequentLogin
+			return resp, nil
 		}
 	}
 	// 无论登录成功还是失败 这里redis记录的数据都+1
@@ -90,13 +93,19 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 	user, err := SelectUserByName(req.Username)
 	if err != nil {
 		zap.L().Error(constant.DatabaseError, zap.Error(err))
-		return nil, errors.New(constant.UserNoExist)
+		resp.StatusCode = -1
+		resp.StatusMsg = constant.UserNoExist
+		return resp, nil
 	}
 	if user.ID == 0 {
-		return nil, errors.New(constant.UserNoExist)
+		resp.StatusCode = -1
+		resp.StatusMsg = constant.UserNoExist
+		return resp, nil
 	}
 	if !bcryptCheck(req.Password, user.Password) {
-		return nil, errors.New(constant.SecretError)
+		resp.StatusCode = -1
+		resp.StatusMsg = constant.SecretError
+		return resp, nil
 	}
 	// redis预热 用户要查看个人信息 发布的视频 喜欢的视频
 	go func() {
@@ -127,11 +136,10 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 		// 	zap.L().Sugar().Error(err)
 		// }
 	}()
-	return &pbuser.LoginResponse{
-		StatusCode: constant.Success,
-		StatusMsg:  constant.LoginSuccess,
-		UserId:     user.ID,
-	}, nil
+	resp.StatusCode = constant.Success
+	resp.StatusMsg = constant.LoginSuccess
+	resp.UserId = user.ID
+	return resp, nil
 }
 
 func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuser.InfoResponse, error) {

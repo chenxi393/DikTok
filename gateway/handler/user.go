@@ -99,6 +99,10 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
+	if res.StatusCode != 0 {
+		c.Status(fiber.StatusOK)
+		return c.JSON(res)
+	}
 	// 签发token
 	token, err := auth.SignToken(int64(res.UserId))
 	if err != nil {
