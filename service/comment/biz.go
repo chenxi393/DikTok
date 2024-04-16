@@ -104,6 +104,14 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 	if req.Count == 0 {
 		req.Count = 50
 	}
+	if req.LastCommentId == 0 {
+		id, err := util.GetSonyFlakeID()
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		req.LastCommentId = int64(id)
+	}
 	var comments []*model.Comment
 	var err error
 	// if req.GetOffset()+req.Count >= 50 {
@@ -154,6 +162,7 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 	// 		comments = comments[req.GetOffset() : req.GetOffset()+req.Count]
 	// 	}
 	// }
+
 	comments, err = GetCommentsByVideoIDFromMaster(req.VideoID, req.GetLastCommentId(), req.GetCount()+1)
 	if err != nil {
 		zap.L().Sugar().Error(err)
