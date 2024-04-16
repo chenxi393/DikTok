@@ -2,6 +2,8 @@ package otel
 
 import (
 	"context"
+	"douyin/config"
+	"douyin/package/constant"
 	"log"
 	"time"
 
@@ -10,6 +12,9 @@ import (
 
 // 还会开启 内存检测 不过内存检测放在一个进程不合适
 func Init(url, serviceName string) func() {
+	if config.System.Mode != constant.DebugMode {
+		return func() {}
+	}
 	tp := initTracerProvider(url, serviceName)
 	mp := initMeterProvider(url, serviceName)
 	// 内存监测 还没啥效果
