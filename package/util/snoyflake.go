@@ -1,8 +1,9 @@
 package util
 
 import (
-	"douyin/package/constant"
 	"time"
+
+	"diktok/package/constant"
 
 	"github.com/gofrs/uuid"
 	"github.com/sony/sonyflake"

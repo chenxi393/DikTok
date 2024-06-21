@@ -2,20 +2,20 @@ package main
 
 import (
 	"context"
-	"douyin/config"
-	pbmessage "douyin/grpc/message"
-	pbrelation "douyin/grpc/relation"
-	"douyin/package/constant"
-	"douyin/package/otel"
-	"douyin/package/rpc"
-	"douyin/package/util"
-	"douyin/storage/database"
 	"fmt"
 	"log"
 	"net"
 
+	"diktok/config"
+	pbmessage "diktok/grpc/message"
+	pbrelation "diktok/grpc/relation"
+	"diktok/package/constant"
+	"diktok/package/otel"
+	"diktok/package/rpc"
+	"diktok/package/util"
+	"diktok/storage/database"
+
 	eclient "go.etcd.io/etcd/client/v3"
-	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -33,18 +33,14 @@ func main() {
 	defer shutdown()
 	database.InitMySQL()
 
-	// 连接到依赖的服务
-	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
+	// 连接ETCD
+	etcdClient, err := eclient.NewFromURL(config.System.EtcdURL)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
-	etcdResolverBuilder, err := eresolver.NewBuilder(etcdClient)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-	// 开启用户服务的连接 并且defer关闭函数
-	relationTarget := fmt.Sprintf("etcd:///%s", constant.RalationService)
-	relationConn := rpc.SetupServiceConn(relationTarget, etcdResolverBuilder)
+
+	// RPC客户端
+	relationConn := rpc.SetupServiceConn(fmt.Sprintf("etcd:///%s", constant.RalationService), etcdClient)
 	defer relationConn.Close()
 	relationClient = pbrelation.NewRelationClient(relationConn)
 
@@ -58,9 +54,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, constant.MessageAddr, constant.MessageService)
+	go rpc.RegisterEndPointToEtcd(ctx, etcdClient, constant.MessageAddr, constant.MessageService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

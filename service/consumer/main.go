@@ -1,9 +1,9 @@
 package main
 
 // import (
-// 	"douyin/config"
-// 	"douyin/storage/database"
-// 	"douyin/package/util"
+// 	"diktok/config"
+// 	"diktok/storage/database"
+// 	"diktok/package/util"
 // 	"fmt"
 
 // 	amqp "github.com/rabbitmq/amqp091-go"

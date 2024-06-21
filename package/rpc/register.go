@@ -2,8 +2,6 @@ package rpc
 
 import (
 	"context"
-	"douyin/package/constant"
-	"fmt"
 	"log"
 	"time"
 
@@ -11,9 +9,7 @@ import (
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
 
-func RegisterEndPointToEtcd(ctx context.Context, addr string, name string) {
-	// 创建 etcd 客户端
-	etcdClient, _ := eclient.NewFromURL(constant.MyEtcdURL)
+func RegisterEndPointToEtcd(ctx context.Context, etcdClient *eclient.Client, addr string, name string) {
 	// 创建 etcd 服务端节点管理模块 etcdManager
 	etcdManager, _ := endpoints.NewManager(etcdClient, name)
 
@@ -22,8 +18,7 @@ func RegisterEndPointToEtcd(ctx context.Context, addr string, name string) {
 	lease, _ := etcdClient.Grant(ctx, ttl)
 
 	// 添加注册节点到 etcd 中，并且携带上租约 id
-	err := etcdManager.AddEndpoint(ctx, fmt.Sprintf("%s/%s", name, addr),
-		endpoints.Endpoint{Addr: addr}, eclient.WithLease(lease.ID))
+	err := etcdManager.AddEndpoint(ctx, name+"/"+addr, endpoints.Endpoint{Addr: addr}, eclient.WithLease(lease.ID))
 	if err != nil {
 		log.Fatalf("add endpoint err: %v", err)
 	}

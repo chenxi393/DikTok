@@ -3,13 +3,14 @@ package handler
 import (
 	"bytes"
 	"context"
-	"douyin/gateway/auth"
-	"douyin/gateway/response"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
 	"io"
 	"mime/multipart"
 	"time"
+
+	"diktok/gateway/auth"
+	"diktok/gateway/response"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"

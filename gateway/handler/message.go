@@ -2,12 +2,13 @@ package handler
 
 import (
 	"context"
-	"douyin/gateway/response"
-	pbmessage "douyin/grpc/message"
-	"douyin/package/constant"
 	"errors"
 	"strconv"
 	"strings"
+
+	"diktok/gateway/response"
+	pbmessage "diktok/grpc/message"
+	"diktok/package/constant"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"

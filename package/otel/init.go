@@ -2,10 +2,11 @@ package otel
 
 import (
 	"context"
-	"douyin/config"
-	"douyin/package/constant"
 	"log"
 	"time"
+
+	"diktok/config"
+	"diktok/package/constant"
 
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 )

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+# 文件需要有可执行权限
 ## create user for sync
 MASTER_SYNC_USER=${MASTER_SYNC_USER:-sync_admin} #默认为 "sync_admin" 不然就从环境遍历读物
 MASTER_SYNC_PASSWORD=${MASTER_SYNC_PASSWORD:-sync_admin123456}

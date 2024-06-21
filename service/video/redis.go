@@ -1,12 +1,13 @@
 package main
 
 import (
-	"douyin/package/constant"
-	"douyin/storage/database/model"
 	"encoding/json"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"diktok/package/constant"
+	"diktok/storage/database/model"
 
 	"go.uber.org/zap"
 )

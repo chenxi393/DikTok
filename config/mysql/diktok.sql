@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.2.0, for Linux (x86_64)
 --
--- Host: localhost    Database: douyin
+-- Host: localhost    Database: diktok
 -- ------------------------------------------------------
 -- Server version	8.2.0
 
@@ -16,12 +16,12 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Current Database: `douyin`
+-- Current Database: `diktok`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `douyin` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `diktok` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
 
-USE `douyin`;
+USE `diktok`;
 
 --
 -- Table structure for table `comment`

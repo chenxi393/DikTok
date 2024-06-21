@@ -1,9 +1,10 @@
 package sensitive_test
 
 import (
-	"douyin/package/sensitive"
 	"fmt"
 	"testing"
+
+	"diktok/package/sensitive"
 )
 
 func TestTrie(t *testing.T) {

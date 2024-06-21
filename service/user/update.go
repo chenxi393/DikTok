@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
 	"errors"
 	"regexp"
+
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"

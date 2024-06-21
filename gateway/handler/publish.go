@@ -2,13 +2,14 @@ package handler
 
 import (
 	"bytes"
-	"douyin/gateway/auth"
-	"douyin/gateway/response"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
-	"douyin/package/util"
 	"io"
 	"strings"
+
+	"diktok/gateway/auth"
+	"diktok/gateway/response"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
+	"diktok/package/util"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"

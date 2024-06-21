@@ -1,9 +1,10 @@
 package mq
 
 import (
-	"douyin/config"
 	"fmt"
 	"time"
+
+	"diktok/config"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"

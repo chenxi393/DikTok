@@ -1,8 +1,8 @@
 package main
 
 // import (
-// 	"douyin/storage/database/model"
-// 	"douyin/storage/database"
+// 	"diktok/storage/database/model"
+// 	"diktok/storage/database"
 // 	"encoding/json"
 
 // 	"go.uber.org/zap"

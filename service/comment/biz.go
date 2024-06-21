@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	pbcomment "douyin/grpc/comment"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
-	"douyin/package/util"
-	"douyin/storage/database/model"
 	"errors"
 	"sync"
+
+	pbcomment "diktok/grpc/comment"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
+	"diktok/package/util"
+	"diktok/storage/database/model"
 
 	"time"
 

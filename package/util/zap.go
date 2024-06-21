@@ -1,8 +1,8 @@
 package util
 
 import (
-	"douyin/config"
-	"douyin/package/constant"
+	"diktok/config"
+	"diktok/package/constant"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelzap"
 	"go.uber.org/zap"

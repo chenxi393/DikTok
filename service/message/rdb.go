@@ -1,9 +1,10 @@
 package main
 
 import (
-	"douyin/storage/database"
-	"douyin/storage/database/model"
 	"time"
+
+	"diktok/storage/database"
+	"diktok/storage/database/model"
 )
 
 // 弃用 改用mongoDB

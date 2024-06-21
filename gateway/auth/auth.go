@@ -1,11 +1,12 @@
 package auth
 
 import (
-	"douyin/config"
-	"douyin/gateway/response"
-	"douyin/package/constant"
 	"fmt"
 	"time"
+
+	"diktok/config"
+	"diktok/gateway/response"
+	"diktok/package/constant"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

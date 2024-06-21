@@ -33,7 +33,7 @@ main分支为微服务版本，持续开发中
 * 分别运行网关和6个微服务（可以使用Makefile）
 
 ### 注意事项
-* 不推荐使用GORM自动建表migration()，一般手动建表（使用config/douyin.sql建表）
+* 不推荐使用GORM自动建表migration()，一般手动建表（使用config/diktok.sql建表）
 * 若数据库已经存在表的情况下，注释掉database里的init.go的migration()（反之取消注释）
 * MySQL主从复制在docker容器重启时偶现失败
 * 请不要上传大于30MB的视频 会返回413（大视频应在客户端压缩）

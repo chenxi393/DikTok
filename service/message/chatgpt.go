@@ -1,7 +1,7 @@
 package main
 
 import (
-	"douyin/package/constant"
+	"diktok/package/constant"
 
 	"go.uber.org/zap"
 )

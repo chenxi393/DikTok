@@ -3,7 +3,7 @@ package favorite;
 import "idl/video.proto";
 
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
-option go_package = "douyin/grpc/favorite;pbfavorite";
+option go_package = "diktok/grpc/favorite;pbfavorite";
 
 service Favorite {
     rpc Like (LikeRequest) returns (LikeResponse) {}

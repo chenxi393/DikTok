@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	pbuser "douyin/grpc/user"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
 	"errors"
+
+	pbuser "diktok/grpc/user"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
 
 	"go.uber.org/zap"
 )

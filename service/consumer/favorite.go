@@ -1,7 +1,7 @@
 package main
 
 // import (
-// 	"douyin/storage/database"
+// 	"diktok/storage/database"
 // 	"strconv"
 // 	"strings"
 

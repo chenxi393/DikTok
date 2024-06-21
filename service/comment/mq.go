@@ -2,8 +2,8 @@ package main
 
 // import (
 // 	"context"
-// 	"douyin/storage/database/model"
-// 	"douyin/package/mq"
+// 	"diktok/storage/database/model"
+// 	"diktok/package/mq"
 // 	"encoding/json"
 
 // 	amqp "github.com/rabbitmq/amqp091-go"

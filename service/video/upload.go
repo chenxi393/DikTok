@@ -3,11 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
-	"douyin/config"
-	"douyin/package/constant"
-	"douyin/package/util"
 	"os"
 	"path/filepath"
+
+	"diktok/config"
+	"diktok/package/constant"
+	"diktok/package/util"
 
 	"github.com/disintegration/imaging"
 	"github.com/qiniu/go-sdk/v7/storage"

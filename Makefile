@@ -17,7 +17,7 @@ relation:
 	go run service/relation/*.go
 
 message:
-	go build service/message/*.go && ./biz
+	go run service/message/*.go
 
 favorite:
 	go run service/favorite/*.go

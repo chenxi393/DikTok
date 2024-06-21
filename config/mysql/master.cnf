@@ -5,7 +5,7 @@ port=3306
 # 原生数据复制
 binlog-format=ROW 
 # 同步的数据库名称
-binlog-do-db=douyin   
+binlog-do-db=diktok   
 
 # 修改全文索引的最小搜索长度
 innodb_ft_min_token_size = 1

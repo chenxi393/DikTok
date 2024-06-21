@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"douyin/config"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,6 +12,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"diktok/config"
 
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
@@ -65,7 +66,7 @@ func requestToSparkAPI(content string) string {
 			zap.L().Sugar().Infoln("Error parsing JSON:", err)
 			return ""
 		}
-		//解析数据 
+		//解析数据
 		data_, ok := data["payload"]
 		if !ok {
 			zap.L().Sugar().Infoln("payload err")

@@ -1,6 +1,7 @@
 mode: "debug" # debug 打印详细的日志 其他例如production 打印简略的日志
 jwtSecret: 
 gptSecret: 
+etcd_address:
 
 # 七牛云
 qiniu:
@@ -12,23 +13,23 @@ qiniu:
 http:
   host: 0.0.0.0 #需要更换为主机的ip
   port: 8000 #更换为运行的端口
-  videoAddress: "./douyinVideo"
+  videoAddress: "./diktokVideo"
 
 mysqlMaster:
-  host: mysql-master # docker：mysql-master:3306 本机：127.0.0.1:13306
+  host: mysql_master # docker：mysql-master:3306 本机：127.0.0.1:13306
   port: 3306
   username: root
   password: admin123456
-  database: douyin
+  database: diktok
   maxOpenConn: 100
   maxIdleConn: 10
 
 mysqlSlave:
-  host: mysql-slave # docker：mysql-slave:3306 本机：127.0.0.1:13307
+  host: mysql_slave # docker：mysql-slave:3306 本机：127.0.0.1:13307
   port: 3306
   username: root
   password: admin123456
-  database: douyin
+  database: diktok
   maxOpenConn: 100
   maxIdleConn: 10
 
@@ -51,11 +52,11 @@ mongo:
   db: 
 
 rabbitmq:
-  host: dev-rabbitmq # docker： dev-rabbitmq:6379 本机：127.0.0.1:5672
+  host: dev_rabbitmq # docker： dev-rabbitmq:6379 本机：127.0.0.1:5672
   port: 5672
   user: user
   password: password
 
 otel_collector:
-  host: otel-collector
+  host: otel_collector
   port: 4318

@@ -2,22 +2,22 @@ package main
 
 import (
 	"context"
-	"douyin/config"
-	pbcomment "douyin/grpc/comment"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
-	"douyin/package/otel"
-	"douyin/package/rpc"
-	"douyin/package/util"
-	"douyin/storage/cache"
-	"douyin/storage/database"
 	"fmt"
 	"log"
 	"net"
 
+	"diktok/config"
+	pbcomment "diktok/grpc/comment"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
+	"diktok/package/otel"
+	"diktok/package/rpc"
+	"diktok/package/util"
+	"diktok/storage/cache"
+	"diktok/storage/database"
+
 	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
-	eresolver "go.etcd.io/etcd/client/v3/naming/resolver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -38,21 +38,19 @@ func main() {
 	database.InitMySQL()
 	commentRedis = cache.InitRedis(config.System.Redis.CommentDB)
 	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
-	// 连接到依赖的服务
-	etcdClient, err := eclient.NewFromURL(constant.MyEtcdURL)
+
+	// 连接ETCD
+	etcdClient, err := eclient.NewFromURL(config.System.EtcdURL)
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}
-	etcdResolverBuilder, err := eresolver.NewBuilder(etcdClient)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-	// 开启用户服务的连接 并且defer关闭函数
-	userTarget := fmt.Sprintf("etcd:///%s", constant.UserService)
-	userConn := rpc.SetupServiceConn(userTarget, etcdResolverBuilder)
+
+	// RPC客户端
+	userConn := rpc.SetupServiceConn(fmt.Sprintf("etcd:///%s", constant.UserService), etcdClient)
 	defer userConn.Close()
 	userClient = pbuser.NewUserClient(userConn)
 
+	// RPC服务端
 	lis, err := net.Listen("tcp", constant.CommentAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -63,9 +61,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 注册grpc到etcd节点中
 	// 注册 grpc 服务节点到 etcd 中
-	go rpc.RegisterEndPointToEtcd(ctx, constant.CommentAddr, constant.CommentService)
+	go rpc.RegisterEndPointToEtcd(ctx, etcdClient, constant.CommentAddr, constant.CommentService)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

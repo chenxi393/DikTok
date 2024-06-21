@@ -1,10 +1,11 @@
 package main
 
 import (
-	"douyin/package/constant"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"diktok/package/constant"
 
 	"github.com/go-redis/redis"
 	"go.uber.org/zap"

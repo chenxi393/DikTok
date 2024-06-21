@@ -2,7 +2,7 @@ package main
 
 // import (
 // 	"context"
-// 	"douyin/package/mq"
+// 	"diktok/package/mq"
 // 	"fmt"
 
 // 	amqp "github.com/rabbitmq/amqp091-go"

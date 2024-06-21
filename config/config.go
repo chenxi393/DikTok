@@ -1,10 +1,11 @@
 package config
 
 import (
-	"douyin/package/constant"
 	"log"
 	"os"
 	"strings"
+
+	"diktok/package/constant"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -76,11 +77,12 @@ type SystemConfig struct {
 	MQ            RabbitMQ   `mapstructure:"rabbitmq"`
 	OtelColletcor OTEL       `mapstructure:"otel_collector"`
 	Mongo         MongoDB    `mapstructure:"mongo"`
+	EtcdURL       string     `mapstructure:"etcd_address"`
 }
 
 var System SystemConfig
 
-// TODO 配置文件实际上也应该分离
+// TODO 配置文件 各个服务应该分离
 func Init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -109,9 +111,8 @@ func Init() {
 		log.Println(System.Qiniu.OssDomain)
 	})
 
-	// TODO 适配本机和docker 不然会阻塞 是不是有更好的办法 能不能不阻塞直接报错
+	// TODO 适配本机和docker 是不是有更好的办法
 	if os.Getenv("RUN_ENV") != "docker" {
-		constant.MyEtcdURL = getLocalAddr(constant.MyEtcdURL)
 		constant.VideoAddr = getLocalAddr(constant.VideoAddr)
 		constant.UserAddr = getLocalAddr(constant.UserAddr)
 		constant.RelationAddr = getLocalAddr(constant.RelationAddr)

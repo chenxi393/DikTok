@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	pbfavorite "douyin/grpc/favorite"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
+
+	pbfavorite "diktok/grpc/favorite"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
 
 	"go.uber.org/zap"
 )

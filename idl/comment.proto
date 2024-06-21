@@ -2,7 +2,7 @@ syntax = "proto3";
 package comment;
 import "idl/user.proto";
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
-option go_package = "douyin/grpc/comment;pbcomment";
+option go_package = "diktok/grpc/comment;pbcomment";
 
 service Comment {
     rpc Add (AddRequest) returns (CommentResponse) {}

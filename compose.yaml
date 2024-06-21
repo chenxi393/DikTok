@@ -9,7 +9,7 @@ services:
     depends_on:
     # TODO 健康检查  所有的
       - video
-      - mysql-slave
+      - mysql_slave
     #stdin_open: true # 与 docker run -i  类似 打开容器的标准输出 与用户进行交互
     #tty: true    #分配一个伪终端 与-t类似    docker run -dit
     networks:
@@ -25,8 +25,8 @@ services:
     container_name: video
     command: [/app/video]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
       - redis
     networks:
       - mysql
@@ -41,15 +41,14 @@ services:
     container_name: user
     command: [/app/user]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
       - redis
     networks:
       - mysql
       - backend
     restart: on-failure:10
     environment:
-    # 这个环境变量似乎不起作用
       - TZ=Asia/Shanghai
       - RUN_ENV=docker
 
@@ -58,10 +57,10 @@ services:
     container_name: relation
     command: [/app/relation]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
       - redis
-      - dev-rabbitmq
+      - dev_rabbitmq
     networks:
       - mysql
       - backend
@@ -76,8 +75,8 @@ services:
     container_name: message
     command: [/app/message]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
     networks:
       - mysql
       - backend
@@ -92,10 +91,10 @@ services:
     container_name: favorite
     command: [/app/favorite]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
       - redis
-      - dev-rabbitmq
+      - dev_rabbitmq
     networks:
       - mysql
       - backend
@@ -110,10 +109,10 @@ services:
     container_name: comment
     command: [/app/comment]
     depends_on:
-      - mysql-master
-      - mysql-slave
+      - mysql_master
+      - mysql_slave
       - redis
-      - dev-rabbitmq
+      - dev_rabbitmq
     networks:
       - mysql
       - backend
@@ -138,20 +137,20 @@ services:
       - ETCD_CERT_FILE="/path/to/server.crt"
       - ETCD_KEY_FILE="/path/to/server.key"
       - ETCD_AUTH="simple"
-      - ETCD_AUTH_USER="douyin"
-      - ETCD_AUTH_PASSWORD="douyin"
+      - ETCD_AUTH_USER="diktok"
+      - ETCD_AUTH_PASSWORD="diktok"
     networks:
       - backend
 
-  mysql-master:
-    container_name: mysql-master 
+  mysql_master:
+    container_name: mysql_master 
     image: mysql:latest
     ports:
       - "13306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: admin123456
       MYSQL_ROOT_HOST: '%'
-      MYSQL_DATABASE: 'douyin'
+      MYSQL_DATABASE: 'diktok'
       MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
       MASTER_SYNC_USER: syncuser
       MASTER_SYNC_PASSWORD: sync123456
@@ -164,21 +163,21 @@ services:
     volumes:
      # 可能需要注意的是 docker-entrypoint-initdb.d 再每次重启运行 都会启动一次
       - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
-      - ./config/mysql/douyin.sql:/docker-entrypoint-initdb.d/douyin.sql 
+      - ./config/mysql/diktok.sql:/docker-entrypoint-initdb.d/diktok.sql 
       - ./config/mysql/master.cnf:/etc/my.cnf
-      - mysqlMasterData:/var/lib/mysql/
+      - mysql_master:/var/lib/mysql/
     networks:
       mysql:
         ipv4_address: 192.168.0.100
 
-  mysql-slave:
-    container_name: mysql-slave
+  mysql_slave:
+    container_name: mysql_slave
     image: mysql:latest
     ports:
       - "13307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: admin123456
-      MYSQL_DATABASE: 'douyin'
+      MYSQL_DATABASE: 'diktok'
       MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
       MASTER_HOST: 192.168.0.100
       MASTER_PORT: 3306
@@ -189,16 +188,16 @@ services:
       R_USER_HOST: '%'
       TZ: Asia/Shanghai
     volumes:
-    # 这里sh和sql的执行顺序应该时按照字母序 先执行douyin.sql 再执行slave.sql
+    # 这里sh和sql的执行顺序应该时按照字母序 先执行diktok.sql 再执行slave.sql
       - ./config/mysql/slave.sh:/docker-entrypoint-initdb.d/slave.sh
-      - ./config/mysql/douyin.sql:/docker-entrypoint-initdb.d/douyin.sql 
+      - ./config/mysql/diktok.sql:/docker-entrypoint-initdb.d/diktok.sql 
       - ./config/mysql/slave.cnf:/etc/my.cnf
-      - mysqlSlaveData:/var/lib/mysql/
+      - mysql_slave:/var/lib/mysql/
     networks:
       mysql:
         ipv4_address: 192.168.0.101
     depends_on:
-      - mysql-master
+      - mysql_master
   
   redis:
     image: redis:latest
@@ -210,9 +209,9 @@ services:
     volumes:
       - redis:/data
 
-  dev-rabbitmq:
+  dev_rabbitmq:
     image: rabbitmq:3-management
-    container_name: dev-rabbitmq
+    container_name: dev_rabbitmq
     ports:
       - 5672:5672
       - 15672:15672
@@ -223,7 +222,7 @@ services:
     networks:
       - backend
 
-  otel-collector:
+  otel_collector:
     image: otel/opentelemetry-collector-contrib
     volumes:
       - ./config/otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
@@ -235,17 +234,19 @@ services:
       - 4317:4317 # OTLP gRPC receiver
       - 4318:4318 # OTLP http receiver
       - 55679:55679 # zpages extension
+
   open_observe:
     image: public.ecr.aws/zinclabs/openobserve:latest
     volumes:
       - open_observe_data:/data
     environment:
-      - ZO_DATA_DIR="/data"
+      - ZO_DATA_DIR=/data
       - ZO_ROOT_USER_EMAIL=root@example.com  # 加上引号居然不行 什么破 bug
       - ZO_ROOT_USER_PASSWORD=Complexpass#123
     ports:
       - 5080:5080  # for http
       - 5081:5081  # for grpc
+
 networks:
   mysql:
     ipam:
@@ -257,9 +258,8 @@ networks:
 # volume 持久化数据
 volumes:
   rabbitmq:
-  # 有机会改一下名mysql_master
-  mysqlMasterData:
-  mysqlSlaveData:
+  mysql_master:
+  mysql_slave:
   redis:
   open_observe_data:
 

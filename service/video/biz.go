@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"douyin/config"
-	pbfavorite "douyin/grpc/favorite"
-	pbuser "douyin/grpc/user"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
-	"douyin/storage/database/model"
 	"sync"
 	"time"
+
+	"diktok/config"
+	pbfavorite "diktok/grpc/favorite"
+	pbuser "diktok/grpc/user"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
+	"diktok/storage/database/model"
 
 	"go.uber.org/zap"
 )

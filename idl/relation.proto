@@ -2,7 +2,7 @@ syntax = "proto3";
 package relation;
 import "idl/user.proto";
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
-option go_package = "douyin/grpc/relation;pbrelation";
+option go_package = "diktok/grpc/relation;pbrelation";
 
 service Relation {
     rpc Follow (FollowRequest) returns (FollowResponse) {}

@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"douyin/gateway/response"
-	pbcomment "douyin/grpc/comment"
-	"douyin/package/constant"
 	"errors"
+
+	"diktok/gateway/response"
+	pbcomment "diktok/grpc/comment"
+	"diktok/package/constant"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"

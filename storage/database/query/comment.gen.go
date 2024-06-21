@@ -16,7 +16,7 @@ import (
 
 	"gorm.io/plugin/dbresolver"
 
-	"douyin/storage/database/model"
+	"diktok/storage/database/model"
 )
 
 func newComment(db *gorm.DB, opts ...gen.DOOption) comment {

@@ -1,11 +1,12 @@
 package cache
 
 import (
-	"douyin/config"
-	"douyin/storage/database"
-	"douyin/storage/database/model"
 	"fmt"
 	"strconv"
+
+	"diktok/config"
+	"diktok/storage/database"
+	"diktok/storage/database/model"
 
 	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/go-redis/redis"

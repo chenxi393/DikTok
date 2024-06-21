@@ -2,8 +2,9 @@ package otel
 
 import (
 	"context"
-	"douyin/config"
 	"log"
+
+	"diktok/config"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"

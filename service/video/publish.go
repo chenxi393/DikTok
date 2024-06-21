@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
-	"douyin/config"
-	pbuser "douyin/grpc/user"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
-	"douyin/storage/cache"
-	"douyin/storage/database"
-	"douyin/storage/database/model"
 	"os"
 	"strconv"
 	"time"
+
+	"diktok/config"
+	pbuser "diktok/grpc/user"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
+	"diktok/storage/cache"
+	"diktok/storage/database"
+	"diktok/storage/database/model"
 
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"

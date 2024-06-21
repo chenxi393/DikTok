@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	pbmessage "douyin/grpc/message"
-	pbrelation "douyin/grpc/relation"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
 	"sync"
+
+	pbmessage "diktok/grpc/message"
+	pbrelation "diktok/grpc/relation"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 
 	"go.uber.org/zap"
 )

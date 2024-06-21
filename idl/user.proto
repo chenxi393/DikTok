@@ -2,7 +2,7 @@ syntax = "proto3";
 package user;
 
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
-option go_package = "douyin/grpc/user;pbuser";
+option go_package = "diktok/grpc/user;pbuser";
 
 service User {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}

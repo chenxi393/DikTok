@@ -1,9 +1,10 @@
 package database
 
 import (
-	"douyin/config"
-	"douyin/package/constant"
 	"strings"
+
+	"diktok/config"
+	"diktok/package/constant"
 
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"

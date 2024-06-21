@@ -16,7 +16,7 @@ import (
 
 	"gorm.io/plugin/dbresolver"
 
-	"douyin/storage/database/model"
+	"diktok/storage/database/model"
 )
 
 func newFavorite(db *gorm.DB, opts ...gen.DOOption) favorite {

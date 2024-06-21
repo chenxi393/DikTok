@@ -13,25 +13,25 @@ ENV GO111MODULE=on \
 # Install ffmpeg 提取视频第一帧 弃用
 # RUN apt-get update && apt-get install -y ffmpeg
 
-WORKDIR /douyin
+WORKDIR /diktok
 
 # 把本地文件拷贝到容器里 这里应该是到工作目录
 COPY . .
 
 # 构建镜像运行的shell 命令
-RUN go install /douyin/gateway
-RUN go install /douyin/service/comment
-RUN go install /douyin/service/favorite
-RUN go install /douyin/service/message
-RUN go install /douyin/service/relation
-RUN go install /douyin/service/user
-RUN go install /douyin/service/video
+RUN go install /diktok/gateway
+RUN go install /diktok/service/comment
+RUN go install /diktok/service/favorite
+RUN go install /diktok/service/message
+RUN go install /diktok/service/relation
+RUN go install /diktok/service/user
+RUN go install /diktok/service/video
 
 FROM alpine
 
 WORKDIR /app
 
-COPY --from=builder /douyin/config /app/config
+COPY --from=builder /diktok/config /app/config
 COPY --from=builder /go/bin/gateway /app/gateway
 COPY --from=builder /go/bin/comment /app/comment
 COPY --from=builder /go/bin/favorite /app/favorite

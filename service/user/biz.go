@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
-	"douyin/config"
-	pbrelation "douyin/grpc/relation"
-	pbuser "douyin/grpc/user"
-	"douyin/package/constant"
-	"douyin/storage/cache"
-	"douyin/storage/database/model"
 	"errors"
 	"strconv"
+
+	"diktok/config"
+	pbrelation "diktok/grpc/relation"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
+	"diktok/storage/cache"
+	"diktok/storage/database/model"
 
 	"go.uber.org/zap"
 )

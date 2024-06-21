@@ -2,8 +2,8 @@ package main
 
 // import (
 // 	"context"
-// 	"douyin/config"
-// 	"douyin/package/util"
+// 	"diktok/config"
+// 	"diktok/package/util"
 // 	"log"
 // 	"time"
 

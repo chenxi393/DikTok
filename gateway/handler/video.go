@@ -1,9 +1,11 @@
 package handler
 
 import (
-	"douyin/gateway/response"
-	pbvideo "douyin/grpc/video"
-	"douyin/package/constant"
+	"context"
+	"diktok/gateway/response"
+	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -32,7 +34,9 @@ func Feed(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	res, err := VideoClient.Feed(c.UserContext(), &pbvideo.FeedRequest{
+	ctx, cancel := context.WithTimeout(c.UserContext(), time.Second)
+	defer cancel()
+	res, err := VideoClient.Feed(ctx, &pbvideo.FeedRequest{
 		LatestTime: req.LatestTime,
 		Topic:      req.Topic,
 		UserID:     userID,

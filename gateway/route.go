@@ -1,10 +1,10 @@
 package main
 
 import (
-	"douyin/config"
-	"douyin/gateway/auth"
-	"douyin/gateway/handler"
-	"douyin/gateway/response"
+	"diktok/config"
+	"diktok/gateway/auth"
+	"diktok/gateway/handler"
+	"diktok/gateway/response"
 
 	"github.com/gofiber/contrib/otelfiber"
 	"github.com/gofiber/contrib/websocket"

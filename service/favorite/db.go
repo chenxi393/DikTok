@@ -1,10 +1,11 @@
 package main
 
 import (
-	"douyin/package/constant"
-	"douyin/storage/database"
-	"douyin/storage/database/model"
 	"errors"
+
+	"diktok/package/constant"
+	"diktok/storage/database"
+	"diktok/storage/database/model"
 
 	"gorm.io/gorm"
 )

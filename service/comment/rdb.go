@@ -1,8 +1,8 @@
 package main
 
 import (
-	"douyin/storage/database"
-	"douyin/storage/database/model"
+	"diktok/storage/database"
+	"diktok/storage/database/model"
 
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"

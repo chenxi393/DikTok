@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
-	"douyin/storage/mq"
 	"fmt"
+
+	"diktok/storage/mq"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
