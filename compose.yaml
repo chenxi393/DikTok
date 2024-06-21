@@ -1,7 +1,9 @@
 version: '3.8'
 services:
   gateway: 
-    build: . # 会在指定目录寻找Dockerfile 构建镜像
+    build:
+      args:
+        SERVICE: ${SERVICE:-gateway}
     container_name: gateway
     ports:
       - "8000:8000"
@@ -15,13 +17,12 @@ services:
     networks:
       - backend
     restart: on-failure:10
-    environment:
-    # 这个环境变量似乎不起作用
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   video: 
-    build: . 
+    build: 
+      context: .
+      args:
+       SERVICE: ${SERVICE:-video}
     container_name: video
     command: [/app/video]
     depends_on:
@@ -32,12 +33,12 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   user: 
-    build: .
+    build:
+      context: .
+      args:
+        SERVICE: ${SERVICE:-user}
     container_name: user
     command: [/app/user]
     depends_on:
@@ -48,12 +49,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   relation: 
-    build: .
+    build:
+      args:
+        SERVICE: ${SERVICE:-relation}
     container_name: relation
     command: [/app/relation]
     depends_on:
@@ -65,13 +65,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-    # 这个环境变量似乎不起作用
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   message: 
-    build: .
+    build:
+      args:
+        SERVICE: message
     container_name: message
     command: [/app/message]
     depends_on:
@@ -81,13 +79,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-    # 这个环境变量似乎不起作用
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   favorite: 
-    build: .
+    build:
+      args:
+        SERVICE: ${SERVICE:-favorite}
     container_name: favorite
     command: [/app/favorite]
     depends_on:
@@ -99,13 +95,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-    # 这个环境变量似乎不起作用
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
   
   comment: 
-    build: .
+    build:
+      args:
+        SERVICE: ${SERVICE:-comment}
     container_name: comment
     command: [/app/comment]
     depends_on:
@@ -117,10 +111,6 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-    environment:
-    # 这个环境变量似乎不起作用
-      - TZ=Asia/Shanghai
-      - RUN_ENV=docker
 
   etcd:
     image: "quay.io/coreos/etcd:v3.5.5"
@@ -161,7 +151,7 @@ services:
       R_W_DATABASE: '*'
       TZ: Asia/Shanghai
     volumes:
-     # 可能需要注意的是 docker-entrypoint-initdb.d 再每次重启运行 都会启动一次
+     # docker-entrypoint-initdb.d 里的文件 在构建镜像的时候会执行下面的脚本
       - ./config/mysql/master.sh:/docker-entrypoint-initdb.d/master.sh #这个sh会在mysql启动后自动运行
       - ./config/mysql/diktok.sql:/docker-entrypoint-initdb.d/diktok.sql 
       - ./config/mysql/master.cnf:/etc/my.cnf

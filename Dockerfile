@@ -18,27 +18,28 @@ WORKDIR /diktok
 # 把本地文件拷贝到容器里 这里应该是到工作目录
 COPY . .
 
-# 构建镜像运行的shell 命令
-RUN go install /diktok/gateway
-RUN go install /diktok/service/comment
-RUN go install /diktok/service/favorite
-RUN go install /diktok/service/message
-RUN go install /diktok/service/relation
-RUN go install /diktok/service/user
-RUN go install /diktok/service/video
+# 提取参数 构建对应的镜像
+# 包变小了 但是会很卡 因为并行的跑几个 之前只跑一个
+ARG SERVICE
+RUN if [ "$SERVICE" = "gateway" ]; then \
+        go install /diktok/gateway; \
+        else \
+        go install /diktok/service/$SERVICE; \
+    fi
+
 
 FROM alpine
 
 WORKDIR /app
 
+# 设置时区环境变量
+ENV TZ=Asia/Shanghai
+
+# 安装 tzdata 包以支持时区
+RUN apk update && apk add --no-cache tzdata
+
 COPY --from=builder /diktok/config /app/config
-COPY --from=builder /go/bin/gateway /app/gateway
-COPY --from=builder /go/bin/comment /app/comment
-COPY --from=builder /go/bin/favorite /app/favorite
-COPY --from=builder /go/bin/message /app/message
-COPY --from=builder /go/bin/relation /app/relation
-COPY --from=builder /go/bin/user /app/user
-COPY --from=builder /go/bin/video /app/video
+COPY --from=builder /go/bin/ /app/
 
 # 容器运行时执行的shell 命令 一般在最后一行 一定要前台运行 不然运行之后容器就关闭了
 # 可以被docker run 的tag覆盖
