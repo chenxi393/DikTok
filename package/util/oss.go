@@ -1,8 +1,6 @@
 package util
 
 import (
-	"time"
-
 	"diktok/config"
 
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
@@ -14,7 +12,7 @@ func GetUploadToken(fileName string) string {
 	putPolicy := storage.PutPolicy{
 		Scope:           config.System.Qiniu.Bucket + ":" + fileName,
 		IsPrefixalScope: 1,
-		Expires:         uint64(time.Now().Unix()) + 600, // 给了10min 给用户上传 TODO 这个10min好像不准 自测几小时
+		Expires:         300, // 给了5min
 		FsizeLimit:      30 * 1024 * 1024,
 	}
 	mac := qbox.NewMac(config.System.Qiniu.AccessKey, config.System.Qiniu.SecretKey)

@@ -115,6 +115,7 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
+	auth.SetTokenCookie(c, token)
 	res.Token = token
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)

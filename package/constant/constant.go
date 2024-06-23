@@ -78,7 +78,7 @@ const (
 	RetryTime = 20
 
 	// token过期时间
-	TokenTimeOut = 12 * time.Hour
+	TokenExpiration = 48 * time.Hour
 )
 
 // grpc

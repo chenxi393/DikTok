@@ -24,7 +24,7 @@ func SignToken(userID int64) (string, error) {
 	claims := UserClaims{
 		userID,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(constant.TokenTimeOut)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(constant.TokenExpiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -55,10 +55,7 @@ func ParseToken(token string) (*UserClaims, error) {
 }
 
 func Authentication(c *fiber.Ctx) error {
-	token := c.Query("token")
-	if token == "" {
-		token = c.Get("token")
-	}
+	token := getToken(c)
 	if token == "" {
 		zap.L().Info("token为空")
 		res := response.CommonResponse{
@@ -75,16 +72,34 @@ func Authentication(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
+	refreshToken(c, claims)
 	c.Locals(constant.UserID, claims.UserID)
 	return c.Next()
 }
 
-func AuthenticationOption(c *fiber.Ctx) error {
-	token := c.Get("token")
-	if token == "" {
-		token = c.Query("token")
+func refreshToken(c *fiber.Ctx, claims *UserClaims) {
+	// 如果过期时间 小于1天 则续期
+	if claims.ExpiresAt.Before(time.Now().AddDate(0, 0, 1)) {
+		t, _ := SignToken(claims.UserID)
+		SetTokenCookie(c, t)
 	}
-	if token != "" {
+}
+
+func SetTokenCookie(c *fiber.Ctx, token string) {
+	// Create cookie
+	cookie := new(fiber.Cookie)
+	cookie.Name = "token"
+	cookie.Value = token
+	cookie.HTTPOnly = true
+	cookie.Secure = true
+	cookie.Expires = time.Now().Add(constant.TokenExpiration)
+
+	// Set cookie
+	c.Cookie(cookie)
+}
+
+func AuthenticationOption(c *fiber.Ctx) error {
+	if token := getToken(c); token != "" {
 		claims, err := ParseToken(token)
 		if err != nil {
 			res := response.CommonResponse{
@@ -93,10 +108,23 @@ func AuthenticationOption(c *fiber.Ctx) error {
 			}
 			return c.JSON(res)
 		}
+		refreshToken(c, claims)
 		c.Locals(constant.UserID, claims.UserID)
 	} else {
 		// 解决 c.locals 无数据 反射panic的问题
 		c.Locals(constant.UserID, int64(0))
 	}
 	return c.Next()
+}
+
+func getToken(c *fiber.Ctx) (token string) {
+	// 兼容 三种传参
+	token = c.Get("token")
+	if token == "" {
+		token = c.Cookies("token")
+	}
+	if token == "" {
+		token = c.Query("token")
+	}
+	return
 }

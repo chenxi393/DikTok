@@ -12,7 +12,8 @@ const (
 	BloomFilterRejected = "布隆过滤器拦截"
 	DatabaseError       = "数据库操作失败"
 	BadParaRequest      = "参数错误"
-	WrongToken          = "token不匹配 请重新登录"
+	WrongToken          = "token不匹配，请重新登录"
+	InternalException   = "服务器内部错误，请重试"
 
 	// 用户
 	SecretFormatError = "密码格式错误"

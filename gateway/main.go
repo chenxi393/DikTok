@@ -29,7 +29,8 @@ func main() {
 	// defer shutdown()
 
 	// 连接ETCD
-	// TODO 非常奇怪 连接服务器的etcd 会超时
+	// TODO 非常奇怪 连接服务器的etcd 会超时  linux 系统 https 走socks 代理的问题
+	// etcd老版本使用的  grpc版本 默认不走代理
 	// etcd 客户端与grpc服务端 通信使用的grpc协议 可以看下etcd的源码
 	// 因为grpc建立连接非阻塞调用 所以在put之类的操作的时候会阻塞
 	etcdClient, err := clientv3.New(clientv3.Config{
