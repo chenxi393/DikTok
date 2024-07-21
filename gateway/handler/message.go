@@ -1,10 +1,11 @@
 package handler
 
 import (
+	"bufio"
 	"context"
-	"errors"
-	"strconv"
-	"strings"
+	"encoding/json"
+	"fmt"
+	"io"
 
 	"diktok/gateway/response"
 	pbmessage "diktok/grpc/message"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
 )
 
@@ -101,51 +103,123 @@ func MessageChat(c *fiber.Ctx) error {
 	return c.JSON(resp)
 }
 
+type RequestMsg struct {
+	Method   string `json:"method"`
+	ToUserID int64  `json:"to_user_id"`
+	Content  string `query:"content"`
+}
+
 func MessageWebsocket() func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
 		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 		var (
-			mt  int
 			msg []byte
 			err error
 		)
 		// c.Locals is added to the *websocket.Conn
-		toUserID, err := strconv.ParseInt(c.Query("to_user_id"), 10, 64)
-		if err != nil {
-			zap.L().Error(err.Error())
-			return
-		}
 		userID := c.Locals(constant.UserID).(int64)
 		for {
-			if mt, msg, err = c.ReadMessage(); err != nil {
+			if _, msg, err = c.ReadMessage(); err != nil {
 				zap.L().Sugar().Errorf("read:", err)
 				break
 			}
 			zap.L().Sugar().Infof("recv: %s", msg)
-			ms := strings.Split(string(msg), "\n")
-			if len(ms) == 1 && ms[0] == "get" {
+			var msgJson RequestMsg
+			err := json.Unmarshal(msg, &msgJson)
+			if err != nil {
+				err = c.WriteJSON(&response.CommonResponse{
+					StatusCode: -1,
+					StatusMsg:  constant.BadParaRequest,
+				})
+				if err != nil {
+					zap.L().Sugar().Error("write:", err)
+					break
+				}
+				continue
+			}
+			zap.L().Sugar().Infof("recvJSON: %#v", msgJson)
+			if msgJson.Method == "get" {
 				// 返回聊天记录
 				res, err := MessageClinet.List(context.Background(), &pbmessage.ListRequest{
 					UserID:   userID,
-					ToUserID: toUserID,
+					ToUserID: msgJson.ToUserID,
 				})
 				if err != nil {
 					zap.L().Error(err.Error())
 				}
 				c.WriteJSON(res)
-			} else if len(ms) == 2 && ms[1] == "post" {
+			} else if msgJson.Method == "post" {
 				// TODO
 				// 写入数据库 发送给对应的在线好友
 				// 不在线怎么办 ？？
 			} else {
-				msg = []byte("错误的消息格式 连接关闭")
-				err := errors.New(string(msg))
-				zap.L().Error(err.Error())
-				if err = c.WriteMessage(mt, msg); err != nil {
+				err = c.WriteJSON(&response.CommonResponse{
+					StatusCode: -1,
+					StatusMsg:  constant.BadParaRequest,
+				})
+				if err != nil {
 					zap.L().Sugar().Error("write:", err)
+					break
 				}
-				break
 			}
+			// TODO 存储 在线状态
+			// 当用户收到消息的时候 主动推送
 		}
 	}
+}
+
+func SSEHandle(c *fiber.Ctx) error {
+	c.Set("Content-Type", "text/event-stream")
+	c.Set("Cache-Control", "no-cache")
+	c.Set("Connection", "keep-alive")
+	c.Set("Transfer-Encoding", "chunked")
+
+	c.Context().SetBodyStreamWriter(fasthttp.StreamWriter(func(w *bufio.Writer) {
+		var msgJson RequestMsg
+		err := c.BodyParser(&msgJson)
+		if err != nil {
+			err = c.JSON(&response.CommonResponse{
+				StatusCode: -1,
+				StatusMsg:  constant.BadParaRequest,
+			})
+			if err != nil {
+				zap.L().Sugar().Error(err.Error())
+			}
+			return
+		}
+		userID := c.Locals(constant.UserID).(int64)
+		switch msgJson.Method {
+		case "chat":
+			{
+				stream, err := MessageClinet.RequestToLLM(c.Context(), &pbmessage.RequestToLLMRequest{
+					UserID:  userID,
+					Content: msgJson.Content,
+				})
+				if err != nil {
+					zap.L().Sugar().Error(err.Error())
+				}
+
+				// 3. for循环获取服务端推送的消息
+				for {
+					// 通过 Recv() 不断获取服务端send()推送的消息
+					resp, err := stream.Recv()
+					// 4. err==io.EOF则表示服务端关闭stream了 退出
+					if err == io.EOF {
+						zap.L().Sugar().Infof("server closed")
+						break
+					}
+					if err != nil {
+						zap.L().Sugar().Errorf("Recv error:%v", err)
+						break
+					}
+					zap.L().Sugar().Infof("Recv data:%v", resp.String())
+					fmt.Fprintf(w, "data: %s\n\n", resp.String())
+					if err := w.Flush(); err != nil {
+						break
+					}
+				}
+			}
+		}
+	}))
+	return nil
 }

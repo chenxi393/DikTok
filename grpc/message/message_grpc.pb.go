@@ -25,6 +25,7 @@ type MessageClient interface {
 	Send(ctx context.Context, in *SendRequest, opts ...grpc.CallOption) (*SendResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	GetFirstMessage(ctx context.Context, in *GetFirstRequest, opts ...grpc.CallOption) (*GetFirstResponse, error)
+	RequestToLLM(ctx context.Context, in *RequestToLLMRequest, opts ...grpc.CallOption) (Message_RequestToLLMClient, error)
 }
 
 type messageClient struct {
@@ -62,6 +63,38 @@ func (c *messageClient) GetFirstMessage(ctx context.Context, in *GetFirstRequest
 	return out, nil
 }
 
+func (c *messageClient) RequestToLLM(ctx context.Context, in *RequestToLLMRequest, opts ...grpc.CallOption) (Message_RequestToLLMClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Message_ServiceDesc.Streams[0], "/message.Message/RequestToLLM", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &messageRequestToLLMClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Message_RequestToLLMClient interface {
+	Recv() (*RequestToLLMResponse, error)
+	grpc.ClientStream
+}
+
+type messageRequestToLLMClient struct {
+	grpc.ClientStream
+}
+
+func (x *messageRequestToLLMClient) Recv() (*RequestToLLMResponse, error) {
+	m := new(RequestToLLMResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // MessageServer is the server API for Message service.
 // All implementations must embed UnimplementedMessageServer
 // for forward compatibility
@@ -69,6 +102,7 @@ type MessageServer interface {
 	Send(context.Context, *SendRequest) (*SendResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	GetFirstMessage(context.Context, *GetFirstRequest) (*GetFirstResponse, error)
+	RequestToLLM(*RequestToLLMRequest, Message_RequestToLLMServer) error
 	mustEmbedUnimplementedMessageServer()
 }
 
@@ -84,6 +118,9 @@ func (UnimplementedMessageServer) List(context.Context, *ListRequest) (*ListResp
 }
 func (UnimplementedMessageServer) GetFirstMessage(context.Context, *GetFirstRequest) (*GetFirstResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFirstMessage not implemented")
+}
+func (UnimplementedMessageServer) RequestToLLM(*RequestToLLMRequest, Message_RequestToLLMServer) error {
+	return status.Errorf(codes.Unimplemented, "method RequestToLLM not implemented")
 }
 func (UnimplementedMessageServer) mustEmbedUnimplementedMessageServer() {}
 
@@ -152,6 +189,27 @@ func _Message_GetFirstMessage_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Message_RequestToLLM_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RequestToLLMRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MessageServer).RequestToLLM(m, &messageRequestToLLMServer{stream})
+}
+
+type Message_RequestToLLMServer interface {
+	Send(*RequestToLLMResponse) error
+	grpc.ServerStream
+}
+
+type messageRequestToLLMServer struct {
+	grpc.ServerStream
+}
+
+func (x *messageRequestToLLMServer) Send(m *RequestToLLMResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Message_ServiceDesc is the grpc.ServiceDesc for Message service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -172,6 +230,12 @@ var Message_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Message_GetFirstMessage_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "RequestToLLM",
+			Handler:       _Message_RequestToLLM_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "idl/message.proto",
 }

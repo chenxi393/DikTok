@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"diktok/gateway/auth"
+	"diktok/gateway/middleware"
 	"diktok/gateway/response"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
@@ -41,15 +41,20 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	userClaim, err := auth.ParseToken(req.Token)
-	if err != nil {
-		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.WrongToken,
+	userID := c.Locals(constant.UserID).(int64)
+	if userID == 0 {
+		userClaim, err := middleware.ParseToken(req.Token)
+		if err != nil {
+			zap.L().Error(err.Error())
+			res := response.CommonResponse{
+				StatusCode: constant.Failed,
+				StatusMsg:  constant.WrongToken,
+			}
+			return c.JSON(res)
 		}
-		return c.JSON(res)
+		userID = userClaim.UserID
 	}
+
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -92,7 +97,7 @@ func PublishAction(c *fiber.Ctx) error {
 	res, err := VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
 		Title:  req.Title,
 		Topic:  req.Topic,
-		UserID: userClaim.UserID,
+		UserID: userID,
 		Data:   buf.Bytes(),
 	})
 	if err != nil {

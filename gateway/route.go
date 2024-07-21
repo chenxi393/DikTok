@@ -2,11 +2,11 @@ package main
 
 import (
 	"diktok/config"
-	"diktok/gateway/auth"
 	"diktok/gateway/handler"
+	"diktok/gateway/middleware"
 	"diktok/gateway/response"
 
-	"github.com/gofiber/contrib/otelfiber"
+	// "github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -32,61 +32,65 @@ func startFiber() {
 }
 
 func initRouter(app *fiber.App) {
+	// https://github.com/gofiber/contrib/issues/1126
+	// FIXME 这都是啥bug啊 使用这个导致sse 阻塞不可用
+	// app.Use(otelfiber.Middleware())
+
+	app.Use(middleware.Recovery)
 	// 允许跨域请求
-	app.Use(otelfiber.Middleware())
 	app.Use(cors.New())
 	api := app.Group("/douyin")
 	{
-		api.Get("/feed/", auth.AuthenticationOption, handler.Feed)
+		api.Get("/feed", middleware.AuthenticationOption, handler.Feed)
 		// get token of file upload
-		api.Get("/upload/get_token", auth.Authentication, handler.UploadToken)
+		api.Get("/upload/get_token", middleware.Authentication, handler.UploadToken)
 
 		// 视频搜索 可以拓展搜索用户
-		search := api.Group("/search", auth.AuthenticationOption)
+		search := api.Group("/search", middleware.AuthenticationOption)
 		{
-			search.Get("/video/", handler.SearchVideo)
-			search.Get("/user/", handler.UserSearch)
+			search.Get("/video", handler.SearchVideo)
+			search.Get("/user", handler.UserSearch)
 		}
 
 		user := api.Group("/user")
-		user.Get("/", auth.AuthenticationOption, handler.UserInfo)
 		{
-			user.Post("/register/", handler.UserRegister)
-			user.Post("/login/", handler.UserLogin)
-			user.Post("/update/", auth.Authentication, handler.UserUpdate)
+			user.Get("/", middleware.AuthenticationOption, handler.UserInfo)
+			user.Post("/register", handler.UserRegister)
+			user.Post("/login", handler.UserLogin)
+			user.Post("/update", middleware.Authentication, handler.UserUpdate)
 		}
 
 		publish := api.Group("/publish")
 		{
-			// action token放在body端 不适用中间件鉴权
-			publish.Post("/action/", handler.PublishAction)
-			publish.Get("/list/", auth.AuthenticationOption, handler.ListPublishedVideo)
+			// action token放在body端 先使用中间件鉴权 userid 无在拿body
+			publish.Post("/action", middleware.AuthenticationOption, handler.PublishAction)
+			publish.Get("/list", middleware.AuthenticationOption, handler.ListPublishedVideo)
 		}
 
 		favorite := api.Group("/favorite")
 		{
-			favorite.Post("/action/", auth.Authentication, handler.FavoriteVideoAction)
-			favorite.Get("/list/", auth.AuthenticationOption, handler.FavoriteList)
+			favorite.Post("/action", middleware.Authentication, handler.FavoriteVideoAction)
+			favorite.Get("/list", middleware.AuthenticationOption, handler.FavoriteList)
 		}
 
 		comment := api.Group("/comment")
 		{
-			comment.Post("/action/", auth.Authentication, handler.CommentAction)
-			comment.Get("/list/", auth.AuthenticationOption, handler.CommentList)
+			comment.Post("/action", middleware.Authentication, handler.CommentAction)
+			comment.Get("/list", middleware.AuthenticationOption, handler.CommentList)
 		}
 
 		relation := api.Group("/relation")
 		{
-			relation.Post("/action/", auth.Authentication, handler.RelationAction)
-			relation.Get("/follow/list/", auth.AuthenticationOption, handler.FollowList)
-			relation.Get("/follower/list/", auth.AuthenticationOption, handler.FollowerList)
-			relation.Get("/friend/list/", auth.Authentication, handler.FriendList)
+			relation.Post("/action", middleware.Authentication, handler.RelationAction)
+			relation.Get("/follow/list", middleware.AuthenticationOption, handler.FollowList)
+			relation.Get("/follower/list", middleware.AuthenticationOption, handler.FollowerList)
+			relation.Get("/friend/list", middleware.Authentication, handler.FriendList)
 		}
 
-		messgae := api.Group("/message", auth.Authentication)
+		messgae := api.Group("/message", middleware.Authentication)
 		{
-			messgae.Post("/action/", handler.MessageAction)
-			messgae.Get("/chat/", handler.MessageChat)
+			messgae.Post("/action", handler.MessageAction)
+			messgae.Get("/chat", handler.MessageChat)
 			// 使用websocket替换http每秒轮询
 			messgae.Use("/ws", func(c *fiber.Ctx) error {
 				if websocket.IsWebSocketUpgrade(c) {
@@ -95,6 +99,8 @@ func initRouter(app *fiber.App) {
 				return fiber.ErrUpgradeRequired
 			})
 			messgae.Get("/ws", websocket.New(handler.MessageWebsocket()))
+			// sse
+			messgae.Post("/sse", handler.SSEHandle)
 		}
 	}
 }

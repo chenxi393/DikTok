@@ -8,6 +8,7 @@ service Message {
     rpc Send (SendRequest) returns (SendResponse) {}
     rpc List (ListRequest) returns (ListResponse) {}
     rpc GetFirstMessage (GetFirstRequest) returns (GetFirstResponse) {}
+    rpc RequestToLLM (RequestToLLMRequest) returns (stream RequestToLLMResponse) {}
 }
 
 message SendRequest {
@@ -49,4 +50,13 @@ message GetFirstRequest{
 message GetFirstResponse{
     string message = 1;
     int32 msgType = 2;
+}
+
+message RequestToLLMRequest{
+    int64 UserID = 1;
+    string Content = 2;
+}
+
+message RequestToLLMResponse{
+    string Content = 2;
 }

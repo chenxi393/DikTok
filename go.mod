@@ -1,18 +1,19 @@
 module diktok
 
-go 1.20
+go 1.21
+
+toolchain go1.22.3
 
 require (
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/gofiber/contrib/otelfiber v1.0.10
-	github.com/gofiber/fiber/v2 v2.49.2
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.2.3
-	go.opentelemetry.io/otel v1.22.0
+	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/sdk v1.22.0
 	go.opentelemetry.io/otel/sdk/metric v1.22.0
-	go.opentelemetry.io/otel/trace v1.22.0
+	go.opentelemetry.io/otel/trace v1.28.0
 	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.32.0
 	gorm.io/gen v0.3.26
@@ -27,7 +28,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/fasthttp/websocket v1.5.4 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -62,18 +63,17 @@ require (
 	github.com/uptrace/opentelemetry-go-extra/otelutil v0.2.3 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.10 // indirect
-	go.opentelemetry.io/contrib v1.17.0 // indirect
-	go.opentelemetry.io/otel/metric v1.22.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/term v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.20.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
@@ -86,26 +86,26 @@ require (
 )
 
 require (
-	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.6.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gofiber/contrib/websocket v1.2.2
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/qiniu/go-sdk/v7 v7.17.1
 	github.com/rabbitmq/amqp091-go v1.9.0
-	github.com/rivo/uniseg v0.4.3 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sony/sonyflake v1.2.0
 	github.com/spf13/viper v1.16.0
 	github.com/u2takey/ffmpeg-go v0.5.0
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasthttp v1.50.0 // indirect
+	github.com/valyala/fasthttp v1.55.0
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.10
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1
@@ -116,8 +116,8 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.22.0
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/crypto v0.24.0
+	golang.org/x/sys v0.21.0 // indirect
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/gorm v1.25.9
 	gorm.io/plugin/dbresolver v1.5.1

@@ -7,7 +7,6 @@ import (
 	"diktok/storage/database/model"
 )
 
-// 弃用 改用mongoDB
 func CreateMessage(userID, toUSerId int64, content string) error {
 	msg := model.Message{
 		Content:    content,

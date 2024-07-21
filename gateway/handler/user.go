@@ -7,7 +7,7 @@ import (
 	"mime/multipart"
 	"time"
 
-	"diktok/gateway/auth"
+	"diktok/gateway/middleware"
 	"diktok/gateway/response"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
@@ -57,7 +57,7 @@ func UserRegister(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	// 签发token
-	token, err := auth.SignToken(res.UserId)
+	token, err := middleware.SignToken(res.UserId)
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -67,6 +67,7 @@ func UserRegister(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
+	middleware.SetTokenCookie(c, token)
 	res.Token = token
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
@@ -105,7 +106,7 @@ func UserLogin(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	// 签发token
-	token, err := auth.SignToken(int64(res.UserId))
+	token, err := middleware.SignToken(int64(res.UserId))
 	if err != nil {
 		zap.L().Error(err.Error())
 		res := response.UserRegisterOrLogin{
@@ -115,7 +116,7 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	auth.SetTokenCookie(c, token)
+	middleware.SetTokenCookie(c, token)
 	res.Token = token
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)
@@ -137,7 +138,7 @@ func UserInfo(c *fiber.Ctx) error {
 	if req.Token == "" {
 		loginUserID = 0
 	} else {
-		claims, err := auth.ParseToken(req.Token)
+		claims, err := middleware.ParseToken(req.Token)
 		if err != nil {
 			res := response.UserRegisterOrLogin{
 				StatusCode: constant.Failed,
