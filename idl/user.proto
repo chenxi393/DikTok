@@ -8,6 +8,7 @@ service User {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Login (LoginRequest) returns (LoginResponse) {}
     rpc Info (InfoRequest) returns (InfoResponse) {}
+    rpc List (ListReq) returns (ListResp) {}
     rpc Update (UpdateRequest) returns (UpdateResponse){}
 }
 
@@ -73,4 +74,13 @@ message UserInfo {
     int64 total_favorited = 9; //获赞数量
     int64 work_count = 10; //作品数量
     int64 favorite_count = 11; //点赞数量
-  }
+}
+
+// list 和 Mget 语义不一致
+message ListReq {
+    repeated int64 userID = 1;
+}
+
+message ListResp {
+    map<int64, UserInfo> user = 1;
+}

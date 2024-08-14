@@ -6,11 +6,11 @@ import "idl/user.proto";
 option go_package = "diktok/grpc/video;pbvideo";
 
 service Video {
-    rpc Feed (FeedRequest) returns (FeedResponse) {}
-    rpc Publish (PublishRequest) returns (PublishResponse) {}
-    rpc List (ListRequest) returns (VideoListResponse) {}
-    rpc Search (SearchRequest) returns (VideoListResponse) {}
-    rpc GetVideosByUserID(GetVideosRequest)returns(GetVideosResponse){}
+    // TODO 需要 引入推荐系统
+    rpc Feed (FeedRequest) returns (FeedResponse);
+    rpc Publish (PublishRequest) returns (PublishResponse);
+    rpc MGet(MGetReq) returns (MGetResp); // 提供外部系统的通用查询接口
+    rpc Search (SearchRequest) returns (ListResponse); // 正常情况 es搜索接口 这里暂时全文索引支持
 }
 
 message VideoData {
@@ -26,10 +26,20 @@ message VideoData {
     string publish_time=10;
 }
 
+message VideoMetaData {
+    int64 id = 1;
+    string play_url = 2;
+    string cover_url = 3;
+    string title = 4;
+    string topic = 5;
+    string publish_time=6;
+    int64 author_id = 7; 
+}
+
 message FeedRequest {
-    int64 LatestTime = 1;
-    string Topic = 2;
-    int64 UserID = 3;
+    int64 latest_time = 1;
+    string topic = 2;
+    int64 login_user_id = 3;
 }
 
 message FeedResponse {
@@ -38,22 +48,21 @@ message FeedResponse {
     int32 status_code = 3;
     repeated VideoData video_list = 4;
 }
-
 message SearchRequest {
-    string Keyword = 1;
-    int64 UserID = 2;
+    string keyword = 1;
+    int64 login_user_id = 2;
 }
 
-message VideoListResponse {
+message ListResponse {
     int32 status_code = 1;
     string status_msg = 2;
     repeated VideoData video_list = 3;
 }
 
 message PublishRequest {
-    string Title = 1;
-    string Topic = 2;
-    int64 UserID = 3;
+    string title = 1;
+    string topic = 2;
+    int64 login_user_id = 3;
     bytes data = 4; // 视频数据
 }
 
@@ -62,16 +71,19 @@ message PublishResponse {
     string status_msg = 2;
 }
 
-message ListRequest {
-    int64 UserID = 1;
-    int64 LoginUserID = 2;
+message MGetReq{
+    // and 条件
+    int64 user_id = 1;
+    repeated int64 video_id = 2;
+    int64 max_publish_time = 3;
+    string topic = 4;
+
+    int32 offset = 19;
+    int32 limit = 20;
 }
 
-message GetVideosRequest{
-    int64 UserID = 1;
-    repeated int64 VideoID = 2;
-}
-
-message GetVideosResponse{
-    repeated VideoData video_list = 2;
+message MGetResp{
+    repeated VideoMetaData video_list = 1;
+    int64 total = 2;
+    bool has_mode = 3;
 }
