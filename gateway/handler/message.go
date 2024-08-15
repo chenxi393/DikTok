@@ -111,7 +111,6 @@ type RequestMsg struct {
 
 func MessageWebsocket() func(*websocket.Conn) {
 	return func(c *websocket.Conn) {
-		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 		var (
 			msg []byte
 			err error
@@ -119,6 +118,7 @@ func MessageWebsocket() func(*websocket.Conn) {
 		// c.Locals is added to the *websocket.Conn
 		userID := c.Locals(constant.UserID).(int64)
 		for {
+			// c.p
 			if _, msg, err = c.ReadMessage(); err != nil {
 				zap.L().Sugar().Errorf("read:", err)
 				break

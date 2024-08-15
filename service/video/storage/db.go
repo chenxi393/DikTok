@@ -1,13 +1,18 @@
-package main
+package storage
 
 import (
+	"context"
 	"time"
 
 	"diktok/storage/database"
 	"diktok/storage/database/model"
+	"diktok/storage/database/query"
 
+	"gorm.io/gen"
+	"gorm.io/gen/field"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/plugin/dbresolver"
 )
 
 // CreateVideo 新增视频，返回的 videoID 是为了将 videoID 放入布隆过滤器
@@ -45,6 +50,11 @@ func SelectVideosByUserID(userID int64) ([]*model.Video, error) {
 		return nil, err
 	}
 	return videos, nil
+}
+
+// 指定主库读
+func MGetVideosByCond(ctx context.Context, offset, limit int, conds []gen.Condition, order ...field.Expr) ([]*model.Video, int64, error) {
+	return query.Use(database.DB.Clauses(dbresolver.Write)).Video.WithContext(ctx).Where(conds...).Order(order...).FindByPage(offset, limit)
 }
 
 // 根据视频ID集合查询视频信息 按id排序
@@ -98,32 +108,6 @@ func SearchVideoByKeyword(keyword string) ([]*model.Video, error) {
 	return videos, err
 }
 
-// 已弃用 分布式或者分库分表 不宜使用join
-// Scan支持的数据类型仅为struct及struct slice以及它们的指针类型
-// Scan要不结构体加tag  gorm:"column:col_name" 指定列名 要不改造结构体
-// func SelectFeedVideoByTopicWithJoin(numberVideos int, lastTime int64, topic string) ([]*response.VideoData, error) {
-// 	if lastTime == 0 {
-// 		lastTime = time.Now().UnixMilli()
-// 	}
-// 	res := make([]*response.VideoData, 0, 30)
-// 	// 这里使用外连接 双表联查 可以考虑改多次单表 联查太麻烦
-// 	err :=DB.Model(&model.User{}).Select(`user.*,
-//     video.id as vid,
-//     video.play_url,
-//     video.cover_url,
-//     video.favorite_count as vfavorite_count,
-//     video.comment_count,
-//     video.title,
-// 	video.publish_time,
-// 	video.topic`).Joins(
-// 		"right join video on video.author_id = user.id").Where("video.publish_time < ? and video.topic like ?",
-// 		time.UnixMilli(lastTime), topic+"%").Order("video.publish_time desc").Limit(numberVideos).Scan(&res).Error
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return res, nil
-// }
-
 func SelectWorkCount(userID int64) (int64, error) {
 	var cnt int64
 	err := database.DB.Model(&model.User{}).Select("work_count").Where("id = ? ", userID).First(&cnt).Error
@@ -131,4 +115,30 @@ func SelectWorkCount(userID int64) (int64, error) {
 		return 0, err
 	}
 	return cnt, nil
+}
+
+// 已弃用 分布式或者分库分表 不宜使用join
+// Scan支持的数据类型仅为struct及struct slice以及它们的指针类型
+// Scan要不结构体加tag  gorm:"column:col_name" 指定列名 要不改造结构体
+func SelectFeedVideoByTopicWithJoin(numberVideos int, lastTime int64, topic string) ([]*model.Video, error) {
+	if lastTime == 0 {
+		lastTime = time.Now().UnixMilli()
+	}
+	res := make([]*model.Video, 0, 30)
+	// 这里使用外连接 双表联查 可以考虑改多次单表 联查太麻烦
+	err := database.DB.Model(&model.User{}).Select(`user.*,
+    video.id as id,
+    video.play_url as play_url,
+    video.cover_url as cover_url,
+    video.favorite_count as favorite_count,
+    video.comment_count as comment_count ,
+    video.title as title,
+	video.publish_time as publish_time,
+	video.topic as topic`).Joins(
+		"right join video on video.author_id = user.id").Where("video.publish_time < ? and video.topic like ?",
+		time.UnixMilli(lastTime), topic+"%").Order("video.publish_time desc").Limit(numberVideos).Scan(&res).Error
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }

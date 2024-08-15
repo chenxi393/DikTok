@@ -109,6 +109,7 @@ func (s *RelationService) Unfollow(ctx context.Context, req *pbrelation.FollowRe
 			StatusMsg:  constant.UnFollowNotFollowed,
 		}, nil
 	}
+	// FIXME 这里之前没改造 直接panic 暴了
 	SendFollowMessage(req.UserID, req.ToUserID, -1)
 	zap.L().Debug("Follow: publish a message")
 	return &pbrelation.FollowResponse{

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	pbfavorite "diktok/grpc/favorite"
-	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 
 	"go.uber.org/zap"
@@ -59,24 +58,14 @@ func (s *FavoriteService) List(ctx context.Context, req *pbfavorite.ListRequest)
 			}
 		}()
 	}
-	// FIXME 这里非顺序返回
-	// 返回的是按id倒叙返回
-	videos, err := videoClient.GetVideosByUserID(ctx, &pbvideo.GetVideosRequest{
-		UserID:  req.LoginUserID,
-		VideoID: videoIDs,
-	})
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
 	return &pbfavorite.ListResponse{
 		StatusCode: constant.Success,
 		StatusMsg:  constant.FavoriteListSuccess,
-		VideoList:  videos.GetVideoList(),
+		VideoList:  videoIDs,
 	}, nil
 }
 
-func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.LikeRequest) (*pbfavorite.IsFavoriteResponse, error) {
+func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteRequest) (*pbfavorite.IsFavoriteResponse, error) {
 	// 获取用户的喜欢视频列表
 	likingVideos, err := GetFavoriteSet(req.GetUserID())
 	if err != nil {
@@ -101,5 +90,20 @@ func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.LikeRe
 	}
 	return &pbfavorite.IsFavoriteResponse{
 		IsFavorite: false,
+	}, nil
+}
+
+func (s *FavoriteService) Count(ctx context.Context, req *pbfavorite.CountReq) (*pbfavorite.CountResp, error) {
+	countMap := make(map[int64]int64, len(req.GetVideoID()))
+	for _, v := range req.GetVideoID() {
+		total, err := GetFavoriteNumByVideoIDFromMaster(v)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		countMap[v] = total
+	}
+	return &pbfavorite.CountResp{
+		Total: countMap,
 	}, nil
 }

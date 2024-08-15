@@ -8,6 +8,7 @@ service Comment {
     rpc Add (AddRequest) returns (CommentResponse) {}
     rpc Delete (DeleteRequest) returns (CommentResponse) {}
     rpc List (ListRequest) returns (ListResponse) {}
+    rpc Count (CountReq) returns (CountResp) {}
 }
 
 message AddRequest {
@@ -50,4 +51,12 @@ message CommentData {
     user.UserInfo user = 2;
     string content = 3;
     string create_date = 4;
+}
+
+message CountReq{
+    repeated int64 VideoID = 1;
+}
+
+message CountResp{
+    map<int64,int64> Total = 1;
 }

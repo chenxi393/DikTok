@@ -24,7 +24,7 @@ type Comment struct {
 	// 评论发布日期，格式 yyyy-mm-dd
 	CreateDate string `json:"create_date"`
 	// 评论id
-	ID uint64 `json:"id"`
+	ID int64 `json:"id"`
 	// 评论用户信息
 	User User `json:"user"`
 }

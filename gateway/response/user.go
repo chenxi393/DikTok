@@ -6,7 +6,7 @@ type UserRegisterOrLogin struct {
 	// 返回状态描述
 	StatusMsg string `json:"status_msg"`
 	// 用户id
-	UserID *uint64 `json:"user_id"`
+	UserID *int64 `json:"user_id"`
 }
 
 type InfoResponse struct {
@@ -31,11 +31,11 @@ type User struct {
 	// 粉丝总数
 	FollowerCount int64 `json:"follower_count"`
 	// 用户id
-	ID uint64 `json:"id"`
+	ID int64 `json:"id"`
 	// true-已关注，false-未关注
 	IsFollow bool `json:"is_follow"`
 	// 用户名称
-	Username string `json:"name" gorm:"column:username"` //done
+	Name string `json:"name"` //done
 	// 个人简介
 	Signature string `json:"signature"`
 	// 获赞数量

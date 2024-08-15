@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"encoding/json"
@@ -9,8 +9,11 @@ import (
 	"diktok/package/constant"
 	"diktok/storage/database/model"
 
+	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
+
+var VideoRedis, UserRedis *redis.Client
 
 // VideoInfo 视频固定的信息
 type VideoInfo struct {
@@ -37,7 +40,7 @@ func SetVideoInfo(video *model.Video) error {
 		return err
 	}
 	// 开启管道 一次发送请求
-	pipeline := videoRedis.Pipeline()
+	pipeline := VideoRedis.Pipeline()
 
 	// 下面两个的过期时间保持一致 不然查库还是会查出信息
 	randomTime := constant.Expiration + time.Duration(rand.Intn(100))*time.Second
@@ -77,7 +80,7 @@ func GetVideoInfo(videoID int64) (*model.Video, error) {
 	infoKey := constant.VideoInfoPrefix + strconv.FormatInt(videoID, 10)
 	infoCountKey := constant.VideoInfoCountPrefix + strconv.FormatInt(videoID, 10)
 	// 使用管道加速
-	pipeline := videoRedis.Pipeline()
+	pipeline := VideoRedis.Pipeline()
 	// 注意pipeline返回指针 返回值肯定是nil
 	videoInfoCmd := pipeline.Get(infoKey)
 	videoInfoCountCmd := pipeline.HGetAll(infoCountKey)
@@ -128,7 +131,7 @@ func SetPublishSet(userID int64, pubulishIDSet []int64) error {
 	for i := range pubulishIDSet {
 		pubulishIDStrings = append(pubulishIDStrings, strconv.FormatInt(pubulishIDSet[i], 10))
 	}
-	pp := videoRedis.Pipeline()
+	pp := VideoRedis.Pipeline()
 	pp.SAdd(key, pubulishIDStrings)
 	pp.Expire(key, constant.Expiration+time.Duration(rand.Intn(100))*time.Second)
 	_, err := pp.Exec()
@@ -137,7 +140,7 @@ func SetPublishSet(userID int64, pubulishIDSet []int64) error {
 
 func GetPubulishSet(userID int64) ([]int64, error) {
 	key := constant.PublishIDPrefix + strconv.FormatInt(userID, 10)
-	idSet, err := videoRedis.SMembers(key).Result()
+	idSet, err := VideoRedis.SMembers(key).Result()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return nil, err
@@ -159,14 +162,14 @@ func PublishVideo(userID, videoID int64) error {
 	authorInfoCountKey := constant.UserInfoCountPrefix + strconv.FormatInt(userID, 10)
 	authorInfoKey := constant.UserInfoPrefix + strconv.FormatInt(userID, 10)
 	// 这里也应该删缓存 不能增加
-	err := userRedis.Del(authorInfoCountKey, authorInfoKey).Err()
+	err := UserRedis.Del(authorInfoCountKey, authorInfoKey).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
 	}
 	// 应该删缓存 而不是增加 或者重新设置整个集合
 	// TODO可以考虑把视频加入 以便feed使用
-	err = videoRedis.Del(publishSet).Err()
+	err = VideoRedis.Del(publishSet).Err()
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

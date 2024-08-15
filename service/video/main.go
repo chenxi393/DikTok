@@ -2,55 +2,42 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
 	"diktok/config"
-	pbfavorite "diktok/grpc/favorite"
-	pbuser "diktok/grpc/user"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
+	"diktok/package/etcd"
 	"diktok/package/rpc"
 	"diktok/package/util"
+	"diktok/service/video/storage"
 	"diktok/storage/cache"
 	"diktok/storage/database"
 
-	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-var (
-	userClient     pbuser.UserClient
-	favoriteClient pbfavorite.FavoriteClient
-
-	videoRedis, userRedis *redis.Client
-)
-
 func main() {
+	// 初始化配置文件
 	config.Init()
+	// 初始化日志打印
 	util.InitZap()
+	// 初始化DB
 	database.InitMySQL()
-	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
-	userRedis = cache.InitRedis(config.System.Redis.UserDB)
+	// 初始化redis TODO收拢为一个redis
+	storage.VideoRedis = cache.InitRedis(config.System.Redis.VideoDB)
+	storage.UserRedis = cache.InitRedis(config.System.Redis.UserDB)
+	// 初始化ETCD 作为服务发现与注册中心
+	etcd.InitETCD()
+	// 初始化rpc 客户端
+	defer rpc.InitRpcClient(etcd.GetEtcdClient())
+	// 初始化rpc 服务端
+	InitServer(etcd.GetEtcdClient())
+}
 
-	// 连接ETCD
-	etcdClient, err := eclient.NewFromURL(config.System.EtcdURL)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-
-	// RPC客户端
-	userConn := rpc.SetupServiceConn(fmt.Sprintf("etcd:///%s", constant.UserService), etcdClient)
-	defer userConn.Close()
-	userClient = pbuser.NewUserClient(userConn)
-
-	favoriteConn := rpc.SetupServiceConn(fmt.Sprintf("etcd:///%s", constant.FavoriteService), etcdClient)
-	favoriteClient = pbfavorite.NewFavoriteClient(favoriteConn)
-	defer favoriteConn.Close()
-
+func InitServer(etcdClient *eclient.Client) {
 	// RPC服务端
 	lis, err := net.Listen("tcp", constant.VideoAddr)
 	if err != nil {
@@ -59,7 +46,6 @@ func main() {
 	s := grpc.NewServer(grpc.MaxRecvMsgSize(30 * 1024 * 1024))
 	pbvideo.RegisterVideoServer(s, &VideoService{})
 
-	// TODO 这一块context 目前还没没有理解是干嘛的
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func uploadVideo(file []byte, fileName string) (string, string, error) {
+func UploadVideo(file []byte, fileName string) (string, string, error) {
 	err := os.MkdirAll(config.System.HTTP.VideoAddress, os.ModePerm)
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -39,7 +39,7 @@ func uploadVideo(file []byte, fileName string) (string, string, error) {
 	return fileName, constant.DefaultCover, nil
 }
 
-func uploadToOSS(fileName, filePath string) error {
+func UploadToOSS(fileName, filePath string) error {
 	token := util.GetUploadToken(fileName)
 	cfg := storage.Config{}
 	// 是否使用https域名
@@ -66,7 +66,7 @@ func uploadToOSS(fileName, filePath string) error {
 	return nil
 }
 
-// 使用ffmpeg deprecated 已弃用
+// 需要本地安装ffmpeg deprecated
 func GetVideoFrame(outputFilePath, fileName string) error {
 	// 提取视频的第一帧
 	picBuffer := bytes.NewBuffer(nil)

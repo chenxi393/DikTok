@@ -9,7 +9,7 @@ import (
 	"diktok/gateway/response"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
-	"diktok/package/util"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -22,12 +22,6 @@ type publishRequest struct {
 	Title string `form:"title"`
 	// 新增 topic
 	Topic string `form:"topic"`
-}
-
-type listRequest struct {
-	// 用户鉴权token
-	Token  string `query:"token"`
-	UserID int64  `query:"user_id"`
 }
 
 func PublishAction(c *fiber.Ctx) error {
@@ -94,11 +88,11 @@ func PublishAction(c *fiber.Ctx) error {
 		}
 		return c.JSON(res)
 	}
-	res, err := VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
-		Title:  req.Title,
-		Topic:  req.Topic,
-		UserID: userID,
-		Data:   buf.Bytes(),
+	res, err := rpc.VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
+		Title:       req.Title,
+		Topic:       req.Topic,
+		LoginUserId: userID,
+		Data:        buf.Bytes(),
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
@@ -107,75 +101,6 @@ func PublishAction(c *fiber.Ctx) error {
 			StatusMsg:  err.Error(),
 		}
 		return c.JSON(res)
-	}
-	return c.JSON(res)
-}
-
-func ListPublishedVideo(c *fiber.Ctx) error {
-	var req listRequest
-	err := c.QueryParser(&req)
-	if err != nil {
-		zap.L().Error(err.Error())
-		res := response.VideoListResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		return c.JSON(res)
-	}
-	userID := c.Locals(constant.UserID).(int64)
-	resp, err := VideoClient.List(c.UserContext(), &pbvideo.ListRequest{
-		UserID:      req.UserID,
-		LoginUserID: userID,
-	})
-	if err != nil {
-		res := response.UserRegisterOrLogin{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		return c.JSON(res)
-	}
-	return c.JSON(resp)
-}
-
-const (
-	video      = "1"
-	avatar     = "2"
-	background = "3"
-)
-
-func UploadToken(c *fiber.Ctx) error {
-	uploadType := c.Get("upload_type")
-	var prefix string
-	switch uploadType {
-	case video:
-		prefix = "V-"
-	case avatar:
-		prefix = "A-"
-	case background:
-		prefix = "B-"
-	default:
-		// TODO 这些错误返回可以封装一下 给一个 code msg 和 结构体 直接封装 之前的也是 学一下
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		return c.JSON(res)
-	}
-	key, err := util.GetUUid()
-	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		return c.JSON(res)
-	}
-	key = prefix + key
-	token := util.GetUploadToken(key)
-	res := response.UploadTokenResponse{
-		StatusCode:  constant.Success,
-		StatusMsg:   constant.GetTokenSuccess,
-		UploadToken: token,
-		FileName:    key,
 	}
 	return c.JSON(res)
 }

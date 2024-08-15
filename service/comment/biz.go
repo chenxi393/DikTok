@@ -8,6 +8,7 @@ import (
 	pbcomment "diktok/grpc/comment"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/storage/database/model"
 
@@ -41,7 +42,7 @@ func (s *CommentService) Add(ctx context.Context, req *pbcomment.AddRequest) (*p
 		return nil, err
 	}
 	// 查找评论的用户信息
-	userResponse, err := userClient.Info(ctx, &pbuser.InfoRequest{
+	userResponse, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
 		UserID:      req.UserID,
 		LoginUserID: req.UserID,
 	})
@@ -70,7 +71,7 @@ func (s *CommentService) Delete(ctx context.Context, req *pbcomment.DeleteReques
 		return nil, err
 	}
 	// 查找评论的用户信息
-	userResponse, err := userClient.Info(ctx, &pbuser.InfoRequest{
+	userResponse, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
 		UserID:      req.UserID,
 		LoginUserID: req.UserID,
 	})
@@ -184,7 +185,7 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		go func(id int64) {
 			defer wg.Done()
 			// TODO 这里是不是也应该 rpc批量拿出来 而不是一个个去拿
-			user, err := userClient.Info(ctx, &pbuser.InfoRequest{
+			user, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
 				LoginUserID: req.UserID,
 				UserID:      id,
 			})
@@ -226,5 +227,20 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		CommentList: commentResponse,
 		HasMore:     hasMore,
 		Total:       total,
+	}, nil
+}
+
+func (s *CommentService) Count(ctx context.Context, req *pbcomment.CountReq) (*pbcomment.CountResp, error) {
+	countMap := make(map[int64]int64, len(req.GetVideoID()))
+	for _, v := range req.GetVideoID() {
+		total, err := GetCommentsNumByVideoIDFromMaster(v)
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		countMap[v] = total
+	}
+	return &pbcomment.CountResp{
+		Total: countMap,
 	}, nil
 }

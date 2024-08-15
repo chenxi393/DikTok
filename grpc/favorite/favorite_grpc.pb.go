@@ -25,7 +25,8 @@ type FavoriteClient interface {
 	Like(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
 	Unlike(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	IsFavorite(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error)
+	IsFavorite(ctx context.Context, in *IsFavoriteRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error)
+	Count(ctx context.Context, in *CountReq, opts ...grpc.CallOption) (*CountResp, error)
 }
 
 type favoriteClient struct {
@@ -63,9 +64,18 @@ func (c *favoriteClient) List(ctx context.Context, in *ListRequest, opts ...grpc
 	return out, nil
 }
 
-func (c *favoriteClient) IsFavorite(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error) {
+func (c *favoriteClient) IsFavorite(ctx context.Context, in *IsFavoriteRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error) {
 	out := new(IsFavoriteResponse)
 	err := c.cc.Invoke(ctx, "/favorite.Favorite/IsFavorite", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *favoriteClient) Count(ctx context.Context, in *CountReq, opts ...grpc.CallOption) (*CountResp, error) {
+	out := new(CountResp)
+	err := c.cc.Invoke(ctx, "/favorite.Favorite/Count", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +89,8 @@ type FavoriteServer interface {
 	Like(context.Context, *LikeRequest) (*LikeResponse, error)
 	Unlike(context.Context, *LikeRequest) (*LikeResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	IsFavorite(context.Context, *LikeRequest) (*IsFavoriteResponse, error)
+	IsFavorite(context.Context, *IsFavoriteRequest) (*IsFavoriteResponse, error)
+	Count(context.Context, *CountReq) (*CountResp, error)
 	mustEmbedUnimplementedFavoriteServer()
 }
 
@@ -96,8 +107,11 @@ func (UnimplementedFavoriteServer) Unlike(context.Context, *LikeRequest) (*LikeR
 func (UnimplementedFavoriteServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedFavoriteServer) IsFavorite(context.Context, *LikeRequest) (*IsFavoriteResponse, error) {
+func (UnimplementedFavoriteServer) IsFavorite(context.Context, *IsFavoriteRequest) (*IsFavoriteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsFavorite not implemented")
+}
+func (UnimplementedFavoriteServer) Count(context.Context, *CountReq) (*CountResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Count not implemented")
 }
 func (UnimplementedFavoriteServer) mustEmbedUnimplementedFavoriteServer() {}
 
@@ -167,7 +181,7 @@ func _Favorite_List_Handler(srv interface{}, ctx context.Context, dec func(inter
 }
 
 func _Favorite_IsFavorite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LikeRequest)
+	in := new(IsFavoriteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -179,7 +193,25 @@ func _Favorite_IsFavorite_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/favorite.Favorite/IsFavorite",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FavoriteServer).IsFavorite(ctx, req.(*LikeRequest))
+		return srv.(FavoriteServer).IsFavorite(ctx, req.(*IsFavoriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Favorite_Count_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FavoriteServer).Count(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/favorite.Favorite/Count",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FavoriteServer).Count(ctx, req.(*CountReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -206,6 +238,10 @@ var Favorite_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsFavorite",
 			Handler:    _Favorite_IsFavorite_Handler,
+		},
+		{
+			MethodName: "Count",
+			Handler:    _Favorite_Count_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

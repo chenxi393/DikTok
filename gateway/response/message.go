@@ -16,9 +16,9 @@ type Message struct {
 	// 消息发送时间 yyyy-MM-dd HH:MM:ss
 	CreateTime int64 `json:"create_time"`
 	// 消息发送者id
-	FromUserID uint64 `json:"from_user_id"`
+	FromUserID int64 `json:"from_user_id"`
 	// 消息id
 	ID int64 `json:"id"`
 	// 消息接收者id
-	ToUserID uint64 `json:"to_user_id"`
+	ToUserID int64 `json:"to_user_id"`
 }

@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 
 	"diktok/config"
 	pbcomment "diktok/grpc/comment"
-	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
-	"diktok/package/otel"
+	"diktok/package/etcd"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/storage/cache"
@@ -19,38 +17,27 @@ import (
 	"github.com/go-redis/redis"
 	eclient "go.etcd.io/etcd/client/v3"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 var (
-	// 需要RPC调用的客户端
-	userClient pbuser.UserClient
-
 	commentRedis, videoRedis *redis.Client
 )
 
 func main() {
 	config.Init()
 	util.InitZap()
-	shutdown := otel.Init("rpc://comment", constant.ServiceName+".comment")
-	defer shutdown()
+	// shutdown := otel.Init("rpc://comment", constant.ServiceName+".comment")
+	// defer shutdown()
 	database.InitMySQL()
 	commentRedis = cache.InitRedis(config.System.Redis.CommentDB)
 	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
+	etcd.InitETCD()
+	defer rpc.InitRpcClient(etcd.GetEtcdClient())
+	InitServer(etcd.GetEtcdClient())
+}
 
-	// 连接ETCD
-	etcdClient, err := eclient.NewFromURL(config.System.EtcdURL)
-	if err != nil {
-		zap.L().Fatal(err.Error())
-	}
-
-	// RPC客户端
-	userConn := rpc.SetupServiceConn(fmt.Sprintf("etcd:///%s", constant.UserService), etcdClient)
-	defer userConn.Close()
-	userClient = pbuser.NewUserClient(userConn)
-
-	// RPC服务端
+func InitServer(etcdClient *eclient.Client) {
 	lis, err := net.Listen("tcp", constant.CommentAddr)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)

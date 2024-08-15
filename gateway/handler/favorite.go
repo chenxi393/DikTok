@@ -64,34 +64,3 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	c.Status(fiber.StatusOK)
 	return c.JSON(resp)
 }
-
-func FavoriteList(c *fiber.Ctx) error {
-	var req likeListRequest
-	err := c.QueryParser(&req)
-	if err != nil {
-		zap.L().Error(err.Error())
-		res := response.VideoListResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-			VideoList:  nil,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
-	userID := c.Locals(constant.UserID).(int64)
-	resp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
-		UserID:      req.UserID,
-		LoginUserID: userID,
-	})
-	if err != nil {
-		res := response.VideoListResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-			VideoList:  nil,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
-	}
-	c.Status(fiber.StatusOK)
-	return c.JSON(resp)
-}

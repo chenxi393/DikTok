@@ -24,3 +24,12 @@ favorite:
 
 comment:
 	go run service/comment/*.go
+
+proto:
+	protoc --go_out=.. --go-grpc_out=.. ./idl/*.proto
+
+model:
+	go run cmd/main.go
+
+tidy:
+	go mod tidy && go fmt ./...

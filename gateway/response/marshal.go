@@ -26,3 +26,11 @@ type CommonResponse struct {
 	Prompt     string      `json:"prompt"`      // 提示用户的
 	Data       interface{} `json:"data,omitempty"`
 }
+
+func BuildStdResp(StatusCode int, StatusMsg string, data interface{}) *CommonResponse {
+	return &CommonResponse{
+		StatusCode: StatusCode,
+		StatusMsg:  StatusMsg,
+		Data:       data,
+	}
+}

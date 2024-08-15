@@ -8,6 +8,7 @@ import (
 	"diktok/storage/database/model"
 
 	"gorm.io/gorm"
+	"gorm.io/plugin/dbresolver"
 )
 
 // cnt=1表示 点赞 cnt=-1 表示取消赞
@@ -73,4 +74,13 @@ func SelectFavoriteVideoByUserID(userID int64) ([]int64, error) {
 	res := make([]int64, 0)
 	err := database.DB.Model(&model.Favorite{}).Select("video_id").Where("user_id = ?", userID).Order("id desc").Find(&res).Error
 	return res, err
+}
+
+func GetFavoriteNumByVideoIDFromMaster(videoID int64) (int64, error) {
+	var cnt int64
+	err := database.DB.Clauses(dbresolver.Write).Model(&model.Favorite{}).Where("video_id = ?", videoID).Count(&cnt).Error
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
 }

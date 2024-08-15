@@ -99,6 +99,7 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 		return resp, nil
 	}
 	if user.ID == 0 {
+
 		resp.StatusCode = -1
 		resp.StatusMsg = constant.UserNoExist
 		return resp, nil

@@ -34,6 +34,7 @@ WORKDIR /app
 
 # 设置时区环境变量
 ENV TZ=Asia/Shanghai
+ENV RUN_ENV=docker
 
 # 安装 tzdata 包以支持时区
 RUN apk update && apk add --no-cache tzdata

@@ -32,7 +32,7 @@ message VideoMetaData {
     string cover_url = 3;
     string title = 4;
     string topic = 5;
-    string publish_time=6;
+    int64 publish_time=6;
     int64 author_id = 7; 
 }
 
