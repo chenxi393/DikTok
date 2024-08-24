@@ -3,7 +3,10 @@
 *.png
 /config/wsl.yaml
 /config/docker.yaml
+*online.yaml
+*default.yaml
 Note.md
 biz
 cmd/main.go
 prd.md
+frontend
