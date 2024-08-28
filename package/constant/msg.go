@@ -14,6 +14,7 @@ const (
 	BadParaRequest      = "参数错误"
 	WrongToken          = "token不匹配，请重新登录"
 	InternalException   = "服务器内部错误，请重试"
+	LoadSuccess         = "加载成功"
 
 	// 用户
 	SecretFormatError = "密码格式错误"
@@ -25,18 +26,17 @@ const (
 	SecretError       = "用户密码错误"
 	RegisterSuccess   = "用户注册成功"
 	LoginSuccess      = "用户登录成功"
-	InfoSuccess       = "加载成功"
 	TooLongSignature  = "签名长度不符合要求"
 	UpdateSuccess     = "更新用户信息成功"
 
 	// 视频
-	PubulishListSuccess = "发布视频列表获取成功"
-	SearchSuccess       = "搜索成功"
-	FeedSuccess         = "视频列表获取成功"
-	NoMoreVideos        = "视频见底了"
-	FileFormatError     = "文件格式错误"
-	UploadVideoSuccess  = "上传视频成功"
-	GetTokenSuccess     = "获取上传凭证成功"
+	PublishListSuccess = "发布视频列表获取成功"
+	SearchSuccess      = "搜索成功"
+	FeedSuccess        = "视频列表获取成功"
+	NoMoreVideos       = "视频见底了"
+	FileFormatError    = "文件格式错误"
+	UploadVideoSuccess = "上传视频成功"
+	GetTokenSuccess    = "获取上传凭证成功"
 
 	// relation
 	FollowSuccese       = "关注成功"

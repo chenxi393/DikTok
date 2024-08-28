@@ -38,8 +38,8 @@ func UserInfo(c *fiber.Ctx) error {
 		}
 		loginUserID = claims.UserID
 	}
-	res, err := rpc.UserClient.Info(c.UserContext(), &pbuser.InfoRequest{
-		UserID:      req.UserID,
+	res, err := rpc.UserClient.List(c.UserContext(), &pbuser.ListReq{
+		UserID:      []int64{req.UserID},
 		LoginUserID: loginUserID,
 	})
 	if err != nil {

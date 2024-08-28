@@ -33,7 +33,8 @@ func main() {
 	commentRedis = cache.InitRedis(config.System.Redis.CommentDB)
 	videoRedis = cache.InitRedis(config.System.Redis.VideoDB)
 	etcd.InitETCD()
-	defer rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	defer ConnClose()
 	InitServer(etcd.GetEtcdClient())
 }
 

@@ -13,7 +13,8 @@ func main() {
 	// shutdown := otel.Init("http://newclip.cn", constant.ServiceName+".gateway")
 	// defer shutdown()
 	etcd.InitETCD()
-	defer rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	defer ConnClose()
 	// 开启HTTP框架
 	startFiber()
 }

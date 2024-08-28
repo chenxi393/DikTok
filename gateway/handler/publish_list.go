@@ -38,7 +38,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	}
 	return c.JSON(&response.VideoListResponse{
 		StatusCode: constant.Success,
-		StatusMsg:  constant.ListSuccess,
+		StatusMsg:  constant.PublishListSuccess,
 		VideoList:  data,
 	})
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	pbuser "diktok/grpc/user"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/service/video/storage"
@@ -23,12 +22,11 @@ func Search(ctx context.Context, req *pbvideo.SearchRequest) (*pbvideo.ListRespo
 		zap.L().Error(err.Error())
 		return nil, err
 	}
-	// 先用map 减少rpc查询次数
-	userMap := make(map[int64]*pbuser.UserInfo)
-	for i := range videos {
-		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
+	videoInfo, err := BuildVideosInfo(ctx, nil, buildMGetVideosResp(videos), req.GetLoginUserId())
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
-	videoInfo := getVideoInfo(ctx, videos, userMap, req.LoginUserId)
 	return &pbvideo.ListResponse{
 		StatusCode: constant.Success,
 		StatusMsg:  constant.SearchSuccess,

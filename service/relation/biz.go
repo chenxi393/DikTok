@@ -8,6 +8,7 @@ import (
 	pbrelation "diktok/grpc/relation"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"go.uber.org/zap"
 )
@@ -142,24 +143,18 @@ func (s *RelationService) FollowList(ctx context.Context, req *pbrelation.ListRe
 			zap.L().Error(err.Error())
 		}
 	}
-	usersInfo := make([]*pbuser.UserInfo, len(following))
-	wg := &sync.WaitGroup{}
-	wg.Add(len(following))
-	for i := range following {
-		go func(i int) {
-			defer wg.Done()
-			u, err := userClient.Info(ctx, &pbuser.InfoRequest{
-				LoginUserID: req.LoginUserID,
-				UserID:      following[i],
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				return
-			}
-			usersInfo[i] = u.GetUser()
-		}(i)
+	usersInfo := make([]*pbuser.UserInfo, 0, len(following))
+	userMap, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		LoginUserID: req.LoginUserID,
+		UserID:      following,
+	})
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
-	wg.Wait()
+	for _, u := range following {
+		usersInfo = append(usersInfo, userMap.User[u])
+	}
 	return &pbrelation.ListResponse{
 		StatusCode: constant.Success,
 		StatusMsg:  constant.FollowListSuccess,
@@ -189,23 +184,18 @@ func (s *RelationService) FollowerList(ctx context.Context, req *pbrelation.List
 			}
 		}()
 	}
-	usersInfo := make([]*pbuser.UserInfo, len(follower))
-	wg := &sync.WaitGroup{}
-	wg.Add(len(follower))
-	for i := range follower {
-		go func(i int) {
-			defer wg.Done()
-			u, err := userClient.Info(ctx, &pbuser.InfoRequest{
-				LoginUserID: req.LoginUserID,
-				UserID:      follower[i],
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-			}
-			usersInfo[i] = u.GetUser()
-		}(i)
+	usersInfo := make([]*pbuser.UserInfo, 0, len(follower))
+	userMap, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		LoginUserID: req.LoginUserID,
+		UserID:      follower,
+	})
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
-	wg.Wait()
+	for _, u := range follower {
+		usersInfo = append(usersInfo, userMap.User[u])
+	}
 	return &pbrelation.ListResponse{
 		StatusCode: constant.Success,
 		StatusMsg:  constant.FollowerListSuccess,
@@ -270,20 +260,21 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 	}
 	friends = append(friends, constant.ChatGPTID)
 	friendsInfo := make([]*pbrelation.FriendInfo, len(friends))
+	userMap, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		LoginUserID: req.LoginUserID,
+		UserID:      friends,
+	})
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
 	wg := &sync.WaitGroup{}
 	wg.Add(len(friends))
 	for i := range friends {
 		go func(i int) {
 			defer wg.Done()
-			friendInfo, err := userClient.Info(ctx, &pbuser.InfoRequest{
-				LoginUserID: req.LoginUserID,
-				UserID:      friends[i],
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				return
-			}
-			msg, err := messageClient.GetFirstMessage(ctx, &pbmessage.GetFirstRequest{
+			friendInfo := userMap.User[friends[i]]
+			msg, err := rpc.MessageClient.GetFirstMessage(ctx, &pbmessage.GetFirstRequest{
 				UserID:   req.UserID,
 				ToUserID: friends[i],
 			})
@@ -292,17 +283,17 @@ func (s *RelationService) FriendList(ctx context.Context, req *pbrelation.ListRe
 				return
 			}
 			friend := &pbrelation.FriendInfo{
-				Id:              friendInfo.User.Id,
-				Name:            friendInfo.User.Name,
-				Avatar:          friendInfo.User.Avatar,
-				BackgroundImage: friendInfo.User.BackgroundImage,
-				Signature:       friendInfo.User.Signature,
-				IsFollow:        friendInfo.User.IsFollow,
-				FollowCount:     friendInfo.User.FollowCount,
-				FollowerCount:   friendInfo.User.FollowerCount,
-				TotalFavorited:  friendInfo.User.TotalFavorited,
-				WorkCount:       friendInfo.User.WorkCount,
-				FavoriteCount:   friendInfo.User.FavoriteCount,
+				Id:              friendInfo.Id,
+				Name:            friendInfo.Name,
+				Avatar:          friendInfo.Avatar,
+				BackgroundImage: friendInfo.BackgroundImage,
+				Signature:       friendInfo.Signature,
+				IsFollow:        friendInfo.IsFollow,
+				FollowCount:     friendInfo.FollowCount,
+				FollowerCount:   friendInfo.FollowerCount,
+				TotalFavorited:  friendInfo.TotalFavorited,
+				WorkCount:       friendInfo.WorkCount,
+				FavoriteCount:   friendInfo.FavoriteCount,
 				Message:         msg.Message, // 最近的一条消息 客户端测试了是有的
 				MsgType:         msg.MsgType,
 			}

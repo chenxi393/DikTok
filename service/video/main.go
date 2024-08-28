@@ -32,7 +32,8 @@ func main() {
 	// 初始化ETCD 作为服务发现与注册中心
 	etcd.InitETCD()
 	// 初始化rpc 客户端
-	defer rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	defer ConnClose()
 	// 初始化rpc 服务端
 	InitServer(etcd.GetEtcdClient())
 }

@@ -7,7 +7,6 @@ option go_package = "diktok/grpc/user;pbuser";
 service User {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Login (LoginRequest) returns (LoginResponse) {}
-    rpc Info (InfoRequest) returns (InfoResponse) {}
     rpc List (ListReq) returns (ListResp) {}
     rpc Update (UpdateRequest) returns (UpdateResponse){}
 }
@@ -79,6 +78,8 @@ message UserInfo {
 // list 和 Mget 语义不一致
 message ListReq {
     repeated int64 userID = 1;
+    int64 loginUserID = 2;
+
 }
 
 message ListResp {

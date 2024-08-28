@@ -2,14 +2,10 @@ package logic
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"diktok/config"
-	pbfavorite "diktok/grpc/favorite"
-	pbuser "diktok/grpc/user"
 	pbvideo "diktok/grpc/video"
-	"diktok/package/rpc"
 	stroage "diktok/service/video/storage"
 	"diktok/storage/database"
 	"diktok/storage/database/model"
@@ -69,70 +65,4 @@ func buildMGetVideosResp(videos []*model.Video) []*pbvideo.VideoMetaData {
 		})
 	}
 	return res
-}
-
-// TODO 与 user 点赞 解耦
-// RPC调用拿userMap 里的用户信息 拿video里的详细信息 返回
-// 然后 对这些视频判断 loginUserID 有没有点赞
-// 视频里的作者信息应当都是service.user_id（还需判断 登录用户有没有关注）
-func getVideoInfo(ctx context.Context, videos []*model.Video, userMap map[int64]*pbuser.UserInfo, loginUserID int64) []*pbvideo.VideoData {
-	// rpc调用 去拿个人信息
-	wg := &sync.WaitGroup{}
-	wg.Add(len(userMap))
-	for userID := range userMap {
-		go func(id int64) {
-			defer wg.Done()
-			// TODO 这里是不是也应该 rpc批量拿出来 而不是一个个去拿
-			user, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
-				LoginUserID: loginUserID,
-				UserID:      id,
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				return
-			}
-			if user.StatusCode != 0 {
-				zap.L().Error("rpc 调用错误")
-			}
-			*userMap[id] = *user.GetUser()
-		}(userID)
-	}
-	videoInfos := make([]*pbvideo.VideoData, 0, len(videos))
-	for i := range videos {
-		videoInfos = append(videoInfos, videoDataInfo(videos[i], userMap[videos[i].AuthorID]))
-	}
-	// 判断请求用户是否喜欢
-	if loginUserID != 0 {
-		wg.Add(len(videoInfos))
-		for i := range videoInfos {
-			go func(i int) {
-				defer wg.Done()
-				result, err := rpc.FavoriteClient.IsFavorite(ctx, &pbfavorite.IsFavoriteRequest{
-					UserID:  loginUserID,
-					VideoID: videoInfos[i].Id,
-				})
-				if err != nil {
-					zap.L().Error(err.Error())
-					return
-				}
-				videoInfos[i].IsFavorite = result.IsFavorite
-			}(i)
-		}
-	}
-	wg.Wait()
-	return videoInfos
-}
-
-func videoDataInfo(v *model.Video, u *pbuser.UserInfo) *pbvideo.VideoData {
-	return &pbvideo.VideoData{
-		Author:        u,
-		Id:            v.ID,
-		PlayUrl:       config.System.Qiniu.OssDomain + "/" + v.PlayURL,
-		CoverUrl:      config.System.Qiniu.OssDomain + "/" + v.CoverURL,
-		FavoriteCount: v.FavoriteCount,
-		CommentCount:  v.CommentCount,
-		Title:         v.Title,
-		Topic:         v.Topic,
-		PublishTime:   v.PublishTime.Format("2006-01-02 15:04"),
-	}
 }

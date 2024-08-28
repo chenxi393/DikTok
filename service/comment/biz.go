@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"sync"
 
 	pbcomment "diktok/grpc/comment"
 	pbuser "diktok/grpc/user"
@@ -42,8 +41,8 @@ func (s *CommentService) Add(ctx context.Context, req *pbcomment.AddRequest) (*p
 		return nil, err
 	}
 	// 查找评论的用户信息
-	userResponse, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
-		UserID:      req.UserID,
+	userResponse, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		UserID:      []int64{req.UserID},
 		LoginUserID: req.UserID,
 	})
 	if err != nil {
@@ -51,7 +50,7 @@ func (s *CommentService) Add(ctx context.Context, req *pbcomment.AddRequest) (*p
 	}
 	commentResponse := &pbcomment.CommentData{
 		Id:         msg.ID,
-		User:       userResponse.GetUser(),
+		User:       userResponse.GetUser()[req.UserID],
 		Content:    msg.Content,
 		CreateDate: msg.CreatedTime.Format("2006-01-02 15:04"),
 	}
@@ -71,8 +70,8 @@ func (s *CommentService) Delete(ctx context.Context, req *pbcomment.DeleteReques
 		return nil, err
 	}
 	// 查找评论的用户信息
-	userResponse, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
-		UserID:      req.UserID,
+	userResponse, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		UserID:      []int64{req.UserID},
 		LoginUserID: req.UserID,
 	})
 	if err != nil {
@@ -80,7 +79,7 @@ func (s *CommentService) Delete(ctx context.Context, req *pbcomment.DeleteReques
 	}
 	commentResponse := &pbcomment.CommentData{
 		Id:      msg.ID,
-		User:    userResponse.GetUser(),
+		User:    userResponse.GetUser()[req.UserID],
 		Content: msg.Content,
 		// 这个评论的时间客户端哈好像可以到毫秒2006-01-02 15:04:05.999
 		// 但是感觉每必要 日期就够了
@@ -175,47 +174,29 @@ func (s *CommentService) List(ctx context.Context, req *pbcomment.ListRequest) (
 		comments = comments[:len(comments)-1]
 	}
 	// 先用map 减少rpc查询次数
-	userMap := make(map[int64]*pbuser.UserInfo)
-	for i := range comments {
-		userMap[comments[i].UserID] = &pbuser.UserInfo{}
+	userIDs := make([]int64, 0)
+	for _, c := range comments {
+		userIDs = append(userIDs, c.UserID)
 	}
-	wg := &sync.WaitGroup{}
-	wg.Add(len(userMap))
-	for userID := range userMap {
-		go func(id int64) {
-			defer wg.Done()
-			// TODO 这里是不是也应该 rpc批量拿出来 而不是一个个去拿
-			user, err := rpc.UserClient.Info(ctx, &pbuser.InfoRequest{
-				LoginUserID: req.UserID,
-				UserID:      id,
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				// 没有数据 return也是可以接收的 可以重试两次 （封装一下）
-				return // 这里 不return 会panic 下面 user
-			}
-			if user.StatusCode != 0 {
-				zap.L().Error("rpc 调用错误")
-			}
-			// 这里map会不会有并发问题啊
-			// TODO 去测试一下
-			// 这里如果不用 指针写入的化 会导致下面 videoInfo
-			// append 地址被改变 要不就上锁 所有rpc请求之后 再下一个
-			// 但是这里之间 直接使用* 似乎也不太好 报了warning
-			// 说内部有锁  不能复制 TODO
-			*userMap[id] = *user.GetUser()
-		}(userID)
+
+	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		UserID:      userIDs,
+		LoginUserID: req.UserID,
+	})
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
 	commentResponse := make([]*pbcomment.CommentData, len(comments))
 	for i := range comments {
 		commentResponse[i] = &pbcomment.CommentData{
 			Id:         comments[i].ID,
-			User:       userMap[comments[i].UserID],
+			User:       userResp.User[comments[i].UserID],
 			Content:    comments[i].Content,
 			CreateDate: comments[i].CreatedTime.Format("2006-01-02 15:04"),
 		}
 	}
-	wg.Wait()
+
 	total, err := GetCommentsNumByVideoIDFromMaster(req.VideoID)
 	if err != nil {
 		zap.L().Error(err.Error())

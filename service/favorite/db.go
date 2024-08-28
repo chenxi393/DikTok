@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"errors"
 
 	"diktok/package/constant"
 	"diktok/storage/database"
 	"diktok/storage/database/model"
+	"diktok/storage/database/query"
 
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
@@ -76,11 +78,25 @@ func SelectFavoriteVideoByUserID(userID int64) ([]int64, error) {
 	return res, err
 }
 
-func GetFavoriteNumByVideoIDFromMaster(videoID int64) (int64, error) {
-	var cnt int64
-	err := database.DB.Clauses(dbresolver.Write).Model(&model.Favorite{}).Where("video_id = ?", videoID).Count(&cnt).Error
+type temp struct {
+	VideoID int64 `gorm:"column:video_id"`
+	Count   int64 `gorm:"column:c"`
+}
+
+func CountmByVideoIDs(ctx context.Context, videoIDs []int64) (map[int64]int64, error) {
+	res := make([]*temp, 0)
+	countMap := make(map[int64]int64, 0)
+	so := query.Use(database.DB.Clauses(dbresolver.Read)).Favorite
+	err := so.WithContext(ctx).Select(so.VideoID, so.ID.Count()).Where(so.VideoID.In(videoIDs...)).Group(so.VideoID).Scan(&res)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return cnt, nil
+	for _, v := range res {
+		countMap[v.VideoID] = v.Count
+	}
+	return countMap, nil
+	//	SELECT video_id, count(*)
+	// FROM `favorite`
+	// WHERE video_id IN (169, 165, 168, 164, 167, 163)
+	// GROUP BY video_id;
 }

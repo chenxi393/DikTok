@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	pbuser "diktok/grpc/user"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/service/video/storage"
@@ -44,16 +43,15 @@ func Feed(ctx context.Context, req *pbvideo.FeedRequest) (*pbvideo.FeedResponse,
 			NextTime:   nextTime.UnixMilli(),
 		}, nil
 	}
-	// 先用map 减少rpc查询次数
-	userMap := make(map[int64]*pbuser.UserInfo)
-	for i := range videos {
-		userMap[videos[i].AuthorID] = &pbuser.UserInfo{}
+	videoInfo, err := BuildVideosInfo(ctx, nil, buildMGetVideosResp(videos), req.GetLoginUserId())
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
-	videoInfos := getVideoInfo(ctx, videos, userMap, req.LoginUserId)
 	return &pbvideo.FeedResponse{
 		StatusCode: constant.Success,
 		StatusMsg:  constant.FeedSuccess,
-		VideoList:  videoInfos,
+		VideoList:  videoInfo,
 		NextTime:   nextTime.UnixMilli(),
 	}, nil
 }

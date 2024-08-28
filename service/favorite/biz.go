@@ -94,16 +94,12 @@ func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.IsFavo
 }
 
 func (s *FavoriteService) Count(ctx context.Context, req *pbfavorite.CountReq) (*pbfavorite.CountResp, error) {
-	countMap := make(map[int64]int64, len(req.GetVideoID()))
-	for _, v := range req.GetVideoID() {
-		total, err := GetFavoriteNumByVideoIDFromMaster(v)
-		if err != nil {
-			zap.L().Error(err.Error())
-			return nil, err
-		}
-		countMap[v] = total
+	total, err := CountmByVideoIDs(ctx, req.GetVideoID())
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
 	}
 	return &pbfavorite.CountResp{
-		Total: countMap,
+		Total: total,
 	}, nil
 }
