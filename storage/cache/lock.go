@@ -9,7 +9,7 @@ import (
 
 // 使用Redis的SetNX 实现分布式锁
 // 尝试获取缓存前先加锁 加锁失败 等待10ms再去加锁
-// 保证同一时间只有一个协程查数据库
+// 保证同一时间只有一个协程查数据库（不需要严格保证）
 // 查完数据库后更新缓存然后释放锁
 // 后续请求都会走缓存
 
@@ -21,7 +21,7 @@ else
 end`
 
 func GetLock(key, value string, exp time.Duration, client *redis.Client) (bool, error) {
-	ok, err := client.SetNX(key, value, time.Millisecond*exp).Result()
+	ok, err := client.SetNX(key, value, exp).Result()
 	if err != nil {
 		return false, err
 	}

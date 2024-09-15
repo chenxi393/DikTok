@@ -1,16 +1,18 @@
 module diktok
 
-go 1.22
+go 1.22.0
 
 toolchain go1.22.3
 
 require (
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/bytedance/sonic v1.11.9
+	github.com/disintegration/imaging v1.6.2
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/sourcegraph/conc v0.3.0
+	github.com/u2takey/ffmpeg-go v0.5.0
 	github.com/uptrace/opentelemetry-go-extra/otelzap v0.2.3
 	go.opentelemetry.io/otel v1.28.0
 	go.opentelemetry.io/otel/sdk v1.28.0
@@ -76,12 +78,12 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/term v0.21.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
+	golang.org/x/mod v0.21.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/term v0.24.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/tools v0.25.0 // indirect
 	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
@@ -96,7 +98,6 @@ require (
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/bits-and-blooms/bloom/v3 v3.6.0
-	github.com/disintegration/imaging v1.6.2
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gofiber/contrib/websocket v1.2.2
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -111,7 +112,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sony/sonyflake v1.2.0
 	github.com/spf13/viper v1.16.0
-	github.com/u2takey/ffmpeg-go v0.5.0
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.55.0
 	github.com/valyala/tcplisten v1.0.0 // indirect
@@ -124,8 +124,8 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.24.0
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/crypto v0.27.0
+	golang.org/x/sys v0.25.0 // indirect
 	gorm.io/driver/mysql v1.5.6
 	gorm.io/gorm v1.25.9
 	gorm.io/plugin/dbresolver v1.5.1
