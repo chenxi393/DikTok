@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"errors"
-
-	"diktok/gateway/response"
 	pbrelation "diktok/grpc/relation"
 	"diktok/package/constant"
 
@@ -25,12 +22,7 @@ func RelationAction(c *fiber.Ctx) error {
 	var req followRequest
 	err := c.QueryParser(&req)
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	var res *pbrelation.FollowResponse
@@ -45,17 +37,10 @@ func RelationAction(c *fiber.Ctx) error {
 			ToUserID: req.ToUserID,
 		})
 	} else {
-		err = errors.New(constant.BadParaRequest)
+		err = constant.InvalidParams
 	}
 	if err != nil {
-		// 这里由于rpc会传递具体的错误信息
-		// 可以考虑不用
-		res := &response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	c.Status(fiber.StatusOK)
 	return c.JSON(res)

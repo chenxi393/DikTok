@@ -12,7 +12,9 @@ import (
 	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 )
+
 var CommentRedis, VideoRedis *redis.Client
+
 // 评论增加 会影响视频的评论数 和评论表 需要lua脚本保证原子性 （目前采取删缓存）
 // 评论列表zset吧 按照评论时间排序（可以考虑时间加赞数加权排序）
 func CommentAdd(c *model.Comment) error {

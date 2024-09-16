@@ -21,7 +21,7 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.BadParaRequest, nil))
+		return c.JSON(constant.InvalidParams)
 	}
 	loginUserID := c.Locals(constant.UserID).(int64)
 	videoResp, err := rpc.VideoClient.MGet(c.UserContext(), &pbvideo.MGetReq{
@@ -29,12 +29,12 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.InternalException, nil))
+		return c.JSON(constant.ServerInternal)
 	}
 	data, err := BuildVideosInfo(c.Context(), nil, videoResp.VideoList, loginUserID)
 	if err != nil {
 		zap.L().Error(err.Error())
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.InternalException, nil))
+		return c.JSON(constant.ServerInternal)
 	}
 	return c.JSON(&response.VideoListResponse{
 		StatusCode: constant.Success,

@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"errors"
-
-	"diktok/gateway/response"
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
 
@@ -31,12 +28,7 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	var resp *pbfavorite.LikeResponse
@@ -51,16 +43,10 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 			VideoID: req.VideoID,
 		})
 	} else {
-		err = errors.New(constant.BadParaRequest)
+		err = constant.InvalidParams
 	}
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	c.Status(fiber.StatusOK)
 	return c.JSON(resp)
 }

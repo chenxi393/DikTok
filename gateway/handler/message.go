@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 
-	"diktok/gateway/response"
 	pbmessage "diktok/grpc/message"
 	"diktok/package/constant"
 
@@ -40,20 +39,11 @@ func MessageAction(c *fiber.Ctx) error {
 	var req sendRequest
 	err := c.QueryParser(&req)
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		zap.L().Error(err.Error())
+		return c.JSON(constant.InvalidParams)
 	}
 	if req.ActionType != constant.DoAction {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	resp, err := MessageClinet.Send(c.UserContext(), &pbmessage.SendRequest{
@@ -62,14 +52,8 @@ func MessageAction(c *fiber.Ctx) error {
 		Content:  req.Content,
 	})
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	c.Status(fiber.StatusOK)
 	return c.JSON(resp)
 }
 
@@ -78,12 +62,8 @@ func MessageChat(c *fiber.Ctx) error {
 	var req messageListRequest
 	err := c.QueryParser(&req)
 	if err != nil {
-		res := response.MessageResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		zap.L().Error(err.Error())
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	resp, err := MessageClinet.List(c.UserContext(), &pbmessage.ListRequest{
@@ -92,12 +72,7 @@ func MessageChat(c *fiber.Ctx) error {
 		PreMsgTime: req.Pre_msg_time,
 	})
 	if err != nil {
-		res := response.MessageResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	c.Status(fiber.StatusOK)
 	return c.JSON(resp)
@@ -127,10 +102,7 @@ func MessageWebsocket() func(*websocket.Conn) {
 			var msgJson RequestMsg
 			err := json.Unmarshal(msg, &msgJson)
 			if err != nil {
-				err = c.WriteJSON(&response.CommonResponse{
-					StatusCode: -1,
-					StatusMsg:  constant.BadParaRequest,
-				})
+				err = c.WriteJSON(constant.InvalidParams)
 				if err != nil {
 					zap.L().Sugar().Error("write:", err)
 					break
@@ -153,10 +125,7 @@ func MessageWebsocket() func(*websocket.Conn) {
 				// 写入数据库 发送给对应的在线好友
 				// 不在线怎么办 ？？
 			} else {
-				err = c.WriteJSON(&response.CommonResponse{
-					StatusCode: -1,
-					StatusMsg:  constant.BadParaRequest,
-				})
+				err = c.WriteJSON(constant.InvalidParams)
 				if err != nil {
 					zap.L().Sugar().Error("write:", err)
 					break
@@ -178,10 +147,7 @@ func SSEHandle(c *fiber.Ctx) error {
 		var msgJson RequestMsg
 		err := c.BodyParser(&msgJson)
 		if err != nil {
-			err = c.JSON(&response.CommonResponse{
-				StatusCode: -1,
-				StatusMsg:  constant.BadParaRequest,
-			})
+			err = c.JSON(constant.InvalidParams)
 			if err != nil {
 				zap.L().Sugar().Error(err.Error())
 			}

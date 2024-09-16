@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"diktok/gateway/middleware"
-	"diktok/gateway/response"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -29,22 +28,14 @@ func PublishAction(c *fiber.Ctx) error {
 	err := c.BodyParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	if userID == 0 {
 		userClaim, err := middleware.ParseToken(req.Token)
 		if err != nil {
 			zap.L().Error(err.Error())
-			res := response.CommonResponse{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			return c.JSON(res)
+			return c.JSON(constant.InvalidToken)
 		}
 		userID = userClaim.UserID
 	}
@@ -52,41 +43,24 @@ func PublishAction(c *fiber.Ctx) error {
 	fileHeader, err := c.FormFile("data")
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.FileFormatError,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.FileUploadFailed)
 	}
 	// 检查文件后缀是不是mp4 大小在上传的时候会限制30MB
 	if !strings.HasSuffix(fileHeader.Filename, constant.MP4Suffix) {
-		zap.L().Error(constant.FileFormatError)
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.FileFormatError,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.FileIsNotVideo)
 	}
 	zap.L().Info("PublishAction Filename:" + fileHeader.Filename)
 	file, err := fileHeader.Open()
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.FileFormatError,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.FileUploadFailed)
 	}
 	defer file.Close()
 	// 将文件转化为字节流
 	buf := bytes.NewBuffer(nil)
 	if _, err := io.Copy(buf, file); err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.FileFormatError,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.FileUploadFailed)
 	}
 	res, err := rpc.VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
 		Title:       req.Title,
@@ -96,11 +70,7 @@ func PublishAction(c *fiber.Ctx) error {
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal)
 	}
 	return c.JSON(res)
 }

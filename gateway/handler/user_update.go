@@ -61,11 +61,7 @@ func UserUpdate(c *fiber.Ctx) error {
 	case updateSignature:
 		{
 			if req.Signature == "" || len(req.Signature) > 255 {
-				res := response.CommonResponse{
-					StatusCode: constant.Failed,
-					StatusMsg:  constant.TooLongSignature,
-				}
-				return c.JSON(res)
+				return c.JSON(constant.InvalidParams.WithDetails(constant.TooLongSignature))
 			}
 			updateRes, err = rpc.UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
 				UpdateType: req.UpdateType,
@@ -78,31 +74,19 @@ func UserUpdate(c *fiber.Ctx) error {
 			fileHeader, err = c.FormFile("data")
 			if err != nil {
 				otelzap.L().Error(err.Error())
-				res := response.CommonResponse{
-					StatusCode: constant.Failed,
-					StatusMsg:  constant.FileFormatError,
-				}
-				return c.JSON(res)
+				return c.JSON(constant.FileUploadFailed)
 			}
 			otelzap.L().Ctx(c.UserContext()).Info("[UserUpdate] Filename:" + fileHeader.Filename)
 			file, err = fileHeader.Open()
 			if err != nil {
 				otelzap.L().Error(err.Error())
-				res := response.CommonResponse{
-					StatusCode: constant.Failed,
-					StatusMsg:  constant.FileFormatError,
-				}
-				return c.JSON(res)
+				return c.JSON(constant.FileUploadFailed)
 			}
 			defer file.Close()
 			buf := bytes.NewBuffer(nil)
 			if _, err = io.Copy(buf, file); err != nil {
 				otelzap.L().Error(err.Error())
-				res := response.CommonResponse{
-					StatusCode: constant.Failed,
-					StatusMsg:  constant.FileFormatError,
-				}
-				return c.JSON(res)
+				return c.JSON(constant.FileUploadFailed)
 			}
 			updateRes, err = rpc.UserClient.Update(c.UserContext(), &pbuser.UpdateRequest{
 				UserID:     userID,
@@ -113,11 +97,7 @@ func UserUpdate(c *fiber.Ctx) error {
 	}
 	if err != nil {
 		otelzap.L().Ctx(c.UserContext()).Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal)
 	}
 	return c.JSON(updateRes)
 }

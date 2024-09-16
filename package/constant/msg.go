@@ -2,7 +2,7 @@ package constant
 
 // 消息
 const (
-	// 状态码 暂时旧两个 太多目前不好和前端对齐
+	// 状态码 TODO 要去除依赖
 	Success = 0
 	Failed  = -1
 
@@ -12,8 +12,6 @@ const (
 	BloomFilterRejected = "布隆过滤器拦截"
 	DatabaseError       = "数据库操作失败"
 	BadParaRequest      = "参数错误"
-	WrongToken          = "token不匹配，请重新登录"
-	InternalException   = "服务器内部错误，请重试"
 	LoadSuccess         = "加载成功"
 
 	// 用户
@@ -34,7 +32,6 @@ const (
 	SearchSuccess      = "搜索成功"
 	FeedSuccess        = "视频列表获取成功"
 	NoMoreVideos       = "视频见底了"
-	FileFormatError    = "文件格式错误"
 	UploadVideoSuccess = "上传视频成功"
 	GetTokenSuccess    = "获取上传凭证成功"
 

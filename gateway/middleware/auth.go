@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"diktok/config"
-	"diktok/gateway/response"
 	"diktok/package/constant"
 
 	"github.com/gofiber/fiber/v2"
@@ -58,19 +57,11 @@ func Authentication(c *fiber.Ctx) error {
 	token := getToken(c)
 	if token == "" {
 		zap.L().Info("token为空")
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.WrongToken,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.NotLogin)
 	}
 	claims, err := ParseToken(token)
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.WrongToken,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.InvalidToken)
 	}
 	refreshToken(c, claims)
 	c.Locals(constant.UserID, claims.UserID)
@@ -102,11 +93,7 @@ func AuthenticationOption(c *fiber.Ctx) error {
 	if token := getToken(c); token != "" {
 		claims, err := ParseToken(token)
 		if err != nil {
-			res := response.CommonResponse{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			return c.JSON(res)
+			return c.JSON(constant.InvalidToken)
 		}
 		refreshToken(c, claims)
 		c.Locals(constant.UserID, claims.UserID)

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"diktok/gateway/response"
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
 
@@ -14,18 +13,18 @@ func FavoriteList(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.BadParaRequest, nil))
+		return c.JSON(constant.InvalidParams)
 	}
 	loginUserID := c.Locals(constant.UserID).(int64)
 	Favoriteresp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
 		UserID: req.UserID,
 	})
 	if err != nil {
-		return c.JSON(response.BuildStdResp(constant.Failed, err.Error(), nil))
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	resp, err := BuildVideosInfo(c.Context(), Favoriteresp.GetVideoList(), nil, loginUserID)
 	if err != nil {
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.InternalException, nil))
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	return c.JSON(resp)
 }

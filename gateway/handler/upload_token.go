@@ -25,15 +25,11 @@ func UploadToken(c *fiber.Ctx) error {
 	case background:
 		prefix = "B-"
 	default:
-		return c.JSON(response.BuildStdResp(constant.Failed, constant.BadParaRequest, nil))
+		return c.JSON(constant.InvalidParams)
 	}
 	key, err := util.GetUUid()
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal)
 	}
 	key = prefix + key
 	token := util.GetUploadToken(key)

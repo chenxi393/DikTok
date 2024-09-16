@@ -2,7 +2,6 @@ package handler
 
 import (
 	"diktok/gateway/middleware"
-	"diktok/gateway/response"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -16,12 +15,7 @@ func UserInfo(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.UserRegisterOrLogin{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	var loginUserID int64
 	if req.Token == "" {
@@ -29,12 +23,7 @@ func UserInfo(c *fiber.Ctx) error {
 	} else {
 		claims, err := middleware.ParseToken(req.Token)
 		if err != nil {
-			res := response.UserRegisterOrLogin{
-				StatusCode: constant.Failed,
-				StatusMsg:  constant.WrongToken,
-			}
-			c.Status(fiber.StatusOK)
-			return c.JSON(res)
+			return c.JSON(constant.InvalidToken)
 		}
 		loginUserID = claims.UserID
 	}
@@ -43,13 +32,7 @@ func UserInfo(c *fiber.Ctx) error {
 		LoginUserID: loginUserID,
 	})
 	if err != nil {
-		res := response.UserRegisterOrLogin{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	c.Status(fiber.StatusOK)
 	return c.JSON(res)
 }

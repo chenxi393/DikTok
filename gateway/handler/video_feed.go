@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"diktok/gateway/response"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -23,12 +22,7 @@ func Feed(c *fiber.Ctx) error {
 	err := c.QueryParser(&req)
 	if err != nil {
 		zap.L().Error(err.Error())
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  constant.BadParaRequest,
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
 	ctx, cancel := context.WithTimeout(c.UserContext(), time.Second)
@@ -39,13 +33,7 @@ func Feed(c *fiber.Ctx) error {
 		LoginUserId: userID,
 	})
 	if err != nil {
-		res := response.CommonResponse{
-			StatusCode: constant.Failed,
-			StatusMsg:  err.Error(),
-		}
-		c.Status(fiber.StatusOK)
-		return c.JSON(res)
+		return c.JSON(constant.ServerInternal)
 	}
-	c.Status(fiber.StatusOK)
 	return c.JSON(res)
 }
