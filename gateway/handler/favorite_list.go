@@ -3,6 +3,7 @@ package handler
 import (
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -16,7 +17,7 @@ func FavoriteList(c *fiber.Ctx) error {
 		return c.JSON(constant.InvalidParams)
 	}
 	loginUserID := c.Locals(constant.UserID).(int64)
-	Favoriteresp, err := FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
+	Favoriteresp, err := rpc.FavoriteClient.List(c.UserContext(), &pbfavorite.ListRequest{
 		UserID: req.UserID,
 	})
 	if err != nil {

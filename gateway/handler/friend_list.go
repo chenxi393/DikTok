@@ -4,6 +4,7 @@ import (
 	"diktok/gateway/response"
 	pbrelation "diktok/grpc/relation"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -35,7 +36,7 @@ func FriendList(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	resp, err := RelationClient.FriendList(c.UserContext(), &pbrelation.ListRequest{
+	resp, err := rpc.RelationClient.FriendList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})

@@ -3,12 +3,9 @@ package handler
 import (
 	pbrelation "diktok/grpc/relation"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
-)
-
-var (
-	RelationClient pbrelation.RelationClient
 )
 
 type followRequest struct {
@@ -27,12 +24,12 @@ func RelationAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(int64)
 	var res *pbrelation.FollowResponse
 	if req.ActionType == constant.DoAction {
-		res, err = RelationClient.Follow(c.UserContext(), &pbrelation.FollowRequest{
+		res, err = rpc.RelationClient.Follow(c.UserContext(), &pbrelation.FollowRequest{
 			UserID:   userID,
 			ToUserID: req.ToUserID,
 		})
 	} else if req.ActionType == constant.UndoAction {
-		res, err = RelationClient.Unfollow(c.UserContext(), &pbrelation.FollowRequest{
+		res, err = rpc.RelationClient.Unfollow(c.UserContext(), &pbrelation.FollowRequest{
 			UserID:   userID,
 			ToUserID: req.ToUserID,
 		})

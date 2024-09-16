@@ -3,13 +3,10 @@ package handler
 import (
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
-)
-
-var (
-	FavoriteClient pbfavorite.FavoriteClient
 )
 
 type likeRequest struct {
@@ -33,12 +30,12 @@ func FavoriteVideoAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(int64)
 	var resp *pbfavorite.LikeResponse
 	if req.ActionType == constant.DoAction {
-		resp, err = FavoriteClient.Like(c.UserContext(), &pbfavorite.LikeRequest{
+		resp, err = rpc.FavoriteClient.Like(c.UserContext(), &pbfavorite.LikeRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
 		})
 	} else if req.ActionType == constant.UndoAction {
-		resp, err = FavoriteClient.Unlike(c.UserContext(), &pbfavorite.LikeRequest{
+		resp, err = rpc.FavoriteClient.Unlike(c.UserContext(), &pbfavorite.LikeRequest{
 			UserID:  userID,
 			VideoID: req.VideoID,
 		})

@@ -6,13 +6,10 @@ import (
 	"diktok/gateway/response"
 	pbcomment "diktok/grpc/comment"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
-)
-
-var (
-	CommentClient pbcomment.CommentClient
 )
 
 type commentRequest struct {
@@ -45,14 +42,14 @@ func CommentAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(int64)
 	var resp *pbcomment.CommentResponse
 	if req.ActionType == constant.DoAction && req.CommentText != "" {
-		resp, err = CommentClient.Add(c.UserContext(), &pbcomment.AddRequest{
+		resp, err = rpc.CommentClient.Add(c.UserContext(), &pbcomment.AddRequest{
 			UserID:   userID,
 			VideoID:  req.VideoID,
 			Content:  req.CommentText,
 			ParentID: req.ParentID,
 		})
 	} else if req.ActionType == constant.UndoAction && req.CommentID != 0 {
-		resp, err = CommentClient.Delete(c.UserContext(), &pbcomment.DeleteRequest{
+		resp, err = rpc.CommentClient.Delete(c.UserContext(), &pbcomment.DeleteRequest{
 			VideoID:   req.VideoID,
 			CommentID: req.CommentID,
 			UserID:    userID,
@@ -85,7 +82,7 @@ func CommentList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	resp, err := CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
+	resp, err := rpc.CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		UserID:        userID,
 		VideoID:       req.VideoID,
 		LastCommentId: req.LastCommentId,

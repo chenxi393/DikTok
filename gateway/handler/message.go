@@ -9,15 +9,12 @@ import (
 
 	pbmessage "diktok/grpc/message"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/zap"
-)
-
-var (
-	MessageClinet pbmessage.MessageClient
 )
 
 type sendRequest struct {
@@ -46,7 +43,7 @@ func MessageAction(c *fiber.Ctx) error {
 		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	resp, err := MessageClinet.Send(c.UserContext(), &pbmessage.SendRequest{
+	resp, err := rpc.MessageClient.Send(c.UserContext(), &pbmessage.SendRequest{
 		UserID:   userID,
 		ToUserID: req.ToUserID,
 		Content:  req.Content,
@@ -66,7 +63,7 @@ func MessageChat(c *fiber.Ctx) error {
 		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	resp, err := MessageClinet.List(c.UserContext(), &pbmessage.ListRequest{
+	resp, err := rpc.MessageClient.List(c.UserContext(), &pbmessage.ListRequest{
 		UserID:     userID,
 		ToUserID:   req.ToUserID,
 		PreMsgTime: req.Pre_msg_time,
@@ -112,7 +109,7 @@ func MessageWebsocket() func(*websocket.Conn) {
 			zap.L().Sugar().Infof("recvJSON: %#v", msgJson)
 			if msgJson.Method == "get" {
 				// 返回聊天记录
-				res, err := MessageClinet.List(context.Background(), &pbmessage.ListRequest{
+				res, err := rpc.MessageClient.List(context.Background(), &pbmessage.ListRequest{
 					UserID:   userID,
 					ToUserID: msgJson.ToUserID,
 				})
@@ -157,7 +154,7 @@ func SSEHandle(c *fiber.Ctx) error {
 		switch msgJson.Method {
 		case "chat":
 			{
-				stream, err := MessageClinet.RequestToLLM(c.Context(), &pbmessage.RequestToLLMRequest{
+				stream, err := rpc.MessageClient.RequestToLLM(c.Context(), &pbmessage.RequestToLLMRequest{
 					UserID:  userID,
 					Content: msgJson.Content,
 				})

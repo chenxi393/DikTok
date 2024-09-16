@@ -4,6 +4,7 @@ import (
 	"diktok/gateway/response"
 	pbrelation "diktok/grpc/relation"
 	"diktok/package/constant"
+	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -26,7 +27,7 @@ func FollowList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	resp, err := RelationClient.FollowList(c.UserContext(), &pbrelation.ListRequest{
+	resp, err := rpc.RelationClient.FollowList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})
@@ -55,7 +56,7 @@ func FollowerList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	resp, err := RelationClient.FollowerList(c.UserContext(), &pbrelation.ListRequest{
+	resp, err := rpc.RelationClient.FollowerList(c.UserContext(), &pbrelation.ListRequest{
 		LoginUserID: userID,
 		UserID:      req.UserID,
 	})

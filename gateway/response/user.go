@@ -13,7 +13,7 @@ type InfoResponse struct {
 	// 状态码，0-成功，其他值-失败
 	StatusCode int `json:"status_code"`
 	// 返回状态描述
-	StatusMsg *string `json:"status_msg"`
+	StatusMsg string `json:"status_msg"`
 	// 用户信息
 	User *User `json:"user"`
 }

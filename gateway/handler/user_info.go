@@ -35,4 +35,9 @@ func UserInfo(c *fiber.Ctx) error {
 		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	return c.JSON(res)
+	// return c.JSON(response.InfoResponse{
+	// 	StatusCode: constant.Success,
+	// 	StatusMsg:  constant.LoadSuccess,
+	// 	User:       res.GetUser()[req.UserID],
+	// })
 }
