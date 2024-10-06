@@ -1,97 +1,87 @@
 package storage
 
 import (
+	"context"
 	"diktok/storage/database"
 	"diktok/storage/database/model"
+	"diktok/storage/database/query"
 
-	"gorm.io/gorm"
-	"gorm.io/plugin/dbresolver"
+	"gorm.io/gen"
+	"gorm.io/gen/field"
 )
 
-func CreateComment(com *model.Comment) error {
-	err := database.DB.Transaction(func(tx *gorm.DB) error {
-		// 先查询videoID是否存在
-		video := model.Video{ID: com.VideoID}
-		err := tx.First(&video).Error
-		if err != nil {
+// 这个主题表 后续看有没有必要 变成 评论总数表 count计数
+// User not found, create it with give conditions and Attrs
+// func FirstOrCreateSubjectByObj(ctx context.Context, objType int32, objID int64) (*model.CommentSubject, error) {
+// 	so := query.Use(database.DB.Clauses(dbresolver.Read)).CommentSubject
+// 	return so.WithContext(ctx).Attrs(field.Attrs(&model.CommentSubject{})).Where(so.ObjType.Eq(objType), so.ObjID.Eq(objID)).FirstOrCreate()
+// }
+
+func CreateCommentContent(ctx context.Context, meta *model.CommentMetum, content *model.CommentContent) error {
+	q := query.Use(database.DB)
+	return q.Transaction(func(tx *query.Query) error {
+		if err := tx.CommentContent.WithContext(ctx).Create(content); err != nil {
 			return err
 		}
-		err = tx.Model(&model.Comment{}).Create(&com).Error
-		if err != nil {
+		if err := tx.CommentMetum.WithContext(ctx).Create(meta); err != nil {
 			return err
-		}
-		// 非二级评论
-		if com.ParentID == 0 {
-			err = tx.Model(&video).Update("comment_count", video.CommentCount+1).Error
-			if err != nil {
-				return err
-			}
-			return CommentAdd(com)
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
-func DeleteComment(commentID, videoID, userID int64) (*model.Comment, error) {
-	comment := model.Comment{}
-	// delete 不会回写到comment里  Clauses(clause.Returning{}) 这个才会回写
-	err := database.DB.Transaction(func(tx *gorm.DB) error {
-		// 删除要先检查里面有没有啊
-		err := tx.Where("id = ? AND video_id = ? AND user_id = ? and status = 0", commentID, videoID, userID).First(&comment).Error
-		if err != nil || comment.ID == 0 {
-			return err
-		}
-		err = tx.Delete(&comment).Error
+func DeleteCommentContent(ctx context.Context, commentID int64) error {
+	q := query.Use(database.DB)
+	var commentsID []int64
+	return q.Transaction(func(tx *query.Query) error {
+		_, err := tx.CommentContent.WithContext(ctx).Where(tx.CommentContent.ID.Eq(commentID)).Delete()
 		if err != nil {
 			return err
 		}
-		if comment.ParentID == 0 {
-			video := model.Video{ID: videoID}
-			err = tx.Model(&video).Select("comment_count").First(&video).Error
-			if err != nil {
-				return err
-			}
-			err = tx.Model(&video).Update("comment_count", video.CommentCount-1).Error
-			if err != nil {
-				return err
-			}
-			return CommentDelete(&comment)
+		_, err = tx.CommentMetum.WithContext(ctx).Where(tx.CommentMetum.CommentID.Eq(commentID)).Delete()
+		if err != nil {
+			return err
 		}
+		// 子评论也需要都置为删除
+		err = tx.CommentMetum.WithContext(ctx).Select(q.CommentMetum.CommentID).Where(tx.CommentMetum.ParentID.Eq(commentID)).Scan(&commentsID)
+		if err != nil {
+			return err
+		}
+		if len(commentsID) <= 0 {
+			return nil
+		}
+		_, err = tx.CommentContent.WithContext(ctx).Where(tx.CommentContent.ID.In(commentsID...)).Delete()
+		if err != nil {
+			return err
+		}
+		_, err = tx.CommentMetum.WithContext(ctx).Where(tx.CommentMetum.CommentID.In(commentsID...)).Delete()
+		if err != nil {
+			return err
+		}
+		// 如果后续有计数表
+		// 需要再事务里 计数-1
 		return nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return &comment, nil
 }
 
-func GetCommentsByVideoIDRDB(videoID int64) ([]*model.Comment, error) {
-	videos := make([]*model.Comment, 0)
-	err := database.DB.Model(&model.Comment{}).Where("video_id = ? and status = 0 and parent_id = 0", videoID).Order("created_time desc").Find(&videos).Error
-	if err != nil {
-		return nil, err
-	}
-	return videos, nil
-}
-
-func GetCommentsByVideoIDFromMaster(videoID, lastCommentID int64, count int32) ([]*model.Comment, error) {
-	videos := make([]*model.Comment, 0)
-	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ? and id < ?", videoID, lastCommentID).Order("created_time desc").Limit(int(count)).Find(&videos).Error
-	if err != nil {
-		return nil, err
-	}
-	return videos, nil
-}
-
-func GetCommentsNumByVideoIDFromMaster(videoID int64) (int64, error) {
-	var cnt int64
-	err := database.DB.Clauses(dbresolver.Write).Model(&model.Comment{}).Where("video_id = ?", videoID).Count(&cnt).Error
+func CountByItemID(ctx context.Context, itemID int64, parentID int64) (int64, error) {
+	q := query.Use(database.DB)
+	cnt, err := q.CommentMetum.WithContext(ctx).Where(q.CommentMetum.ItemID.Eq(itemID), q.CommentMetum.ParentID.Eq(parentID)).Count()
 	if err != nil {
 		return 0, err
 	}
 	return cnt, nil
+}
+
+func MGetCommentsByCond(ctx context.Context, offset, limit int, conds []gen.Condition, order ...field.Expr) ([]*model.CommentMetum, error) {
+	return query.Use(database.DB).CommentMetum.WithContext(ctx).Where(conds...).Order(order...).Offset(offset).Limit(limit).Find()
+}
+
+func CountByCond(ctx context.Context, conds []gen.Condition) (int64, error) {
+	return query.Use(database.DB).CommentMetum.WithContext(ctx).Where(conds...).Count()
+}
+
+func GetContentByIDs(ctx context.Context, commentIDs []int64) ([]*model.CommentContent, error) {
+	q := query.Use(database.DB)
+	return q.CommentContent.WithContext(ctx).Where(q.CommentContent.ID.In(commentIDs...)).Find()
 }

@@ -1,60 +1,70 @@
 syntax = "proto3";
 package comment;
-import "idl/user.proto";
+import "idl/base.proto";
 // 指定生成的Go代码在你项目中的路径 以及pb的包名
 option go_package = "diktok/grpc/comment;pbcomment";
 
 service Comment {
-    rpc Add (AddRequest) returns (CommentResponse) {}
-    rpc Delete (DeleteRequest) returns (CommentResponse) {}
+    rpc Add (AddRequest) returns (base.BaseResp) {}
+    rpc Delete (DeleteRequest) returns (base.BaseResp) {}
+    // 是否还可以拆分 一个获取评论ID 一个获取评论详情信息 
     rpc List (ListRequest) returns (ListResponse) {}
     rpc Count (CountReq) returns (CountResp) {}
 }
 
 message AddRequest {
-    int64 VideoID = 1;
+    int64 ItemID = 1; // 视频/文章 物品的id
     int64 UserID = 2;
-    int64 ParentID = 3;
-    string Content = 4;
-    int64 ToUserID  = 5; 
+    int64 ParentID =3;
+    string Content = 4; // 内容
+    string ImageURI = 5;  // 图片uri
+    int64 ToCommentID  = 6; // 回复某条评论ID
 }
 
 message DeleteRequest {
     int64 CommentID = 1;
-    int64 VideoID = 2;
-    int64 UserID = 3;
-}
-
-message CommentResponse {
-    int32 status_code = 1;
-    string status_msg = 2;
-    CommentData comment = 3;
 }
 
 message ListRequest {
-    int64 UserID = 1;
-    int64 VideoID = 2;
-    int32 Count = 3;
-    int64 last_comment_id = 4;
+    int64 ItemID = 1;
+    int64 ParentID  = 2;   //  父评论id
+    repeated int32 Status = 3; // 评论状态
+    int64 max_comment_id = 4; // 返回的评论ID一定比这小
+    // int64 UserID = 5;
+    int64 CommentID = 6;
+
+    bool NeedTotal = 9;  // 1: 需要计数 否则无计数
+    int32 SortType = 10; // 0:无序（SQL查询） 1:时间逆序 2:时间正序
+    int32 offset = 19;
+    int32 limit = 20;
 }
 
 message ListResponse {
-    int32 status_code = 1;
-    string status_msg = 2;
-    bool has_more = 3;
-    int64 total = 4;
-    repeated CommentData comment_list = 5;
+    bool has_more = 1;
+    int64 total = 2;
+    repeated CommentData comment_list = 3;
+
+    base.BaseResp meta = 10;
 }
   
 message CommentData {
-    int64 id = 1;
-    user.UserInfo user = 2;
-    string content = 3;
-    string create_date = 4;
+    int64 CommentID = 1;
+    int64 ItemID = 2; // 视频/文章 物品的id
+    int64 UserID = 3;
+    int64 ParentID = 4;     // 根评论id
+    int64 CreateAt = 5;
+    int32 Status = 6;
+
+
+    string Content = 8; // 内容
+    string ImageURI = 9;  // 图片
+    int64 ToCommentID  = 10; // 回复某条评论ID
+  
 }
 
 message CountReq{
-    repeated int64 VideoID = 1;
+    repeated int64 ItemIDs = 1;
+    map<int64,int64> ParentIDs = 2;
 }
 
 message CountResp{

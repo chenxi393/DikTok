@@ -7,6 +7,13 @@ const (
 	// 登录次数的key 默认5分钟 登录5次 + user_name
 	LoginCounterPrefix = "login_counter:"
 
+	// + item_id + parent_id
+	CommentMetaPrefix = "comment_meta:%d:"
+	// + comment_id
+	CommentContentPrefix = "comment_content:%d"
+	// + item_id + parent_id
+	CommentCountField = "comment_count:%d:%d"
+
 	// + user_id
 	UserInfoPrefix = "user_info:"
 	// + user_id
@@ -25,7 +32,6 @@ const (
 
 	// video 哈希hset 的键
 	FavoritedCountField = "favorited_count:"
-	CommentCountField   = "comment_count"
 
 	// + user_id
 	FollowIDPrefix = "follow_id:"
@@ -35,8 +41,6 @@ const (
 	FavoriteIDPrefix = "favorite_id:"
 	// + user_id
 	PublishIDPrefix = "publish_id:"
-	// + video_id
-	CommentPrefix = "comment:"
 )
 
 // 过期时间
@@ -44,9 +48,9 @@ const (
 	// redis过期时间
 	MaxLoginTime    = 5
 	MaxloginInernal = 5 * time.Minute
-	Expiration      = 400 * time.Second
+	Expiration      = 300 * time.Second
 
 	// 分布式锁
-	LockTime  = 200 // 200ms 以毫秒为单位
+	LockTime  = 200 * time.Millisecond // 200ms
 	RetryTime = 20
 )

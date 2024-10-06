@@ -1,5 +1,10 @@
 package response
 
+import (
+	"diktok/config"
+	pbuser "diktok/grpc/user"
+)
+
 type UserRegisterOrLogin struct {
 	// 状态码，0-成功，其他值-失败
 	StatusCode int `json:"status_code"`
@@ -42,4 +47,29 @@ type User struct {
 	TotalFavorited int64 `json:"total_favorited"`
 	// 作品数
 	WorkCount int64 `json:"work_count"`
+}
+
+func BuildUser(user *pbuser.UserInfo) *User {
+	return &User{
+		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
+		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
+		FavoriteCount:   user.FavoriteCount,
+		FollowCount:     user.FollowCount,
+		FollowerCount:   user.FollowerCount,
+		ID:              user.Id,
+		IsFollow:        user.IsFollow,
+		Name:            user.Name,
+		Signature:       user.Signature,
+		TotalFavorited:  user.TotalFavorited,
+		WorkCount:       user.WorkCount,
+	}
+}
+
+func BuildUserMap(userList *pbuser.ListResp) map[int64]*User {
+	mp := make(map[int64]*User, len(userList.User))
+	for _, v := range userList.User {
+		mp[v.Id] = BuildUser(v)
+
+	}
+	return mp
 }

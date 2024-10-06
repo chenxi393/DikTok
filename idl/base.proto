@@ -1,0 +1,14 @@
+syntax = "proto3";
+package base;
+option go_package = "diktok/grpc/base;pbbase";
+
+message BaseResp {
+    int32 status_code = 1; // 0 成功 业务错误
+    string status_msg = 2;
+    map<string,string> extra = 3;
+}
+
+// 暂时还没用起来 都是直接return error
+message CommonResp{
+    BaseResp meta = 10;
+}

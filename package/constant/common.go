@@ -11,7 +11,6 @@ const (
 	UserID             = "userID"
 	DebugMode          = "debug"
 	EasySecret         = "123456"
-	MP4Suffix          = ".mp4"
 	SnoyFlakeStartTime = 1698775594477
 	MaxVideoNumber     = 30
 	DefaultCover       = "default_cover.png"

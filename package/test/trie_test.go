@@ -1,4 +1,4 @@
-package sensitive_test
+package test
 
 import (
 	"fmt"

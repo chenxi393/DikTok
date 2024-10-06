@@ -10,12 +10,12 @@ package constant
 //5**	服务器错误，服务器在处理请求的过程中发生了错误
 
 // Success 根据官方文档 0 代表成功
-var SuccessRes = newError(0, "Success")
+var ServerSuccess = newError(0, "Success")
 
-//// 200 OK
-//var (
-//	Success = newError(200, "Success")
-//)
+// 200 OK
+// var (
+// 	ServerSuccess = newError(200, "Success")
+// )
 
 // 400 BAD REQUEST
 var (
@@ -42,7 +42,7 @@ var (
 
 // 404 NOT FOUND
 var (
-	UserNotFound = newError(40401, "用户不存在")
+	ItemNotFound = newError(40401, "资源不存在")
 )
 
 // 409 CONFLICT
@@ -52,9 +52,11 @@ var (
 	NotFollowed      = newError(40905, "当前未关注")
 )
 
-// 500 INTERNAL ERROR
+// 500 Server ERROR
 var (
 	ServerInternal = newError(50001, "服务器内部错误")
+
+	ServerLogic = newError(50301, "逻辑错误")
 )
 
 func newError(code int, msg string) ApiErr {

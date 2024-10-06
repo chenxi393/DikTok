@@ -17,9 +17,6 @@ type Comment struct {
 	UserID      int64     `gorm:"column:user_id;not null" json:"user_id"`
 	Content     string    `gorm:"column:content;not null" json:"content"`
 	CreatedTime time.Time `gorm:"column:created_time;not null" json:"created_time"`
-	ParentID    int64     `gorm:"column:parent_id;not null" json:"parent_id"`
-	Status      int32     `gorm:"column:status;not null" json:"status"`
-	ToUserID    int64     `gorm:"column:to_user_id;not null" json:"to_user_id"`
 }
 
 // TableName Comment's table name

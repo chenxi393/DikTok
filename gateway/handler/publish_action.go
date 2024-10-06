@@ -3,7 +3,6 @@ package handler
 import (
 	"bytes"
 	"io"
-	"strings"
 
 	"diktok/gateway/middleware"
 	pbvideo "diktok/grpc/video"
@@ -11,6 +10,7 @@ import (
 	"diktok/package/rpc"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/h2non/filetype"
 	"go.uber.org/zap"
 )
 
@@ -45,10 +45,7 @@ func PublishAction(c *fiber.Ctx) error {
 		zap.L().Error(err.Error())
 		return c.JSON(constant.FileUploadFailed)
 	}
-	// 检查文件后缀是不是mp4 大小在上传的时候会限制30MB
-	if !strings.HasSuffix(fileHeader.Filename, constant.MP4Suffix) {
-		return c.JSON(constant.FileIsNotVideo)
-	}
+
 	zap.L().Info("PublishAction Filename:" + fileHeader.Filename)
 	file, err := fileHeader.Open()
 	if err != nil {
@@ -62,6 +59,12 @@ func PublishAction(c *fiber.Ctx) error {
 		zap.L().Error(err.Error())
 		return c.JSON(constant.FileUploadFailed)
 	}
+
+	// 检查文件是不是mp4 大小在上传的时候会限制30MB
+	if !filetype.IsVideo(buf.Bytes()) {
+		return c.JSON(constant.FileIsNotVideo)
+	}
+
 	res, err := rpc.VideoClient.Publish(c.UserContext(), &pbvideo.PublishRequest{
 		Title:       req.Title,
 		Topic:       req.Topic,

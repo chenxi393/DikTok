@@ -32,9 +32,6 @@ func newComment(db *gorm.DB, opts ...gen.DOOption) comment {
 	_comment.UserID = field.NewInt64(tableName, "user_id")
 	_comment.Content = field.NewString(tableName, "content")
 	_comment.CreatedTime = field.NewTime(tableName, "created_time")
-	_comment.ParentID = field.NewInt64(tableName, "parent_id")
-	_comment.Status = field.NewInt32(tableName, "status")
-	_comment.ToUserID = field.NewInt64(tableName, "to_user_id")
 
 	_comment.fillFieldMap()
 
@@ -50,9 +47,6 @@ type comment struct {
 	UserID      field.Int64
 	Content     field.String
 	CreatedTime field.Time
-	ParentID    field.Int64
-	Status      field.Int32
-	ToUserID    field.Int64
 
 	fieldMap map[string]field.Expr
 }
@@ -74,9 +68,6 @@ func (c *comment) updateTableName(table string) *comment {
 	c.UserID = field.NewInt64(table, "user_id")
 	c.Content = field.NewString(table, "content")
 	c.CreatedTime = field.NewTime(table, "created_time")
-	c.ParentID = field.NewInt64(table, "parent_id")
-	c.Status = field.NewInt32(table, "status")
-	c.ToUserID = field.NewInt64(table, "to_user_id")
 
 	c.fillFieldMap()
 
@@ -93,15 +84,12 @@ func (c *comment) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *comment) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 8)
+	c.fieldMap = make(map[string]field.Expr, 5)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["video_id"] = c.VideoID
 	c.fieldMap["user_id"] = c.UserID
 	c.fieldMap["content"] = c.Content
 	c.fieldMap["created_time"] = c.CreatedTime
-	c.fieldMap["parent_id"] = c.ParentID
-	c.fieldMap["status"] = c.Status
-	c.fieldMap["to_user_id"] = c.ToUserID
 }
 
 func (c comment) clone(db *gorm.DB) comment {

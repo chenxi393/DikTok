@@ -8,6 +8,7 @@ package pbcomment
 
 import (
 	context "context"
+	base "diktok/grpc/base"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -22,8 +23,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CommentClient interface {
-	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*CommentResponse, error)
-	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*CommentResponse, error)
+	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*base.BaseResp, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*base.BaseResp, error)
+	// 是否还可以拆分 一个获取评论ID 一个获取评论详情信息
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Count(ctx context.Context, in *CountReq, opts ...grpc.CallOption) (*CountResp, error)
 }
@@ -36,8 +38,8 @@ func NewCommentClient(cc grpc.ClientConnInterface) CommentClient {
 	return &commentClient{cc}
 }
 
-func (c *commentClient) Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*CommentResponse, error) {
-	out := new(CommentResponse)
+func (c *commentClient) Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*base.BaseResp, error) {
+	out := new(base.BaseResp)
 	err := c.cc.Invoke(ctx, "/comment.Comment/Add", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -45,8 +47,8 @@ func (c *commentClient) Add(ctx context.Context, in *AddRequest, opts ...grpc.Ca
 	return out, nil
 }
 
-func (c *commentClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*CommentResponse, error) {
-	out := new(CommentResponse)
+func (c *commentClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*base.BaseResp, error) {
+	out := new(base.BaseResp)
 	err := c.cc.Invoke(ctx, "/comment.Comment/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -76,8 +78,9 @@ func (c *commentClient) Count(ctx context.Context, in *CountReq, opts ...grpc.Ca
 // All implementations must embed UnimplementedCommentServer
 // for forward compatibility
 type CommentServer interface {
-	Add(context.Context, *AddRequest) (*CommentResponse, error)
-	Delete(context.Context, *DeleteRequest) (*CommentResponse, error)
+	Add(context.Context, *AddRequest) (*base.BaseResp, error)
+	Delete(context.Context, *DeleteRequest) (*base.BaseResp, error)
+	// 是否还可以拆分 一个获取评论ID 一个获取评论详情信息
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Count(context.Context, *CountReq) (*CountResp, error)
 	mustEmbedUnimplementedCommentServer()
@@ -87,10 +90,10 @@ type CommentServer interface {
 type UnimplementedCommentServer struct {
 }
 
-func (UnimplementedCommentServer) Add(context.Context, *AddRequest) (*CommentResponse, error) {
+func (UnimplementedCommentServer) Add(context.Context, *AddRequest) (*base.BaseResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
 }
-func (UnimplementedCommentServer) Delete(context.Context, *DeleteRequest) (*CommentResponse, error) {
+func (UnimplementedCommentServer) Delete(context.Context, *DeleteRequest) (*base.BaseResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedCommentServer) List(context.Context, *ListRequest) (*ListResponse, error) {

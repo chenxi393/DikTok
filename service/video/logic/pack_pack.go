@@ -86,7 +86,7 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 	// 评论数量
 	wg.Go(func() {
 		resp, err := rpc.CommentClient.Count(ctx, &pbcomment.CountReq{
-			VideoID: videoIDs,
+			ItemIDs: videoIDs,
 		})
 		if err != nil {
 			zap.L().Error(err.Error())

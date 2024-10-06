@@ -16,18 +16,22 @@ import (
 )
 
 var (
-	Q        = new(Query)
-	Comment  *comment
-	Favorite *favorite
-	Follow   *follow
-	Message  *message
-	User     *user
-	Video    *video
+	Q              = new(Query)
+	Comment        *comment
+	CommentContent *commentContent
+	CommentMetum   *commentMetum
+	Favorite       *favorite
+	Follow         *follow
+	Message        *message
+	User           *user
+	Video          *video
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	Comment = &Q.Comment
+	CommentContent = &Q.CommentContent
+	CommentMetum = &Q.CommentMetum
 	Favorite = &Q.Favorite
 	Follow = &Q.Follow
 	Message = &Q.Message
@@ -37,38 +41,44 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:       db,
-		Comment:  newComment(db, opts...),
-		Favorite: newFavorite(db, opts...),
-		Follow:   newFollow(db, opts...),
-		Message:  newMessage(db, opts...),
-		User:     newUser(db, opts...),
-		Video:    newVideo(db, opts...),
+		db:             db,
+		Comment:        newComment(db, opts...),
+		CommentContent: newCommentContent(db, opts...),
+		CommentMetum:   newCommentMetum(db, opts...),
+		Favorite:       newFavorite(db, opts...),
+		Follow:         newFollow(db, opts...),
+		Message:        newMessage(db, opts...),
+		User:           newUser(db, opts...),
+		Video:          newVideo(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Comment  comment
-	Favorite favorite
-	Follow   follow
-	Message  message
-	User     user
-	Video    video
+	Comment        comment
+	CommentContent commentContent
+	CommentMetum   commentMetum
+	Favorite       favorite
+	Follow         follow
+	Message        message
+	User           user
+	Video          video
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:       db,
-		Comment:  q.Comment.clone(db),
-		Favorite: q.Favorite.clone(db),
-		Follow:   q.Follow.clone(db),
-		Message:  q.Message.clone(db),
-		User:     q.User.clone(db),
-		Video:    q.Video.clone(db),
+		db:             db,
+		Comment:        q.Comment.clone(db),
+		CommentContent: q.CommentContent.clone(db),
+		CommentMetum:   q.CommentMetum.clone(db),
+		Favorite:       q.Favorite.clone(db),
+		Follow:         q.Follow.clone(db),
+		Message:        q.Message.clone(db),
+		User:           q.User.clone(db),
+		Video:          q.Video.clone(db),
 	}
 }
 
@@ -82,33 +92,39 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:       db,
-		Comment:  q.Comment.replaceDB(db),
-		Favorite: q.Favorite.replaceDB(db),
-		Follow:   q.Follow.replaceDB(db),
-		Message:  q.Message.replaceDB(db),
-		User:     q.User.replaceDB(db),
-		Video:    q.Video.replaceDB(db),
+		db:             db,
+		Comment:        q.Comment.replaceDB(db),
+		CommentContent: q.CommentContent.replaceDB(db),
+		CommentMetum:   q.CommentMetum.replaceDB(db),
+		Favorite:       q.Favorite.replaceDB(db),
+		Follow:         q.Follow.replaceDB(db),
+		Message:        q.Message.replaceDB(db),
+		User:           q.User.replaceDB(db),
+		Video:          q.Video.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Comment  ICommentDo
-	Favorite IFavoriteDo
-	Follow   IFollowDo
-	Message  IMessageDo
-	User     IUserDo
-	Video    IVideoDo
+	Comment        ICommentDo
+	CommentContent ICommentContentDo
+	CommentMetum   ICommentMetumDo
+	Favorite       IFavoriteDo
+	Follow         IFollowDo
+	Message        IMessageDo
+	User           IUserDo
+	Video          IVideoDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Comment:  q.Comment.WithContext(ctx),
-		Favorite: q.Favorite.WithContext(ctx),
-		Follow:   q.Follow.WithContext(ctx),
-		Message:  q.Message.WithContext(ctx),
-		User:     q.User.WithContext(ctx),
-		Video:    q.Video.WithContext(ctx),
+		Comment:        q.Comment.WithContext(ctx),
+		CommentContent: q.CommentContent.WithContext(ctx),
+		CommentMetum:   q.CommentMetum.WithContext(ctx),
+		Favorite:       q.Favorite.WithContext(ctx),
+		Follow:         q.Follow.WithContext(ctx),
+		Message:        q.Message.WithContext(ctx),
+		User:           q.User.WithContext(ctx),
+		Video:          q.Video.WithContext(ctx),
 	}
 }
 

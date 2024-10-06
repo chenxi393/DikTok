@@ -5,39 +5,117 @@ import (
 	"errors"
 
 	pbcomment "diktok/grpc/comment"
-	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
-	"diktok/package/rpc"
-	"diktok/package/util"
 	"diktok/service/comment/storage"
+	"diktok/storage/database"
 	"diktok/storage/database/model"
+	"diktok/storage/database/query"
 
+	"github.com/bytedance/sonic"
 	"go.uber.org/zap"
+	"gorm.io/gen"
+	"gorm.io/gen/field"
 )
 
+// 条件处理 -> 数据加载 -> 处理打包
 func List(ctx context.Context, req *pbcomment.ListRequest) (*pbcomment.ListResponse, error) {
-	// // 使用布隆过滤器判断视频ID是否存在
-	// if !VideoIDBloomFilter.TestString(strconv.FormatUint(service.VideoID, 10)) {
-	// 	zap.L().Sugar().Error(constant.BloomFilterRejected)
-	// 	return nil, fmt.Errorf(constant.BloomFilterRejected)
-	// }
-	zap.L().Sugar().Infof("[CommentService list] req: %+v", req)
-	if req.Count < 0 || req.Count > 50 {
+	/*-------------条件处理----------------*/
+	if req.Limit < 0 || req.Limit > 50 {
 		return nil, errors.New(constant.BadParaRequest)
 	}
-	if req.Count == 0 {
-		req.Count = 50
+
+	var orderBy []field.Expr
+	var conds []gen.Condition
+	var resp = &pbcomment.ListResponse{}
+
+	so := query.Use(database.DB).CommentMetum
+	conds = append(conds, so.ItemID.Eq(req.GetItemID()))
+	conds = append(conds, so.ParentID.Eq(req.GetParentID()))
+	if len(req.Status) != 0 {
+		conds = append(conds, so.Status.In(req.GetStatus()...))
 	}
-	if req.LastCommentId == 0 {
-		id, err := util.GetSonyFlakeID()
+	if req.MaxCommentId != 0 {
+		conds = append(conds, so.CommentID.Lt(req.GetMaxCommentId()))
+	}
+	if req.SortType == 1 {
+		orderBy = append(orderBy, so.CreatedAt.Desc())
+	} else if req.SortType == 2 {
+		orderBy = append(orderBy, so.CreatedAt.Asc())
+	}
+
+	// 特殊逻辑 如果有评论id 前置条件作废
+	// 是不是 再抽出一个接口比较好
+	if req.GetCommentID() != 0 {
+		conds = []gen.Condition{so.CommentID.Eq(req.GetCommentID())}
+	}
+
+	/*-------------数据加载----------------*/
+	// 获取评论元信息
+	// 注意这里 limit+1 判断是否has_more  count如果不需要就不返回
+	// TODO 这一块 缓存看怎么搞
+	comments, err := storage.MGetCommentsByCond(ctx, int(req.Offset), int(req.Limit)+1, conds, orderBy...)
+	if err != nil {
+		zap.L().Sugar().Error(err)
+		return nil, err
+	}
+
+	resp.HasMore = len(comments) > int(req.GetLimit())
+	if resp.HasMore {
+		comments = comments[:len(comments)-1]
+	}
+	if req.NeedTotal {
+		resp.Total, err = storage.CountByCond(ctx, conds)
 		if err != nil {
 			zap.L().Error(err.Error())
 			return nil, err
 		}
-		req.LastCommentId = int64(id)
 	}
-	var comments []*model.Comment
-	var err error
+	// 空则 huireturn
+	if len(comments) == 0 {
+		resp.CommentList = nil
+		return resp, nil
+	}
+
+	commentIDs := make([]int64, 0, len(comments))
+	for _, v := range comments {
+		commentIDs = append(commentIDs, v.CommentID)
+	}
+	commentsContent, err := storage.GetContentByCache(ctx, commentIDs)
+	if err != nil {
+		zap.L().Sugar().Error(err)
+		return nil, err
+	}
+	commentContentMp := make(map[int64]*model.CommentContent, len(commentsContent))
+	for _, v := range commentsContent {
+		commentContentMp[v.ID] = v
+	}
+
+	/*-------------处理打包----------------*/
+	var extraJson CommentExtra
+	commentResponse := make([]*pbcomment.CommentData, 0, len(comments))
+	for _, v := range comments {
+		cont := commentContentMp[v.CommentID]
+		sonic.Unmarshal([]byte(cont.Extra), &extraJson)
+
+		commentResponse = append(commentResponse, &pbcomment.CommentData{
+			CommentID: v.CommentID,
+			ItemID:    v.ItemID,
+			UserID:    v.UserID,
+			ParentID:  v.ParentID,
+			CreateAt:  v.CreatedAt.Unix(),
+			Status:    v.Status,
+
+			Content:     cont.Content,
+			ToCommentID: extraJson.ToCommentID,
+			ImageURI:    extraJson.ImageURI,
+		})
+	}
+
+	resp.CommentList = commentResponse
+	return resp, nil
+
+	// var comments []*model.Comment
+	// var err error
 	// if req.GetOffset()+req.Count >= 50 {
 	// 	comments, err = GetCommentsByVideoIDFromMaster(req.VideoID, int(req.GetOffset()), int(req.Count))
 	// 	if err != nil {
@@ -87,49 +165,4 @@ func List(ctx context.Context, req *pbcomment.ListRequest) (*pbcomment.ListRespo
 	// 	}
 	// }
 
-	comments, err = storage.GetCommentsByVideoIDFromMaster(req.VideoID, req.GetLastCommentId(), req.GetCount()+1)
-	if err != nil {
-		zap.L().Sugar().Error(err)
-		return nil, err
-	}
-	hasMore := len(comments) > int(req.GetCount())
-	if hasMore {
-		comments = comments[:len(comments)-1]
-	}
-	// 先用map 减少rpc查询次数
-	userIDs := make([]int64, 0)
-	for _, c := range comments {
-		userIDs = append(userIDs, c.UserID)
-	}
-
-	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
-		UserID:      userIDs,
-		LoginUserID: req.UserID,
-	})
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
-	commentResponse := make([]*pbcomment.CommentData, len(comments))
-	for i := range comments {
-		commentResponse[i] = &pbcomment.CommentData{
-			Id:         comments[i].ID,
-			User:       userResp.User[comments[i].UserID],
-			Content:    comments[i].Content,
-			CreateDate: comments[i].CreatedTime.Format("2006-01-02 15:04"),
-		}
-	}
-
-	total, err := storage.GetCommentsNumByVideoIDFromMaster(req.VideoID)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return nil, err
-	}
-	return &pbcomment.ListResponse{
-		StatusCode:  constant.Success,
-		StatusMsg:   constant.LoadCommentsSuccess,
-		CommentList: commentResponse,
-		HasMore:     hasMore,
-		Total:       total,
-	}, nil
 }
