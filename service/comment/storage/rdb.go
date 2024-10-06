@@ -64,15 +64,6 @@ func DeleteCommentContent(ctx context.Context, commentID int64) error {
 	})
 }
 
-func CountByItemID(ctx context.Context, itemID int64, parentID int64) (int64, error) {
-	q := query.Use(database.DB)
-	cnt, err := q.CommentMetum.WithContext(ctx).Where(q.CommentMetum.ItemID.Eq(itemID), q.CommentMetum.ParentID.Eq(parentID)).Count()
-	if err != nil {
-		return 0, err
-	}
-	return cnt, nil
-}
-
 func MGetCommentsByCond(ctx context.Context, offset, limit int, conds []gen.Condition, order ...field.Expr) ([]*model.CommentMetum, error) {
 	return query.Use(database.DB).CommentMetum.WithContext(ctx).Where(conds...).Order(order...).Offset(offset).Limit(limit).Find()
 }

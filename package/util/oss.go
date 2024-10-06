@@ -19,3 +19,10 @@ func GetUploadToken(fileName string) string {
 	upToken := putPolicy.UploadToken(mac)
 	return upToken
 }
+
+func Uri2Url(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	return config.System.Qiniu.OssDomain + "/" + uri
+}

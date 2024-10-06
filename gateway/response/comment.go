@@ -2,6 +2,7 @@ package response
 
 import (
 	pbcomment "diktok/grpc/comment"
+	"diktok/package/util"
 	"time"
 )
 
@@ -27,22 +28,26 @@ type CommentListResponse struct {
 }
 
 type Comment struct {
-	// 评论内容
-	Content string `json:"content"`
-	// 评论发布日期，格式 yyyy-mm-dd
-	CreateDate string `json:"create_date"`
-	// 评论id
-	CommentID int64 `json:"id"`
-	// 评论用户信息
-	User *User `json:"user"`
-	// TODO 记得增加信息
+	Content         string `json:"content"`     // 评论内容
+	CreateDate      string `json:"create_date"` // 评论发布日期，格式 yyyy-mm-dd
+	CommentID       int64  `json:"id"`
+	ParentID        int64  `json:"parent_id,omitempty"`         // 根评论id
+	ImageURL        string `json:"image_url,omitempty"`         // 图片
+	ToCommentID     int64  `json:"to_comment_id,omitempty"`     // 回复某条评论ID
+	SubCommentCount int64  `json:"sub_comment_count,omitempty"` // 子评论数量
+	User            *User  `json:"user"`                        // 评论用户信息
 }
 
-func BuildComment(v *pbcomment.CommentData, userMp map[int64]*User) *Comment {
+func BuildComment(v *pbcomment.CommentData, userMp map[int64]*User, countMap map[int64]int64) *Comment {
 	return &Comment{
 		User:       userMp[v.UserID],
 		Content:    v.Content,
 		CommentID:  v.CommentID,
 		CreateDate: time.Unix(v.CreateAt, 0).Format(time.DateTime),
+
+		ParentID:        v.ParentID,
+		ImageURL:        util.Uri2Url(v.ImageURI),
+		ToCommentID:     v.ToCommentID,
+		SubCommentCount: countMap[v.CommentID],
 	}
 }

@@ -29,6 +29,9 @@ func CommentAction(c *fiber.Ctx) error {
 	userID := c.Locals(constant.UserID).(int64)
 	if req.ActionType == constant.DoAction && req.CommentText != "" {
 		// TODO 需要先查询视频id 是否存在
+		if req.ParentID == 0 {
+			req.ParentID = req.VideoID
+		}
 		resp, err := rpc.CommentClient.Add(c.UserContext(), &pbcomment.AddRequest{
 			ItemID:      req.VideoID,
 			UserID:      userID,

@@ -25,7 +25,7 @@ func Feed(c *fiber.Ctx) error {
 		return c.JSON(constant.InvalidParams)
 	}
 	userID := c.Locals(constant.UserID).(int64)
-	ctx, cancel := context.WithTimeout(c.UserContext(), time.Second)
+	ctx, cancel := context.WithTimeout(c.UserContext(), 3*time.Second)
 	defer cancel()
 	res, err := rpc.VideoClient.Feed(ctx, &pbvideo.FeedRequest{
 		LatestTime:  req.LatestTime,

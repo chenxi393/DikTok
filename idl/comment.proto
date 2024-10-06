@@ -62,11 +62,12 @@ message CommentData {
   
 }
 
+
 message CountReq{
-    repeated int64 ItemIDs = 1;
-    map<int64,int64> ParentIDs = 2;
+    repeated int64 ParentIDs = 1; // 传的视频 则查视频下所有评论 传的评论id 则查询子评论
+    int64 item_id_index  = 2; // ParentIDs为评论 时使用 传入item_id 走索引
 }
 
 message CountResp{
-    map<int64,int64> Total = 1;
+    map<int64,int64> countMap = 1;
 }

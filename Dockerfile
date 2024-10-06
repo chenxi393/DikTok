@@ -20,13 +20,20 @@ COPY . .
 
 # 提取参数 构建对应的镜像
 # 包变小了 但是会很卡 因为并行的跑几个 之前只跑一个
-ARG SERVICE
-RUN if [ "$SERVICE" = "gateway" ]; then \
-        go install /diktok/gateway; \
-        else \
-        go install /diktok/service/$SERVICE; \
-    fi
+# ARG SERVICE
+# RUN if [ "$SERVICE" = "gateway" ]; then \
+#         go install /diktok/gateway; \
+#         else \
+#         go install /diktok/service/$SERVICE; \
+#     fi
 
+RUN  go install /diktok/gateway; 
+RUN  go install /diktok/service/comment; 
+RUN  go install /diktok/service/relation; 
+RUN  go install /diktok/service/favorite; 
+RUN  go install /diktok/service/message; 
+RUN  go install /diktok/service/user; 
+RUN  go install /diktok/service/video; 
 
 FROM alpine
 

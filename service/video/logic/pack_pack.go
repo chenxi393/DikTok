@@ -27,29 +27,11 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 			videoIDs = append(videoIDs, v.Id)
 		}
 	}
-	videoMetaDataMap := make(map[int64]*pbvideo.VideoMetaData, 0)
 	var likeMap map[int64]bool
 	var likeCount map[int64]int64
 	var commentCount map[int64]int64
 	var UserMap map[int64]*pbuser.UserInfo
 	var wg conc.WaitGroup
-	// 视频源信息
-	wg.Go(func() {
-		if len(videoMeta) <= 0 {
-			videos, err := rpc.VideoClient.MGet(ctx, &pbvideo.MGetReq{
-				VideoId: videoIDs,
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				return
-			}
-			videoMeta = videos.GetVideoList()
-		}
-		// Mget接口不会按照入参顺序返回 需要手动聚合
-		for _, v := range videoMeta {
-			videoMetaDataMap[v.Id] = v
-		}
-	})
 	// 是否点赞
 	wg.Go(func() {
 		// var wgg conc.WaitGroup
@@ -86,17 +68,17 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 	// 评论数量
 	wg.Go(func() {
 		resp, err := rpc.CommentClient.Count(ctx, &pbcomment.CountReq{
-			ItemIDs: videoIDs,
+			ParentIDs: videoIDs,
 		})
 		if err != nil {
 			zap.L().Error(err.Error())
 			return
 		}
-		commentCount = resp.GetTotal()
+		commentCount = resp.GetCountMap()
 	})
 	wg.WaitAndRecover()
-	userIDs := make([]int64, 0, len(videoMetaDataMap))
-	for _, v := range videoMetaDataMap {
+	userIDs := make([]int64, 0, len(videoMeta))
+	for _, v := range videoMeta {
 		userIDs = append(userIDs, v.AuthorId)
 	}
 	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
@@ -107,11 +89,11 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		return
 	}
 	UserMap = userResp.GetUser()
-	zap.L().Sugar().Infof("[BuildVideosInfo] videoMetaDataMap = %s,UserMap = %s", util.GetLogStr(videoMetaDataMap), util.GetLogStr(UserMap))
-	return buildVideoInfo(videoMetaDataMap, UserMap, likeMap, likeCount, commentCount), nil
+	zap.L().Sugar().Infof("[BuildVideosInfo] videoMeta = %s,UserMap = %s", util.GetLogStr(videoMeta), util.GetLogStr(UserMap))
+	return buildVideoInfo(videoMeta, UserMap, likeMap, likeCount, commentCount), nil
 }
 
-func buildVideoInfo(items map[int64]*pbvideo.VideoMetaData, userMap map[int64]*pbuser.UserInfo, isLiked map[int64]bool, likeCount map[int64]int64, commentCount map[int64]int64) []*pbvideo.VideoData {
+func buildVideoInfo(items []*pbvideo.VideoMetaData, userMap map[int64]*pbuser.UserInfo, isLiked map[int64]bool, likeCount map[int64]int64, commentCount map[int64]int64) []*pbvideo.VideoData {
 	data := make([]*pbvideo.VideoData, 0, len(items))
 	for _, item := range items {
 		v := &pbvideo.VideoData{
