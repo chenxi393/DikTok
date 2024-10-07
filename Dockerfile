@@ -27,6 +27,11 @@ COPY . .
 #         go install /diktok/service/$SERVICE; \
 #     fi
 
+# 上面这种做法 由于命令不一样 docker image 构建 无法使用缓存
+# 6个服务 需要6次go mod tidy 下面这种 由于copy 内容一样 命令一样
+# 可以使用 cache 则只需要 一次go mod tidy 后面可以服用 降低CPU消耗
+# TODO 每次提交代码 打包镜像 到docker仓库 服务器再去拉取运行
+RUN  go mod tidy
 RUN  go install /diktok/gateway; 
 RUN  go install /diktok/service/comment; 
 RUN  go install /diktok/service/relation; 
@@ -39,15 +44,15 @@ FROM alpine
 
 WORKDIR /app
 
+COPY --from=builder /diktok/config /app/config
+COPY --from=builder /go/bin/ /app/
+
 # 设置时区环境变量
 ENV TZ=Asia/Shanghai
 ENV RUN_ENV=docker
 
 # 安装 tzdata 包以支持时区
 RUN apk update && apk add --no-cache tzdata
-
-COPY --from=builder /diktok/config /app/config
-COPY --from=builder /go/bin/ /app/
 
 # 容器运行时执行的shell 命令 一般在最后一行 一定要前台运行 不然运行之后容器就关闭了
 # 可以被docker run 的tag覆盖
