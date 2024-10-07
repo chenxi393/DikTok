@@ -88,7 +88,8 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		userIDs = append(userIDs, v.AuthorId)
 	}
 	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
-		UserID: userIDs,
+		UserID:      userIDs,
+		LoginUserID: loginUserID,
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
