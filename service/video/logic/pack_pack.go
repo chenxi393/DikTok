@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"sync"
 
 	"diktok/config"
 	pbcomment "diktok/grpc/comment"
@@ -27,32 +28,37 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 			videoIDs = append(videoIDs, v.Id)
 		}
 	}
-	var likeMap map[int64]bool
+	var likeMap = make(map[int64]bool)
 	var likeCount map[int64]int64
 	var commentCount map[int64]int64
 	var UserMap map[int64]*pbuser.UserInfo
 	var wg conc.WaitGroup
 	// 是否点赞
 	wg.Go(func() {
-		// var wgg conc.WaitGroup
-		// mu := sync.Mutex{}
-		for _, v := range videoIDs {
-			// wgg.Go(func() {
-			// 这里有没有办法批量判断 TODO 或者拿登录用户的点赞视频列表？ 并发数量很大经常报错
-			result, err := rpc.FavoriteClient.IsFavorite(ctx, &pbfavorite.IsFavoriteRequest{
-				UserID:  loginUserID,
-				VideoID: v,
-			})
-			if err != nil {
-				zap.L().Error(err.Error())
-				return
-			}
-			// mu.Lock()
-			likeMap[v] = result.GetIsFavorite()
-			// mu.Unlock()
-			// })
+		if loginUserID == 0 {
+			return
 		}
-		// wgg.WaitAndRecover()
+		var wgg conc.WaitGroup
+		mu := sync.Mutex{}
+		for _, v := range videoIDs {
+			wgg.Go(func() {
+				// FIXME
+				// 这里有没有办法批量判断 TODO 或者拿登录用户的点赞视频列表？ 并发数量很大经常报错
+				result, err := rpc.FavoriteClient.IsFavorite(ctx, &pbfavorite.IsFavoriteRequest{
+					UserID:  loginUserID,
+					VideoID: v,
+				})
+				if err != nil {
+					zap.L().Error(err.Error())
+					return
+				}
+				zap.L().Debug("DEG: " + util.GetLogStr(result))
+				mu.Lock()
+				likeMap[v] = result.GetIsFavorite()
+				mu.Unlock()
+			})
+		}
+		wgg.WaitAndRecover()
 	})
 	// 被赞数量
 	wg.Go(func() {

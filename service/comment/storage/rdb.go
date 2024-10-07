@@ -76,3 +76,22 @@ func GetContentByIDs(ctx context.Context, commentIDs []int64) ([]*model.CommentC
 	q := query.Use(database.DB)
 	return q.CommentContent.WithContext(ctx).Where(q.CommentContent.ID.In(commentIDs...)).Find()
 }
+
+type temp struct {
+	ParentID int64 `gorm:"column:parent_id"`
+	Count    int64 `gorm:"column:count"`
+}
+
+func CountMapByIDs(ctx context.Context, cond []gen.Condition) (map[int64]int64, error) {
+	res := make([]*temp, 0)
+	countMap := make(map[int64]int64, 0)
+	so := query.Use(database.DB).CommentMetum
+	err := so.WithContext(ctx).Select(so.ParentID, so.ID.Count().As("count")).Where(cond...).Group(so.ParentID).Scan(&res)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range res {
+		countMap[v.ParentID] = v.Count
+	}
+	return countMap, nil
+}

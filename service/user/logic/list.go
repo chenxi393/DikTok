@@ -2,6 +2,7 @@ package logic
 
 import (
 	"context"
+	"sync"
 
 	pbrelation "diktok/grpc/relation"
 	pbuser "diktok/grpc/user"
@@ -10,31 +11,39 @@ import (
 	"diktok/service/user/storage"
 	"diktok/storage/database/model"
 
+	"github.com/sourcegraph/conc"
 	"go.uber.org/zap"
 )
 
+// FIXME 优化接口耗时 不能并发查库
 func List(ctx context.Context, req *pbuser.ListReq) (*pbuser.ListResp, error) {
 	userMap := make(map[int64]*model.User)
+	var wg conc.WaitGroup
+	mu := sync.Mutex{}
 	for _, u := range req.GetUserID() {
-		// 去redis里查询用户信息 这是热点数据 redis缓存确实快了很多
-		user, err := storage.GetUserInfo(u)
-		// 缓存未命中再去查数据库
-		if err != nil {
-			zap.L().Warn(constant.CacheMiss, zap.Error(err))
-			user, err = storage.SelectUserByID(u)
+		wg.Go(func() {
+			// 去redis里查询用户信息 这是热点数据 redis缓存确实快了很多
+			user, err := storage.GetUserInfo(u)
+			// 缓存未命中再去查数据库
 			if err != nil {
-				zap.L().Error(constant.DatabaseError, zap.Error(err))
-				return nil, err
-			}
-			// 设置缓存
-			go func() {
-				err = storage.SetUserInfo(user)
+				zap.L().Warn(constant.CacheMiss, zap.Error(err))
+				user, err = storage.SelectUserByID(u)
 				if err != nil {
-					zap.L().Error(constant.SetCacheError, zap.Error(err))
+					zap.L().Error(constant.DatabaseError, zap.Error(err))
+					return
 				}
-			}()
-		}
-		userMap[u] = user
+				// 设置缓存
+				go func() {
+					err = storage.SetUserInfo(user)
+					if err != nil {
+						zap.L().Error(constant.SetCacheError, zap.Error(err))
+					}
+				}()
+			}
+			mu.Lock()
+			userMap[u] = user
+			mu.Unlock()
+		})
 	}
 
 	respMap := make(map[int64]*pbuser.UserInfo, len(userMap))
