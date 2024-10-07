@@ -32,6 +32,10 @@ func CommentList(c *fiber.Ctx) error {
 	if req.ParentID == 0 {
 		req.ParentID = req.VideoID
 	}
+	// 兼容老接口 不带limit 默认20条
+	if req.Limit == 0 {
+		req.Limit = 20
+	}
 	resp, err := rpc.CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		ItemID:    req.VideoID,
 		ParentID:  req.ParentID,

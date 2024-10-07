@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"diktok/config"
 	pbvideo "diktok/grpc/video"
 	stroage "diktok/service/video/storage"
 	"diktok/storage/database"
@@ -57,8 +56,8 @@ func buildMGetVideosResp(videos []*model.Video) []*pbvideo.VideoMetaData {
 		res = append(res, &pbvideo.VideoMetaData{
 			Id:          v.ID,
 			AuthorId:    v.AuthorID,
-			PlayUrl:     config.System.Qiniu.OssDomain + "/" + v.PlayURL,
-			CoverUrl:    config.System.Qiniu.OssDomain + "/" + v.CoverURL,
+			PlayUrl:     v.PlayURL,
+			CoverUrl:    v.CoverURL,
 			Title:       v.Title,
 			Topic:       v.Topic,
 			PublishTime: v.PublishTime.UnixMilli(), //Format("2006-01-02 15:04"), // 这个时间戳 应该给前端转换 TODO
