@@ -17,6 +17,8 @@ import (
 )
 
 // 可以作为通用的 视频id 和登录用户打包 视频信息
+// 这块逻辑 干掉 合入pack 里 是视频打包
+// 应该是 提供视频ID 和login id 然后返回视频详情 统一出口
 func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo.VideoMetaData, loginUserID int64) (resp []*response.Video, err error) {
 	if len(videoIDs) <= 0 && len(videoMeta) <= 0 {
 		return nil, nil
@@ -26,8 +28,8 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		}
 	}
 
-	var videoMetaDataMap map[int64]*pbvideo.VideoMetaData
-	var likeMap map[int64]bool
+	var videoMetaDataMap = make(map[int64]*pbvideo.VideoMetaData)
+	var likeMap = make(map[int64]bool)
 	var likeCount map[int64]int64
 	var commentCount map[int64]int64
 	var UserMap map[int64]*pbuser.UserInfo
@@ -49,6 +51,7 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 			videoMetaDataMap[v.Id] = v
 		}
 	})
+
 	// 是否点赞
 	wg.Go(func() {
 		var wg conc.WaitGroup
@@ -94,21 +97,19 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		commentCount = resp.GetTotal()
 	})
 	wg.WaitAndRecover()
-	wg.Go(func() {
-		userIDs := make([]int64, 0, len(videoMetaDataMap))
-		for _, v := range videoMetaDataMap {
-			userIDs = append(userIDs, v.AuthorId)
-		}
-		userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
-			UserID: userIDs,
-		})
-		if err != nil {
-			zap.L().Error(err.Error())
-			return
-		}
-		UserMap = userResp.GetUser()
+
+	userIDs := make([]int64, 0, len(videoMetaDataMap))
+	for _, v := range videoMetaDataMap {
+		userIDs = append(userIDs, v.AuthorId)
+	}
+	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+		UserID: userIDs,
 	})
-	wg.WaitAndRecover()
+	if err != nil {
+		zap.L().Error(err.Error())
+		return
+	}
+	UserMap = userResp.GetUser()
 	return buildVideoInfo(videoMetaDataMap, UserMap, likeMap, likeCount, commentCount), nil
 }
 
