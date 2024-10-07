@@ -45,7 +45,7 @@ func List(ctx context.Context, req *pbuser.ListReq) (*pbuser.ListResp, error) {
 			mu.Unlock()
 		})
 	}
-
+	wg.WaitAndRecover()
 	respMap := make(map[int64]*pbuser.UserInfo, len(userMap))
 	for _, u := range userMap {
 		// 判断是否是关注用户
