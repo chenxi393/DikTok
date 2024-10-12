@@ -1,0 +1,14 @@
+frontend
+compose*.yaml
+*.mp4
+*.jpg
+*.png
+/config/wsl.yaml
+/config/docker.yaml
+*online*
+*default*
+Note.md
+biz
+cmd/main.go
+prd.md
+frontend
