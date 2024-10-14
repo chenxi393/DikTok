@@ -1,0 +1,50 @@
+name: DikTok镜像打包😎
+on:
+  push:
+    branches: [main] # main分支上push触发部署
+
+jobs:
+  build-image-deploy:
+    name: 构建镜像🤦‍♂️
+    # 在ubuntu上进行构建操作
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 读取仓库内容😉
+        uses: actions/checkout@v4
+
+      - name: Docker meta🤦‍♀️
+        id: meta
+        uses: docker/metadata-action@v4.3.0
+        with:
+          # list of Docker images to use as base name for tags
+          images: chenxi393/diktok
+
+      - name: 登录DockerHub💕
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v4.0.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # 通过ssh远程执行命令重启vps上的服务
+      - name: SSH Remote Commands🤣
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }} # Secrets中的配置：vps IP地址
+          username: ${{ secrets.REMOTE_USER }} # Secrets中的配置：vps 登录用户名
+          key: ${{ secrets.SERVER_SSH_KEY }} # Secrets中的配置：vps 上创建的ssh key的私钥内容
+          script: cd ${{ secrets.PATH }} && make down && make up
+
+      - name: Webhook😂
+        run:
+          curl www.baidu.com
+          # curl '${{ secrets.WEBHOOK_URL }}&target=${{ env.CONTAINER }}'
