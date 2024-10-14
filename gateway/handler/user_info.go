@@ -2,6 +2,7 @@ package handler
 
 import (
 	"diktok/gateway/middleware"
+	"diktok/gateway/response"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -34,10 +35,5 @@ func UserInfo(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	return c.JSON(res)
-	// return c.JSON(response.InfoResponse{
-	// 	StatusCode: constant.Success,
-	// 	StatusMsg:  constant.LoadSuccess,
-	// 	User:       res.GetUser()[req.UserID],
-	// })
+	return c.JSON(response.BuildInfoResponse(res.GetUser()[req.UserID]))
 }

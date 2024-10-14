@@ -36,6 +36,10 @@ func CommentList(c *fiber.Ctx) error {
 	if req.Limit == 0 {
 		req.Limit = 20
 	}
+	// 兼容老逻辑 不带排序 默认时间倒叙
+	if req.SortType == 0 {
+		req.SortType = 1
+	}
 	resp, err := rpc.CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		ItemID:    req.VideoID,
 		ParentID:  req.ParentID,

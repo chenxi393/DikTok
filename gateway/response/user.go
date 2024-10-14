@@ -2,6 +2,7 @@ package response
 
 import (
 	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 )
 
 type UserRegisterOrLogin struct {
@@ -46,6 +47,14 @@ type User struct {
 	TotalFavorited int64 `json:"total_favorited"`
 	// 作品数
 	WorkCount int64 `json:"work_count"`
+}
+
+func BuildInfoResponse(u *pbuser.UserInfo) *InfoResponse {
+	return &InfoResponse{
+		StatusCode: constant.Success,
+		StatusMsg:  constant.LoadSuccess,
+		User:       BuildUser(u),
+	}
 }
 
 func BuildUser(user *pbuser.UserInfo) *User {
