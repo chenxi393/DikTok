@@ -4,6 +4,9 @@ up:
 down:
 	docker compose down
 
+pull:
+	docker compose pull
+
 gate_way:
 	go run gateway/*.go
 

@@ -42,7 +42,7 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }} # Secrets中的配置：vps IP地址
           username: ${{ secrets.REMOTE_USER }} # Secrets中的配置：vps 登录用户名
           key: ${{ secrets.SERVER_SSH_KEY }} # Secrets中的配置：vps 上创建的ssh key的私钥内容
-          script: cd ${{ secrets.PATH }} && make down && make up
+          script: cd ${{ secrets.PATH }} && make down && make pull && make up
 
       - name: Webhook😂
         run:
