@@ -35,7 +35,7 @@ func (s *FavoriteService) List(ctx context.Context, req *pbfavorite.ListRequest)
 	return resp, err
 }
 
-func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteRequest) (*pbfavorite.IsFavoriteResponse, error) {
+func (s *FavoriteService) IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteReq) (*pbfavorite.IsFavoriteResp, error) {
 	zap.L().Sugar().Infof("[IsFavorite] req = %s", util.GetLogStr(req))
 	resp, err := logic.IsFavorite(ctx, req)
 	zap.L().Sugar().Infof("[IsFavorite] resp = %s, err = %s", util.GetLogStr(resp), err)

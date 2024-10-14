@@ -87,7 +87,7 @@ func CountmByVideoIDs(ctx context.Context, videoIDs []int64) (map[int64]int64, e
 	res := make([]*temp, 0)
 	countMap := make(map[int64]int64, 0)
 	so := query.Use(database.DB.Clauses(dbresolver.Read)).Favorite
-	err := so.WithContext(ctx).Select(so.VideoID, so.ID.Count()).Where(so.VideoID.In(videoIDs...)).Group(so.VideoID).Scan(&res)
+	err := so.WithContext(ctx).Select(so.VideoID, so.ID.Count().As("c")).Where(so.VideoID.In(videoIDs...)).Group(so.VideoID).Scan(&res)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,8 @@ package response
 
 import (
 	pbcomment "diktok/grpc/comment"
+	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 	"diktok/package/util"
 	"time"
 )
@@ -36,6 +38,24 @@ type Comment struct {
 	ToCommentID     int64  `json:"to_comment_id,omitempty"`     // 回复某条评论ID
 	SubCommentCount int64  `json:"sub_comment_count,omitempty"` // 子评论数量
 	User            *User  `json:"user"`                        // 评论用户信息
+}
+
+func BuildCommentList(comList *pbcomment.ListResponse, userList *pbuser.ListResp, countResp *pbcomment.CountResp) *CommentListResponse {
+	res := &CommentListResponse{
+		CommentList: make([]*Comment, 0, len(comList.GetCommentList())),
+		HasMore:     comList.GetHasMore(),
+		Total:       comList.GetTotal(),
+		StatusCode:  constant.Success,
+		StatusMsg:   constant.LoadCommentsSuccess,
+	}
+
+	UserMap := BuildUserMap(userList)
+	for _, v := range comList.GetCommentList() {
+		if v != nil {
+			res.CommentList = append(res.CommentList, BuildComment(v, UserMap, countResp.GetCountMap()))
+		}
+	}
+	return res
 }
 
 func BuildComment(v *pbcomment.CommentData, userMp map[int64]*User, countMap map[int64]int64) *Comment {

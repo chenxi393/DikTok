@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"diktok/gateway/response"
 	pbfavorite "diktok/grpc/favorite"
+	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/package/rpc"
 
@@ -23,9 +25,15 @@ func FavoriteList(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	resp, err := BuildVideosInfo(c.Context(), Favoriteresp.GetVideoList(), nil, loginUserID)
+	if len(Favoriteresp.VideoList) <= 0 {
+		return c.JSON(response.BuildVideoList(nil))
+	}
+	packResp, err := rpc.VideoClient.Pack(c.UserContext(), &pbvideo.PackReq{
+		LoginUserId: loginUserID,
+		VideoId:     Favoriteresp.GetVideoList(),
+	})
 	if err != nil {
 		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
-	return c.JSON(resp)
+	return c.JSON(response.BuildVideoList(packResp.GetVideoList()))
 }

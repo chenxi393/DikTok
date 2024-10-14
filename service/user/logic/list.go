@@ -8,6 +8,7 @@ import (
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
 	"diktok/package/rpc"
+	"diktok/package/util"
 	"diktok/service/user/storage"
 	"diktok/storage/database/model"
 
@@ -71,4 +72,20 @@ func List(ctx context.Context, req *pbuser.ListReq) (*pbuser.ListResp, error) {
 	return &pbuser.ListResp{
 		User: respMap,
 	}, nil
+}
+
+func userResponse(user *model.User, isFollowed bool) *pbuser.UserInfo {
+	return &pbuser.UserInfo{
+		Avatar:          util.Uri2Url(user.Avatar),
+		BackgroundImage: util.Uri2Url(user.BackgroundImage),
+		FavoriteCount:   user.FavoriteCount,
+		FollowCount:     user.FollowCount,
+		FollowerCount:   user.FollowerCount,
+		Id:              user.ID,
+		IsFollow:        isFollowed,
+		Name:            user.Username,
+		Signature:       user.Signature,
+		TotalFavorited:  user.TotalFavorited,
+		WorkCount:       user.WorkCount,
+	}
 }

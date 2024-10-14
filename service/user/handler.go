@@ -28,13 +28,6 @@ func (s *UserService) Login(ctx context.Context, req *pbuser.LoginRequest) (*pbu
 	return resp, err
 }
 
-func (s *UserService) Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuser.InfoResponse, error) {
-	zap.L().Sugar().Infof("[Info] req = %s", util.GetLogStr(req))
-	resp, err := logic.Info(ctx, req)
-	zap.L().Sugar().Infof("[Info] resp = %s, err = %s", util.GetLogStr(resp), err)
-	return resp, err
-}
-
 func (s *UserService) List(ctx context.Context, req *pbuser.ListReq) (*pbuser.ListResp, error) {
 	zap.L().Sugar().Infof("[List] req = %s", util.GetLogStr(req))
 	resp, err := logic.List(ctx, req)

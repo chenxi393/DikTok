@@ -47,7 +47,6 @@ func Unfollow(ctx context.Context, req *pbrelation.FollowRequest) (*pbrelation.F
 			StatusMsg:  constant.UnFollowNotFollowed,
 		}, nil
 	}
-	// FIXME 这里之前没改造 直接panic 暴了
 	storage.SendFollowMessage(req.UserID, req.ToUserID, -1)
 	zap.L().Sugar().Debugf("Follow: publish a message")
 	return &pbrelation.FollowResponse{

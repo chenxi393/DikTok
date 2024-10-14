@@ -41,3 +41,10 @@ func (s *VideoService) Search(ctx context.Context, req *pbvideo.SearchRequest) (
 	zap.L().Sugar().Infof("[Search] resp = %s, err = %s", util.GetLogStr(resp), err)
 	return resp, err
 }
+
+func (s *VideoService) Pack(ctx context.Context, req *pbvideo.PackReq) (*pbvideo.PackResp, error) {
+	zap.L().Sugar().Infof("[Pack] req = %s", util.GetLogStr(req))
+	resp, err := logic.Pack(ctx, req)
+	zap.L().Sugar().Infof("[Pack] resp = %s, err = %s", util.GetLogStr(resp), err)
+	return resp, err
+}

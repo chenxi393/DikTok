@@ -1,8 +1,8 @@
 package response
 
 import (
-	"diktok/config"
 	pbuser "diktok/grpc/user"
+	"diktok/package/constant"
 )
 
 type UserRegisterOrLogin struct {
@@ -49,10 +49,18 @@ type User struct {
 	WorkCount int64 `json:"work_count"`
 }
 
+func BuildInfoResponse(u *pbuser.UserInfo) *InfoResponse {
+	return &InfoResponse{
+		StatusCode: constant.Success,
+		StatusMsg:  constant.LoadSuccess,
+		User:       BuildUser(u),
+	}
+}
+
 func BuildUser(user *pbuser.UserInfo) *User {
 	return &User{
-		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
-		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
+		Avatar:          user.Avatar,
+		BackgroundImage: user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,

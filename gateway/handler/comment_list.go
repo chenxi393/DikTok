@@ -36,6 +36,10 @@ func CommentList(c *fiber.Ctx) error {
 	if req.Limit == 0 {
 		req.Limit = 20
 	}
+	// 兼容老逻辑 不带排序 默认时间倒叙
+	if req.SortType == 0 {
+		req.SortType = 1
+	}
 	resp, err := rpc.CommentClient.List(c.UserContext(), &pbcomment.ListRequest{
 		ItemID:    req.VideoID,
 		ParentID:  req.ParentID,
@@ -93,23 +97,5 @@ func CommentList(c *fiber.Ctx) error {
 	if errCount > 0 {
 		return c.JSON(constant.ServerInternal.WithDetails("errCount > 0"))
 	}
-	return c.JSON(PackCommentList(resp, userResp, countResp))
-}
-
-func PackCommentList(comList *pbcomment.ListResponse, userList *pbuser.ListResp, countResp *pbcomment.CountResp) *response.CommentListResponse {
-	res := &response.CommentListResponse{
-		CommentList: make([]*response.Comment, 0, len(comList.GetCommentList())),
-		HasMore:     comList.GetHasMore(),
-		Total:       comList.GetTotal(),
-		StatusCode:  constant.Success,
-		StatusMsg:   constant.LoadCommentsSuccess,
-	}
-
-	UserMap := response.BuildUserMap(userList)
-	for _, v := range comList.GetCommentList() {
-		if v != nil {
-			res.CommentList = append(res.CommentList, response.BuildComment(v, UserMap, countResp.GetCountMap()))
-		}
-	}
-	return res
+	return c.JSON(response.BuildCommentList(resp, userResp, countResp))
 }

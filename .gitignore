@@ -10,3 +10,4 @@ biz
 cmd/main.go
 prd.md
 frontend
+.vscode

@@ -26,8 +26,7 @@ func UserLogin(c *fiber.Ctx) error {
 		c.Status(fiber.StatusOK)
 		return c.JSON(res)
 	}
-	// 初始化一个带取消功能的ctx 超时控制 ！ TODO 超时控制
-	// 注意这里的dial
+	// 初始化一个带取消功能的ctx 超时控制
 	ctx, cancel := context.WithTimeout(c.UserContext(), 1*time.Second)
 	defer cancel()
 	res, err := rpc.UserClient.Login(ctx, &pbuser.LoginRequest{

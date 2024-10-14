@@ -5,12 +5,13 @@ import (
 
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
+	"diktok/package/util"
 	"diktok/service/favorite/storage"
 
 	"go.uber.org/zap"
 )
 
-func IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteRequest) (*pbfavorite.IsFavoriteResponse, error) {
+func IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteReq) (*pbfavorite.IsFavoriteResp, error) {
 	// 获取用户的喜欢视频列表
 	likingVideos, err := storage.GetFavoriteSet(req.GetUserID())
 	if err != nil {
@@ -26,14 +27,14 @@ func IsFavorite(ctx context.Context, req *pbfavorite.IsFavoriteRequest) (*pbfavo
 			}
 		}()
 	}
-	for _, f := range likingVideos {
-		if f == req.VideoID {
-			return &pbfavorite.IsFavoriteResponse{
-				IsFavorite: true,
-			}, nil
+	mp := util.Slice2Map(likingVideos)
+	resMp := make(map[int64]bool, 0)
+	for _, f := range req.GetVideoID() {
+		if _, ok := mp[f]; ok {
+			resMp[f] = true
 		}
 	}
-	return &pbfavorite.IsFavoriteResponse{
-		IsFavorite: false,
+	return &pbfavorite.IsFavoriteResp{
+		IsFavorite: resMp,
 	}, nil
 }

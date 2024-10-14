@@ -2,13 +2,13 @@ package logic
 
 import (
 	"context"
-	"sync"
+	"errors"
 
-	"diktok/config"
 	pbcomment "diktok/grpc/comment"
 	pbfavorite "diktok/grpc/favorite"
 	pbuser "diktok/grpc/user"
 	pbvideo "diktok/grpc/video"
+	"diktok/package/constant"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"time"
@@ -17,9 +17,23 @@ import (
 	"go.uber.org/zap"
 )
 
-// copy 自gate way
-// 可以作为通用的 视频id 和登录用户打包 视频信息
-// 打包服务 包括 load 和 pack 应该分开
+// 作为通用的 视频id（视频元信息） 和登录用户打包视频信息
+func Pack(ctx context.Context, req *pbvideo.PackReq) (*pbvideo.PackResp, error) {
+	if len(req.GetVideoId()) <= 0 {
+		return nil, errors.New(constant.BadParaRequest)
+	}
+
+	videoInfo, err := BuildVideosInfo(ctx, req.GetVideoId(), nil, req.GetLoginUserId())
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
+	return &pbvideo.PackResp{
+		VideoList: videoInfo,
+	}, nil
+}
+
+// load 和 pack 应该分开
 func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo.VideoMetaData, loginUserID int64) (resp []*pbvideo.VideoData, err error) {
 	if len(videoIDs) <= 0 && len(videoMeta) <= 0 {
 		return nil, nil
@@ -27,38 +41,57 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		for _, v := range videoMeta {
 			videoIDs = append(videoIDs, v.Id)
 		}
+	} else if len(videoMeta) <= 0 {
+		videos, err := rpc.VideoClient.MGet(ctx, &pbvideo.MGetReq{
+			VideoId: videoIDs,
+		})
+		if err != nil {
+			zap.L().Error(err.Error())
+			return nil, err
+		}
+		videoMeta = videos.GetVideoList()
+		// Mget接口不会按照入参顺序返回 需要手动聚合
+		// for _, v := range videoMeta {
+		// 	videoMetaDataMap[v.Id] = v
+		// }
 	}
+
+	// var videoMetaDataMap = make(map[int64]*pbvideo.VideoMetaData)
 	var likeMap = make(map[int64]bool)
 	var likeCount map[int64]int64
 	var commentCount map[int64]int64
 	var UserMap map[int64]*pbuser.UserInfo
 	var wg conc.WaitGroup
+	// 用户信息
+	wg.Go(func() {
+		userIDs := make([]int64, 0, len(videoMeta))
+		for _, v := range videoMeta {
+			userIDs = append(userIDs, v.AuthorId)
+		}
+		userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
+			UserID:      userIDs,
+			LoginUserID: loginUserID,
+		})
+		if err != nil {
+			zap.L().Error(err.Error())
+			return
+		}
+		UserMap = userResp.GetUser()
+	})
 	// 是否点赞
 	wg.Go(func() {
 		if loginUserID == 0 {
 			return
 		}
-		var wgg conc.WaitGroup
-		mu := sync.Mutex{}
-		for _, v := range videoIDs {
-			wgg.Go(func() {
-				// FIXME
-				// 这里有没有办法批量判断 TODO 或者拿登录用户的点赞视频列表？ 并发数量很大经常报错
-				result, err := rpc.FavoriteClient.IsFavorite(ctx, &pbfavorite.IsFavoriteRequest{
-					UserID:  loginUserID,
-					VideoID: v,
-				})
-				if err != nil {
-					zap.L().Error(err.Error())
-					return
-				}
-				zap.L().Debug("DEG: " + util.GetLogStr(result))
-				mu.Lock()
-				likeMap[v] = result.GetIsFavorite()
-				mu.Unlock()
-			})
+		result, err := rpc.FavoriteClient.IsFavorite(ctx, &pbfavorite.IsFavoriteReq{
+			UserID:  loginUserID,
+			VideoID: videoIDs,
+		})
+		if err != nil {
+			zap.L().Error(err.Error())
+			return
 		}
-		wgg.WaitAndRecover()
+		likeMap = result.GetIsFavorite()
 	})
 	// 被赞数量
 	wg.Go(func() {
@@ -83,19 +116,6 @@ func BuildVideosInfo(ctx context.Context, videoIDs []int64, videoMeta []*pbvideo
 		commentCount = resp.GetCountMap()
 	})
 	wg.WaitAndRecover()
-	userIDs := make([]int64, 0, len(videoMeta))
-	for _, v := range videoMeta {
-		userIDs = append(userIDs, v.AuthorId)
-	}
-	userResp, err := rpc.UserClient.List(ctx, &pbuser.ListReq{
-		UserID:      userIDs,
-		LoginUserID: loginUserID,
-	})
-	if err != nil {
-		zap.L().Error(err.Error())
-		return
-	}
-	UserMap = userResp.GetUser()
 	zap.L().Sugar().Infof("[BuildVideosInfo] videoMeta = %s,UserMap = %s", util.GetLogStr(videoMeta), util.GetLogStr(UserMap))
 	return buildVideoInfo(videoMeta, UserMap, likeMap, likeCount, commentCount), nil
 }
@@ -104,10 +124,10 @@ func buildVideoInfo(items []*pbvideo.VideoMetaData, userMap map[int64]*pbuser.Us
 	data := make([]*pbvideo.VideoData, 0, len(items))
 	for _, item := range items {
 		v := &pbvideo.VideoData{
-			Author:        buildUserInfo(userMap[item.AuthorId]),
+			Author:        userMap[item.AuthorId],
 			Id:            item.Id,
-			PlayUrl:       config.System.Qiniu.OssDomain + "/" + item.PlayUrl,
-			CoverUrl:      config.System.Qiniu.OssDomain + "/" + item.CoverUrl,
+			PlayUrl:       util.Uri2Url(item.PlayUri),
+			CoverUrl:      util.Uri2Url(item.CoverUri),
 			IsFavorite:    isLiked[item.Id],
 			FavoriteCount: likeCount[item.Id],
 			CommentCount:  commentCount[item.Id], // 其实按道理 评论和点赞 是视频的属性 但是我们已经拆分了 还是要聚合
@@ -118,23 +138,4 @@ func buildVideoInfo(items []*pbvideo.VideoMetaData, userMap map[int64]*pbuser.Us
 		data = append(data, v)
 	}
 	return data
-}
-
-func buildUserInfo(user *pbuser.UserInfo) *pbuser.UserInfo {
-	if user == nil {
-		return nil
-	}
-	return &pbuser.UserInfo{
-		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
-		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
-		FavoriteCount:   user.FavoriteCount,
-		FollowCount:     user.FollowCount,
-		FollowerCount:   user.FollowerCount,
-		Id:              user.Id,
-		IsFollow:        user.IsFollow, // TODO 是否关注这里还是交给下游聚合把？？
-		Name:            user.Name,
-		Signature:       user.Signature,
-		TotalFavorited:  user.TotalFavorited,
-		WorkCount:       user.WorkCount,
-	}
 }

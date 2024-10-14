@@ -25,7 +25,7 @@ type FavoriteClient interface {
 	Like(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
 	Unlike(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	IsFavorite(ctx context.Context, in *IsFavoriteRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error)
+	IsFavorite(ctx context.Context, in *IsFavoriteReq, opts ...grpc.CallOption) (*IsFavoriteResp, error)
 	Count(ctx context.Context, in *CountReq, opts ...grpc.CallOption) (*CountResp, error)
 }
 
@@ -64,8 +64,8 @@ func (c *favoriteClient) List(ctx context.Context, in *ListRequest, opts ...grpc
 	return out, nil
 }
 
-func (c *favoriteClient) IsFavorite(ctx context.Context, in *IsFavoriteRequest, opts ...grpc.CallOption) (*IsFavoriteResponse, error) {
-	out := new(IsFavoriteResponse)
+func (c *favoriteClient) IsFavorite(ctx context.Context, in *IsFavoriteReq, opts ...grpc.CallOption) (*IsFavoriteResp, error) {
+	out := new(IsFavoriteResp)
 	err := c.cc.Invoke(ctx, "/favorite.Favorite/IsFavorite", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ type FavoriteServer interface {
 	Like(context.Context, *LikeRequest) (*LikeResponse, error)
 	Unlike(context.Context, *LikeRequest) (*LikeResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	IsFavorite(context.Context, *IsFavoriteRequest) (*IsFavoriteResponse, error)
+	IsFavorite(context.Context, *IsFavoriteReq) (*IsFavoriteResp, error)
 	Count(context.Context, *CountReq) (*CountResp, error)
 	mustEmbedUnimplementedFavoriteServer()
 }
@@ -107,7 +107,7 @@ func (UnimplementedFavoriteServer) Unlike(context.Context, *LikeRequest) (*LikeR
 func (UnimplementedFavoriteServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedFavoriteServer) IsFavorite(context.Context, *IsFavoriteRequest) (*IsFavoriteResponse, error) {
+func (UnimplementedFavoriteServer) IsFavorite(context.Context, *IsFavoriteReq) (*IsFavoriteResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsFavorite not implemented")
 }
 func (UnimplementedFavoriteServer) Count(context.Context, *CountReq) (*CountResp, error) {
@@ -181,7 +181,7 @@ func _Favorite_List_Handler(srv interface{}, ctx context.Context, dec func(inter
 }
 
 func _Favorite_IsFavorite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IsFavoriteRequest)
+	in := new(IsFavoriteReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func _Favorite_IsFavorite_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/favorite.Favorite/IsFavorite",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FavoriteServer).IsFavorite(ctx, req.(*IsFavoriteRequest))
+		return srv.(FavoriteServer).IsFavorite(ctx, req.(*IsFavoriteReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
