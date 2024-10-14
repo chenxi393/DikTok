@@ -37,7 +37,7 @@ jobs:
 
       # 通过ssh远程执行命令重启vps上的服务
       - name: SSH Remote Commands🤣
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.REMOTE_HOST }} # Secrets中的配置：vps IP地址
           username: ${{ secrets.REMOTE_USER }} # Secrets中的配置：vps 登录用户名

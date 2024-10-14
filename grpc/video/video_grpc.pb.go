@@ -25,8 +25,12 @@ type VideoClient interface {
 	// TODO 需要 引入推荐系统
 	Feed(ctx context.Context, in *FeedRequest, opts ...grpc.CallOption) (*FeedResponse, error)
 	Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error)
+	// 提供外部系统的通用查询视频元信息接口
 	MGet(ctx context.Context, in *MGetReq, opts ...grpc.CallOption) (*MGetResp, error)
+	// 全文索引支持keyword 和user_id 查询
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	// pack 接口 提供视频详情的统一打包出口
+	Pack(ctx context.Context, in *PackReq, opts ...grpc.CallOption) (*PackResp, error)
 }
 
 type videoClient struct {
@@ -73,6 +77,15 @@ func (c *videoClient) Search(ctx context.Context, in *SearchRequest, opts ...grp
 	return out, nil
 }
 
+func (c *videoClient) Pack(ctx context.Context, in *PackReq, opts ...grpc.CallOption) (*PackResp, error) {
+	out := new(PackResp)
+	err := c.cc.Invoke(ctx, "/video.Video/Pack", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // VideoServer is the server API for Video service.
 // All implementations must embed UnimplementedVideoServer
 // for forward compatibility
@@ -80,8 +93,12 @@ type VideoServer interface {
 	// TODO 需要 引入推荐系统
 	Feed(context.Context, *FeedRequest) (*FeedResponse, error)
 	Publish(context.Context, *PublishRequest) (*PublishResponse, error)
+	// 提供外部系统的通用查询视频元信息接口
 	MGet(context.Context, *MGetReq) (*MGetResp, error)
+	// 全文索引支持keyword 和user_id 查询
 	Search(context.Context, *SearchRequest) (*ListResponse, error)
+	// pack 接口 提供视频详情的统一打包出口
+	Pack(context.Context, *PackReq) (*PackResp, error)
 	mustEmbedUnimplementedVideoServer()
 }
 
@@ -100,6 +117,9 @@ func (UnimplementedVideoServer) MGet(context.Context, *MGetReq) (*MGetResp, erro
 }
 func (UnimplementedVideoServer) Search(context.Context, *SearchRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedVideoServer) Pack(context.Context, *PackReq) (*PackResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Pack not implemented")
 }
 func (UnimplementedVideoServer) mustEmbedUnimplementedVideoServer() {}
 
@@ -186,6 +206,24 @@ func _Video_Search_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Video_Pack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PackReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VideoServer).Pack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/video.Video/Pack",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VideoServer).Pack(ctx, req.(*PackReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Video_ServiceDesc is the grpc.ServiceDesc for Video service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -208,6 +246,10 @@ var Video_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Search",
 			Handler:    _Video_Search_Handler,
+		},
+		{
+			MethodName: "Pack",
+			Handler:    _Video_Pack_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

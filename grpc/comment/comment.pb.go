@@ -454,8 +454,8 @@ type CountReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ParentIDs   []int64 `protobuf:"varint,1,rep,packed,name=ParentIDs,proto3" json:"ParentIDs,omitempty"`                   // 父评论的 parent_id 是item_id
-	ItemIdIndex int64   `protobuf:"varint,2,opt,name=item_id_index,json=itemIdIndex,proto3" json:"item_id_index,omitempty"` // 查询子评论时使用 走索引
+	ParentIDs   []int64 `protobuf:"varint,1,rep,packed,name=ParentIDs,proto3" json:"ParentIDs,omitempty"`                   // 传的视频 则查视频下所有评论 传的评论id 则查询子评论
+	ItemIdIndex int64   `protobuf:"varint,2,opt,name=item_id_index,json=itemIdIndex,proto3" json:"item_id_index,omitempty"` // ParentIDs为评论 时使用 传入item_id 走索引
 }
 
 func (x *CountReq) Reset() {

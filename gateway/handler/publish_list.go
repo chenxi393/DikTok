@@ -24,21 +24,16 @@ func ListPublishedVideo(c *fiber.Ctx) error {
 		return c.JSON(constant.InvalidParams)
 	}
 	loginUserID := c.Locals(constant.UserID).(int64)
-	videoResp, err := rpc.VideoClient.MGet(c.UserContext(), &pbvideo.MGetReq{
-		UserId: req.UserID,
+	videoResp, err := rpc.VideoClient.Search(c.UserContext(), &pbvideo.SearchRequest{
+		UserId:      req.UserID,
+		LoginUserId: loginUserID,
 	})
 	if err != nil {
 		zap.L().Error(err.Error())
 		return c.JSON(constant.ServerInternal)
 	}
-	data, err := BuildVideosInfo(c.Context(), nil, videoResp.VideoList, loginUserID)
-	if err != nil {
-		zap.L().Error(err.Error())
-		return c.JSON(constant.ServerInternal)
+	if len(videoResp.VideoList) <= 0 {
+		return c.JSON(response.BuildVideoList(nil))
 	}
-	return c.JSON(&response.VideoListResponse{
-		StatusCode: constant.Success,
-		StatusMsg:  constant.PublishListSuccess,
-		VideoList:  data,
-	})
+	return c.JSON(response.BuildVideoList(videoResp.GetVideoList()))
 }

@@ -30,7 +30,6 @@ COPY . .
 # 上面这种做法 由于命令不一样 docker image 构建 无法使用缓存
 # 6个服务 需要6次go mod tidy 下面这种 由于copy 内容一样 命令一样
 # 可以使用 cache 则只需要 一次go mod tidy 后面可以服用 降低CPU消耗
-# TODO 每次提交代码 打包镜像 到docker仓库 服务器再去拉取运行
 RUN  go mod tidy
 RUN  go install /diktok/gateway; 
 RUN  go install /diktok/service/comment; 

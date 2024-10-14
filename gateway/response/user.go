@@ -1,7 +1,6 @@
 package response
 
 import (
-	"diktok/config"
 	pbuser "diktok/grpc/user"
 )
 
@@ -51,8 +50,8 @@ type User struct {
 
 func BuildUser(user *pbuser.UserInfo) *User {
 	return &User{
-		Avatar:          config.System.Qiniu.OssDomain + "/" + user.Avatar,
-		BackgroundImage: config.System.Qiniu.OssDomain + "/" + user.BackgroundImage,
+		Avatar:          user.Avatar,
+		BackgroundImage: user.BackgroundImage,
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,

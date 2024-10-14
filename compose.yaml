@@ -1,8 +1,21 @@
 services:
+  frontend:
+    image: chenxi393/newclip:v3.1.2
+    container_name: frontend
+    ports:
+      - "443:443"
+      - "80:80"
+      - "3000:3000" # debug 端口
+    networks:
+      - backend
+    restart: on-failure:10
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/fullchain.pem:/etc/nginx/conf.d/fullchain.pem
+      - ./frontend/privkey.pem:/etc/nginx/conf.d/privkey.pem
+
   gateway: 
-    build:
-      args:
-        SERVICE: ${SERVICE:-gateway}
+    image: chenxi393/diktok:main
     container_name: gateway
     ports:
       - "8000:8000"
@@ -16,12 +29,11 @@ services:
     networks:
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   video: 
-    build: 
-      context: .
-      args:
-       SERVICE: ${SERVICE:-video}
+    image: chenxi393/diktok:main
     container_name: video
     command: [/app/video]
     depends_on:
@@ -32,12 +44,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   user: 
-    build:
-      context: .
-      args:
-        SERVICE: ${SERVICE:-user}
+    image: chenxi393/diktok:main
     container_name: user
     command: [/app/user]
     depends_on:
@@ -48,11 +59,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   relation: 
-    build:
-      args:
-        SERVICE: ${SERVICE:-relation}
+    image: chenxi393/diktok:main
     container_name: relation
     command: [/app/relation]
     depends_on:
@@ -64,11 +75,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   message: 
-    build:
-      args:
-        SERVICE: message
+    image: chenxi393/diktok:main
     container_name: message
     command: [/app/message]
     depends_on:
@@ -78,11 +89,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   favorite: 
-    build:
-      args:
-        SERVICE: ${SERVICE:-favorite}
+    image: chenxi393/diktok:main
     container_name: favorite
     command: [/app/favorite]
     depends_on:
@@ -94,11 +105,11 @@ services:
       - mysql
       - backend
     restart: on-failure:10
-  
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
+
   comment: 
-    build:
-      args:
-        SERVICE: ${SERVICE:-comment}
+    image: chenxi393/diktok:main
     container_name: comment
     command: [/app/comment]
     depends_on:
@@ -110,6 +121,8 @@ services:
       - mysql
       - backend
     restart: on-failure:10
+    volumes:
+      - ./config/config.yaml:/app/config/config.yaml
 
   etcd:
     image: "quay.io/coreos/etcd:v3.5.5"

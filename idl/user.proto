@@ -7,6 +7,7 @@ option go_package = "diktok/grpc/user;pbuser";
 service User {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Login (LoginRequest) returns (LoginResponse) {}
+    // 根据用户ID 和登录用户 提供 用户详情的打包接口
     rpc List (ListReq) returns (ListResp) {}
     rpc Update (UpdateRequest) returns (UpdateResponse){}
 }

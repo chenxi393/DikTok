@@ -9,6 +9,7 @@ import (
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
 	"diktok/package/rpc"
+	"diktok/package/util"
 	"diktok/service/user/storage"
 	"diktok/storage/cache"
 	"diktok/storage/database/model"
@@ -68,8 +69,8 @@ func Info(ctx context.Context, req *pbuser.InfoRequest) (*pbuser.InfoResponse, e
 
 func userResponse(user *model.User, isFollowed bool) *pbuser.UserInfo {
 	return &pbuser.UserInfo{
-		Avatar:          user.Avatar,
-		BackgroundImage: user.BackgroundImage,
+		Avatar:          util.Uri2Url(user.Avatar),
+		BackgroundImage: util.Uri2Url(user.BackgroundImage),
 		FavoriteCount:   user.FavoriteCount,
 		FollowCount:     user.FollowCount,
 		FollowerCount:   user.FollowerCount,

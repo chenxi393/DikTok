@@ -20,7 +20,7 @@ func MGetVideos(ctx context.Context, req *pbvideo.MGetReq) (*pbvideo.MGetResp, e
 		offset = req.GetOffset()
 	}
 	var limit int32 = 50
-	if req.Limit > 0 {
+	if req.Limit > 0 && req.Limit < 50 {
 		limit = req.GetLimit()
 	}
 	so := query.Use(database.DB).Video
@@ -56,11 +56,11 @@ func buildMGetVideosResp(videos []*model.Video) []*pbvideo.VideoMetaData {
 		res = append(res, &pbvideo.VideoMetaData{
 			Id:          v.ID,
 			AuthorId:    v.AuthorID,
-			PlayUrl:     v.PlayURL,
-			CoverUrl:    v.CoverURL,
+			PlayUri:     v.PlayURL,
+			CoverUri:    v.CoverURL,
 			Title:       v.Title,
 			Topic:       v.Topic,
-			PublishTime: v.PublishTime.UnixMilli(), //Format("2006-01-02 15:04"), // 这个时间戳 应该给前端转换 TODO
+			PublishTime: v.PublishTime.UnixMilli(),
 		})
 	}
 	return res

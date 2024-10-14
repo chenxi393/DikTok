@@ -9,8 +9,12 @@ service Video {
     // TODO 需要 引入推荐系统
     rpc Feed (FeedRequest) returns (FeedResponse);
     rpc Publish (PublishRequest) returns (PublishResponse);
-    rpc MGet(MGetReq) returns (MGetResp); // 提供外部系统的通用查询接口
-    rpc Search (SearchRequest) returns (ListResponse); // 正常情况 es搜索接口 这里暂时全文索引支持
+    // 提供外部系统的通用查询视频元信息接口
+    rpc MGet(MGetReq) returns (MGetResp); 
+    // 全文索引支持keyword 和user_id 查询
+    rpc Search (SearchRequest) returns (ListResponse);
+    // pack 接口 提供视频详情的统一打包出口
+    rpc Pack(PackReq) returns (PackResp);
 }
 
 message VideoData {
@@ -28,8 +32,8 @@ message VideoData {
 
 message VideoMetaData {
     int64 id = 1;
-    string play_url = 2;
-    string cover_url = 3;
+    string play_uri = 2;
+    string cover_uri = 3;
     string title = 4;
     string topic = 5;
     int64 publish_time=6;
@@ -49,8 +53,9 @@ message FeedResponse {
     repeated VideoData video_list = 4;
 }
 message SearchRequest {
-    string keyword = 1;
+    string keyword = 1; // 视频 标题 topic 等text内容
     int64 login_user_id = 2;
+    int64 user_id =3;  // 支持安装作者搜索
 }
 
 message ListResponse {
@@ -86,4 +91,13 @@ message MGetResp{
     repeated VideoMetaData video_list = 1;
     int64 total = 2;
     bool has_mode = 3;
+}
+
+message PackReq{
+    int64 login_user_id = 1;
+    repeated int64 video_id = 2;
+}
+
+message PackResp{
+    repeated VideoData video_list = 1;
 }
