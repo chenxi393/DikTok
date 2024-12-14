@@ -2,9 +2,15 @@ package rpc
 
 import (
 	"context"
+	"diktok/package/constant"
 	"log"
+	"strconv"
 	"time"
 
+	"strings"
+
+	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	eclient "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/client/v3/naming/endpoints"
 )
@@ -38,4 +44,35 @@ func RegisterEndPointToEtcd(ctx context.Context, etcdClient *eclient.Client, add
 			return
 		}
 	}
+}
+
+func registerToNacos(client naming_client.INamingClient, addr string, name string) {
+	addrSlice := strings.Split(addr, ":")
+	if len(addrSlice) != 2 {
+		log.Fatalf("addr is invalid: %v", addr)
+	}
+	port, err := strconv.ParseUint(addrSlice[1], 10, 64)
+	if err != nil {
+		log.Fatalf("addr is invalid: %v", addr)
+	}
+	registerServiceInstance(client, vo.RegisterInstanceParam{
+		Ip:          addrSlice[0],
+		Port:        port,
+		ServiceName: name,
+		GroupName:   constant.NacosGroupName,
+		ClusterName: "default",
+		Weight:      10,
+		Enable:      true,
+		Healthy:     true,
+		Ephemeral:   true, // 临时节点
+		Metadata:    map[string]string{"idc": "hongkong"},
+	})
+}
+
+func registerServiceInstance(client naming_client.INamingClient, param vo.RegisterInstanceParam) {
+	success, err := client.RegisterInstance(param)
+	if !success || err != nil {
+		panic("RegisterServiceInstance failed!" + err.Error())
+	}
+	log.Printf("RegisterServiceInstance,param:%+v,result:%+v", param, success)
 }

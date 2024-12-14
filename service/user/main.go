@@ -4,7 +4,7 @@ import (
 	"diktok/config"
 	pbuser "diktok/grpc/user"
 	"diktok/package/constant"
-	"diktok/package/etcd"
+	"diktok/package/nacos"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/service/user/logic"
@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	// 初始化nacos 作为服务发现与注册中心 配置中心
+	nacos.InitNacos()
 	// 初始化配置文件
 	config.Init()
 	// 初始化日志打印
@@ -23,11 +25,9 @@ func main() {
 	database.InitMySQL()
 	storage.UserRedis = cache.InitRedis(config.System.Redis.UserDB)
 	logic.RegisterChatGPT()
-	// 初始化ETCD 作为服务发现与注册中心
-	etcd.InitETCD()
 	// 初始化rpc 客户端
-	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClientWithNacos(nacos.GetNamingClient())
 	defer ConnClose()
 	// 初始化rpc 服务端
-	rpc.InitServer(constant.UserAddr, constant.UserService, pbuser.RegisterUserServer, &UserService{})
+	rpc.InitServerWithNacos(constant.UserAddr, constant.UserService, pbuser.RegisterUserServer, &UserService{})
 }
