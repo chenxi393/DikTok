@@ -74,10 +74,12 @@ func BuildUser(user *pbuser.UserInfo) *User {
 }
 
 func BuildUserMap(userList *pbuser.ListResp) map[int64]*User {
+	if userList == nil {
+		return nil
+	}
 	mp := make(map[int64]*User, len(userList.User))
 	for _, v := range userList.User {
 		mp[v.Id] = BuildUser(v)
-
 	}
 	return mp
 }

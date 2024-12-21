@@ -95,7 +95,9 @@ func CommentList(c *fiber.Ctx) error {
 	}()
 	wg.Wait()
 	if errCount > 0 {
-		return c.JSON(constant.ServerInternal.WithDetails("errCount > 0"))
+		// return c.JSON(constant.ServerInternal.WithDetails("errCount > 0"))
+		// 降级 这里不返回报错
+		zap.L().Sugar().Errorf("[CommentList] errCount > 0")
 	}
 	return c.JSON(response.BuildCommentList(resp, userResp, countResp))
 }

@@ -248,7 +248,18 @@ services:
     ports:
       - 5080:5080  # for http
       - 5081:5081  # for grpc
-
+  nacos:
+    image: qingpan/rnacos:v0.6.6
+    container_name: nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "10848:10848"
+    volumes:
+      - nacos_io:/io:rw
+    restart: always
+    networks:
+      - backend
 networks:
   mysql:
     ipam:
@@ -264,6 +275,7 @@ volumes:
   mysql_slave:
   redis:
   open_observe_data:
+  nacos_io:
 
 #    env_file:
 #      - .env

@@ -4,7 +4,7 @@ import (
 	"diktok/config"
 	pbrelation "diktok/grpc/relation"
 	"diktok/package/constant"
-	"diktok/package/etcd"
+	"diktok/package/nacos"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/service/relation/storage"
@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	nacos.InitNacos()
 	config.Init()
 	util.InitZap()
 	// shutdown := otel.Init("rpc://relation", constant.ServiceName+".relation")
@@ -20,10 +21,10 @@ func main() {
 	database.InitMySQL()
 	storage.RelationRedis = cache.InitRedis(config.System.Redis.RelationDB)
 	storage.UserRedis = cache.InitRedis(config.System.Redis.UserDB)
-	etcd.InitETCD()
+
 	// 初始化rpc 客户端
-	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClientWithNacos(nacos.GetNamingClient())
 	defer ConnClose()
 	// 初始化rpc 服务端
-	rpc.InitServer(constant.RelationAddr, constant.RalationService, pbrelation.RegisterRelationServer, &RelationService{})
+	rpc.InitServerWithNacos(constant.RelationAddr, constant.RalationService, pbrelation.RegisterRelationServer, &RelationService{})
 }

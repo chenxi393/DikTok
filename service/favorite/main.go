@@ -4,7 +4,7 @@ import (
 	"diktok/config"
 	pbfavorite "diktok/grpc/favorite"
 	"diktok/package/constant"
-	"diktok/package/etcd"
+	"diktok/package/nacos"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/service/favorite/storage"
@@ -13,6 +13,7 @@ import (
 )
 
 func main() {
+	nacos.InitNacos()
 	config.Init()
 	util.InitZap()
 	// shutdown := otel.Init("rpc://favorite", constant.ServiceName+".favorite")
@@ -21,7 +22,5 @@ func main() {
 	storage.FavoriteRedis = cache.InitRedis(config.System.Redis.FavoriteDB)
 	storage.VideoRedis = cache.InitRedis(config.System.Redis.VideoDB)
 	storage.UserRedis = cache.InitRedis(config.System.Redis.UserDB)
-	etcd.InitETCD()
-	// 初始化rpc 服务端
-	rpc.InitServer(constant.FavoriteAddr, constant.FavoriteService, pbfavorite.RegisterFavoriteServer, &FavoriteService{})
+	rpc.InitServerWithNacos(constant.FavoriteAddr, constant.FavoriteService, pbfavorite.RegisterFavoriteServer, &FavoriteService{})
 }

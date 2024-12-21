@@ -4,7 +4,7 @@ import (
 	"diktok/config"
 	pbcomment "diktok/grpc/comment"
 	"diktok/package/constant"
-	"diktok/package/etcd"
+	"diktok/package/nacos"
 	"diktok/package/rpc"
 	"diktok/package/util"
 	"diktok/service/comment/storage"
@@ -13,15 +13,15 @@ import (
 )
 
 func main() {
+	nacos.InitNacos()
 	config.Init()
 	util.InitZap()
 	// shutdown := otel.Init("rpc://comment", constant.ServiceName+".comment")
 	// defer shutdown()
 	database.InitMySQL()
 	storage.CommentRedis = cache.InitRedis(config.System.Redis.CommentDB)
-	etcd.InitETCD()
-	ConnClose := rpc.InitRpcClient(etcd.GetEtcdClient())
+	ConnClose := rpc.InitRpcClientWithNacos(nacos.GetNamingClient())
 	defer ConnClose()
 	// 初始化rpc 服务端
-	rpc.InitServer(constant.CommentAddr, constant.CommentService, pbcomment.RegisterCommentServer, &CommentService{})
+	rpc.InitServerWithNacos(constant.CommentAddr, constant.CommentService, pbcomment.RegisterCommentServer, &CommentService{})
 }
