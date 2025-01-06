@@ -1,207 +1,117 @@
--- MySQL dump 10.13  Distrib 8.2.0, for Linux (x86_64)
---
--- Host: localhost    Database: diktok
--- ------------------------------------------------------
--- Server version	8.2.0
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
 
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Current Database: `diktok`
---
-
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `diktok` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-
-USE `diktok`;
-
---
--- Table structure for table `comment`
---
-
-DROP TABLE IF EXISTS `comment`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `comment` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `video_id` bigint unsigned NOT NULL,
-  `user_id` bigint unsigned NOT NULL,
-  `content` varchar(255) NOT NULL,
-  `created_time` datetime(3) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_comment_video_id` (`video_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `comment`
---
-
-LOCK TABLES `comment` WRITE;
-/*!40000 ALTER TABLE `comment` DISABLE KEYS */;
-/*!40000 ALTER TABLE `comment` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `favorite`
---
-
-DROP TABLE IF EXISTS `favorite`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `favorite` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint unsigned NOT NULL,
-  `video_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_user_video` (`user_id`,`video_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `favorite`
---
-
-LOCK TABLES `favorite` WRITE;
-/*!40000 ALTER TABLE `favorite` DISABLE KEYS */;
-/*!40000 ALTER TABLE `favorite` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `follow`
---
-
-DROP TABLE IF EXISTS `follow`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `follow` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `user_id` bigint unsigned NOT NULL,
-  `to_user_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_user_touser` (`user_id`,`to_user_id`),
-  KEY `idx_follow_to_user_id` (`to_user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `follow`
---
-
-LOCK TABLES `follow` WRITE;
-/*!40000 ALTER TABLE `follow` DISABLE KEYS */;
-/*!40000 ALTER TABLE `follow` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `message`
---
-
-DROP TABLE IF EXISTS `message`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `message` (
+-- ----------------------------
+-- Table structure for comment_content
+-- ----------------------------
+DROP TABLE IF EXISTS `comment_content`;
+CREATE TABLE `comment_content`  (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `content` text NOT NULL,
+  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '评论内容 后续可以考虑垂直分出去',
+  `extra` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '回复用户 @用户[] 评论图片等',
+  `created_at` datetime NOT NULL,
+  `deleted_at` datetime NULL DEFAULT NULL,
+  `updated_at` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 56526372763336707 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for comment_meta
+-- ----------------------------
+DROP TABLE IF EXISTS `comment_meta`;
+CREATE TABLE `comment_meta`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `comment_id` bigint(20) UNSIGNED ZEROFILL NOT NULL COMMENT '评论ID',
+  `item_id` bigint(20) UNSIGNED ZEROFILL NOT NULL COMMENT '视频ID，文章ID等 抽象的物品item id',
+  `parent_id` bigint(20) UNSIGNED ZEROFILL NOT NULL COMMENT '0:根评论 非0:子评论',
+  `user_id` bigint(20) UNSIGNED ZEROFILL NOT NULL COMMENT '评论的用户ID',
+  `status` int(10) UNSIGNED ZEROFILL NOT NULL COMMENT '1:全都可见 2:已删除 3:置顶 4:审核不通过 。。。',
+  `deleted_at` datetime NULL DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `item_parent_status_idx`(`item_id` ASC, `parent_id` ASC, `status` ASC, `created_at` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 30868 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for favorite
+-- ----------------------------
+DROP TABLE IF EXISTS `favorite`;
+CREATE TABLE `favorite`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `video_id` bigint UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_user_video`(`user_id` ASC, `video_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 160 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for follow
+-- ----------------------------
+DROP TABLE IF EXISTS `follow`;
+CREATE TABLE `follow`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `to_user_id` bigint UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_user_touser`(`user_id` ASC, `to_user_id` ASC) USING BTREE,
+  INDEX `idx_follow_to_user_id`(`to_user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for message
+-- ----------------------------
+DROP TABLE IF EXISTS `message`;
+CREATE TABLE `message`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `create_time` datetime(3) NOT NULL,
-  `from_user_id` bigint unsigned NOT NULL,
-  `to_user_id` bigint unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_message_create_time` (`create_time`),
-  KEY `idx_user_touser` (`from_user_id`,`to_user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `from_user_id` bigint UNSIGNED NOT NULL,
+  `to_user_id` bigint UNSIGNED NOT NULL,
+  `has_read` tinyint NOT NULL,
+  PRIMARY KEY (`id`, `has_read`) USING BTREE,
+  INDEX `idx_message_create_time`(`create_time` ASC) USING BTREE,
+  INDEX `idx_user_touser`(`from_user_id` ASC, `to_user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 190 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
---
--- Dumping data for table `message`
---
-
-LOCK TABLES `message` WRITE;
-/*!40000 ALTER TABLE `message` DISABLE KEYS */;
-/*!40000 ALTER TABLE `message` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `user`
---
-
+-- ----------------------------
+-- Table structure for user
+-- ----------------------------
 DROP TABLE IF EXISTS `user`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `user` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `username` varchar(63) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `avatar` varchar(255) NOT NULL,
-  `background_image` varchar(255) NOT NULL,
-  `signature` varchar(255) NOT NULL,
-  `follow_count` bigint NOT NULL DEFAULT '0',
-  `follower_count` bigint NOT NULL DEFAULT '0',
-  `total_favorited` bigint NOT NULL DEFAULT '0',
-  `favorite_count` bigint NOT NULL DEFAULT '0',
-  `work_count` bigint NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_user_username` (`username`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+CREATE TABLE `user`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `username` varchar(63) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `background_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `signature` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `follow_count` bigint NOT NULL DEFAULT 0,
+  `follower_count` bigint NOT NULL DEFAULT 0,
+  `total_favorited` bigint NOT NULL DEFAULT 0,
+  `favorite_count` bigint NOT NULL DEFAULT 0,
+  `work_count` bigint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `idx_user_username`(`username` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 123 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
---
--- Dumping data for table `user`
---
-
-LOCK TABLES `user` WRITE;
-/*!40000 ALTER TABLE `user` DISABLE KEYS */;
-/*!40000 ALTER TABLE `user` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `video`
---
-
+-- ----------------------------
+-- Table structure for video
+-- ----------------------------
 DROP TABLE IF EXISTS `video`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `video` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `author_id` bigint unsigned NOT NULL,
-  `play_url` varchar(256) NOT NULL,
-  `cover_url` varchar(256) NOT NULL,
-  `title` varchar(63) NOT NULL,
+CREATE TABLE `video`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `author_id` bigint UNSIGNED NOT NULL,
+  `play_url` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '存文件名 然后灵活更换CDN域名',
+  `cover_url` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `title` varchar(63) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Title 增加全文索引 以便于搜索 ngram全文索引支持中文的插件 默认分词2',
   `publish_time` datetime(3) NOT NULL,
-  `favorite_count` bigint NOT NULL DEFAULT '0',
-  `comment_count` bigint NOT NULL DEFAULT '0',
-  `topic` varchar(63) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_video_author_id` (`author_id`),
-  KEY `idx_video_publish_time` (`publish_time`),
-  FULLTEXT KEY `idx_title_topic` (`title`,`topic`) /*!50100 WITH PARSER `ngram` */ 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
+  `favorite_count` bigint NOT NULL DEFAULT 0,
+  `comment_count` bigint NOT NULL DEFAULT 0 COMMENT '两个count是不是可以考虑删除 要的时候再去计算',
+  `topic` varchar(63) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '视频的分类 前两个为固定字段 后面为tag隐式搜索',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_video_author_id`(`author_id` ASC) USING BTREE,
+  INDEX `idx_video_publish_time`(`publish_time` ASC) USING BTREE,
+  FULLTEXT INDEX `idx_title_topic`(`title`, `topic`) WITH PARSER `ngram`
+) ENGINE = InnoDB AUTO_INCREMENT = 117 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
---
--- Dumping data for table `video`
---
-
-LOCK TABLES `video` WRITE;
-/*!40000 ALTER TABLE `video` DISABLE KEYS */;
-/*!40000 ALTER TABLE `video` ENABLE KEYS */;
-UNLOCK TABLES;
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2023-11-05  6:25:35
+SET FOREIGN_KEY_CHECKS = 1;

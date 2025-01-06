@@ -40,19 +40,9 @@ type Redis struct {
 	CommentDB  int    `mapstructure:"comment_db"`
 }
 
-type RabbitMQ struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-}
-
-type MongoDB struct {
-	Host     string `mapstructure:"host"`
-	Port     string `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	DB       string `mapstructure:"db"`
+type RocketMQ struct {
+	Host string `mapstructure:"host"`
+	Port string `mapstructure:"port"`
 }
 
 type QiNiuCloud struct {
@@ -75,10 +65,8 @@ type SystemConfig struct {
 	MysqlMaster   MySQL      `mapstructure:"mysqlMaster"`
 	MysqlSlave    MySQL      `mapstructure:"mysqlSlave"`
 	Redis         Redis      `mapstructure:"redis"`
-	MQ            RabbitMQ   `mapstructure:"rabbitmq"`
+	MQ            RocketMQ   `mapstructure:"rocketmq"`
 	OtelColletcor OTEL       `mapstructure:"otel_collector"`
-	Mongo         MongoDB    `mapstructure:"mongo"`
-	EtcdURL       string     `mapstructure:"etcd_address"`
 }
 
 var System SystemConfig
@@ -132,7 +120,7 @@ func Init() {
 
 		//Listen config change,key=dataId+group+namespaceId.
 		err = nacos.GetConfigClient().ListenConfig(vo.ConfigParam{
-			DataId: "123",
+			DataId: "config.yaml",
 			Group:  "diktok",
 			OnChange: func(namespace, group, dataId, data string) {
 				log.Println("配置文件被修改 重新载入全局变量")

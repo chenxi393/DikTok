@@ -1,3 +1,4 @@
+# 一句话概括：推送代码到main后构建镜像发布到dockerhub，在重新运行服务器docker
 name: DikTok镜像打包😎
 on:
   push:
