@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 
+	"diktok/gateway/response"
 	pbmessage "diktok/grpc/message"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -72,7 +73,7 @@ func MessageChat(c *fiber.Ctx) error {
 		return c.JSON(constant.ServerInternal.WithDetails(err.Error()))
 	}
 	c.Status(fiber.StatusOK)
-	return c.JSON(resp)
+	return c.JSON(response.BuildMessageRes(resp))
 }
 
 type RequestMsg struct {

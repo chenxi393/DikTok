@@ -1,8 +1,13 @@
 package response
 
+import (
+	pbmessage "diktok/grpc/message"
+	"diktok/package/constant"
+)
+
 type MessageResponse struct {
 	// 用户列表
-	MessageList []Message `json:"message_list"`
+	MessageList []*Message `json:"message_list"`
 	// 状态码，0-成功，其他值-失败
 	StatusCode int `json:"status_code"`
 	// 返回状态描述
@@ -21,4 +26,29 @@ type Message struct {
 	ID int64 `json:"id"`
 	// 消息接收者id
 	ToUserID int64 `json:"to_user_id"`
+}
+
+func BuildMessageRes(msgRes *pbmessage.ListResponse) *MessageResponse {
+	msgData := msgRes.MessageList
+	res := &MessageResponse{
+		MessageList: make([]*Message, 0, len(msgData)),
+		StatusCode:  constant.Success,
+		StatusMsg:   constant.FeedSuccess,
+	}
+	for _, v := range msgData {
+		if v != nil {
+			res.MessageList = append(res.MessageList, BuildMessage(v))
+		}
+	}
+	return res
+}
+
+func BuildMessage(item *pbmessage.MessageData) *Message {
+	return &Message{
+		ID:         item.Id,
+		Content:    item.Content,
+		CreateTime: item.CreateTime,
+		FromUserID: item.FromUserId,
+		ToUserID:   item.ToUserId,
+	}
 }
