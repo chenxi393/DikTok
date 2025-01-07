@@ -59,5 +59,5 @@ func UserLogin(c *fiber.Ctx) error {
 	middleware.SetTokenCookie(c, token)
 	res.Token = token
 	c.Status(fiber.StatusOK)
-	return c.JSON(res)
+	return c.JSON(response.BuildLoginRes(res))
 }

@@ -7,11 +7,12 @@ import (
 
 type UserRegisterOrLogin struct {
 	// 状态码，0-成功，其他值-失败
-	StatusCode int `json:"status_code"`
+	StatusCode int32 `json:"status_code"`
 	// 返回状态描述
 	StatusMsg string `json:"status_msg"`
 	// 用户id
 	UserID *int64 `json:"user_id"`
+	Token  string `json:"token"`
 }
 
 type InfoResponse struct {
@@ -82,4 +83,13 @@ func BuildUserMap(userList *pbuser.ListResp) map[int64]*User {
 		mp[v.Id] = BuildUser(v)
 	}
 	return mp
+}
+
+func BuildLoginRes(loginRes *pbuser.LoginResponse) *UserRegisterOrLogin {
+	return &UserRegisterOrLogin{
+		StatusCode: loginRes.StatusCode,
+		StatusMsg:  loginRes.StatusMsg,
+		UserID:     &loginRes.UserId,
+		Token:      loginRes.Token,
+	}
 }
