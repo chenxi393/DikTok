@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"diktok/gateway/response"
 	pbvideo "diktok/grpc/video"
 	"diktok/package/constant"
 	"diktok/package/rpc"
@@ -35,5 +36,5 @@ func Feed(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(constant.ServerInternal)
 	}
-	return c.JSON(res)
+	return c.JSON(response.BuildVideoList(res.GetVideoList()))
 }
