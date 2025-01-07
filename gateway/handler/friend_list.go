@@ -49,5 +49,5 @@ func FriendList(c *fiber.Ctx) error {
 		return c.JSON(res)
 	}
 	c.Status(fiber.StatusOK)
-	return c.JSON(resp)
+	return c.JSON(response.BuildFrindsRes(resp))
 }
