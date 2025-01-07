@@ -36,5 +36,5 @@ func Feed(c *fiber.Ctx) error {
 	if err != nil {
 		return c.JSON(constant.ServerInternal)
 	}
-	return c.JSON(response.BuildVideoList(res.GetVideoList()))
+	return c.JSON(response.BuildFeed(res))
 }

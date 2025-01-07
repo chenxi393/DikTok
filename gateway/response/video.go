@@ -71,7 +71,23 @@ func BuildVideoList(videoData []*pbvideo.VideoData) *VideoListResponse {
 	return res
 }
 
-// 仅透传字段 video服务已打包号
+func BuildFeed(feedData *pbvideo.FeedResponse) *FeedResponse {
+	videoData := feedData.VideoList
+	res := &FeedResponse{
+		VideoList:  make([]*Video, 0, len(videoData)),
+		StatusCode: constant.Success,
+		StatusMsg:  constant.FeedSuccess,
+		NextTime:   feedData.NextTime,
+	}
+	for _, v := range videoData {
+		if v != nil {
+			res.VideoList = append(res.VideoList, BuildVideo(v))
+		}
+	}
+	return res
+}
+
+// 仅透传字段 video服务已打包好
 func BuildVideo(item *pbvideo.VideoData) *Video {
 	return &Video{
 		Author:        BuildUser(item.GetAuthor()),
